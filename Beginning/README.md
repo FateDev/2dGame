@@ -69,7 +69,12 @@ msgSend = s; //otherwise lock and set the message you recieved as the one that i
 globalMutex.unlock();
 ```
 
-After this simply make a thread pointer in the main program, and then do the following later on to launch it:
+After this simply make a thread pointer in the main program:
+```cpp
+sf::Thread* thread = 0;
+```
+
+And then do the following later on to launch it:
 ```cpp
 thread = new sf::Thread(&DoStuff); //makes a thread run that function
 thread->launch(); //launches the thread, constantly looping
