@@ -90,7 +90,7 @@ int main(int argc, char* argv[])
 		GetInput(); //gets this stuff in loop on main thread, at the same time as the other thread
 	}
 
-	if(thread)
+	if(thread) //it is initially set to 0, so if a new thread isn't made, it is 0, so false, so doesn't need to be deleted
 	{
 		thread->wait(); //wait until the current bit of code the thread is going through finishes
 		delete thread; //then delete the thread
