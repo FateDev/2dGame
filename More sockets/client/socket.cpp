@@ -1,8 +1,8 @@
 #include <iostream>
 #include <string>
-#include <SFML/Network.hpp>
+#include "SFML/Network.hpp"
 
-const unsigned short PORT = 5000;
+const unsigned int PORT = 5000;
 const std::string IPADDRESS = "erewhon.xyz";
 const std::string reserved1 = "#";
 const std::string reserved2 = "{";
@@ -47,11 +47,13 @@ void processLoop(void){
 			continue;
 		}
 
+		std::string tempMsgHolder;
+
 		globalMutex.lock();
 
 		sanitiseString(msg);
-		msg = userName + "####" + msg;
-		packetReceive << msg;
+		tempMsgHolder = userName + "####" + msg;
+		packetReceive <<  tempMsgHolder.c_str();
 		msg = "";
 
 		globalMutex.unlock();
@@ -75,8 +77,12 @@ void getInput(void){
 }
 
 void client(){
-	if(socket.connect(IPADDRESS, PORT) == sf::Socket::Done){
-		std::cout << "Successfully connected" << std::endl;
+	while (true) {
+		if (socket.connect(IPADDRESS.c_str(), PORT) == sf::Socket::Done) {
+			std::cout << "Successfully connected" << std::endl;
+			break;
+		}
+		std::cout << ".";
 	}
 }
 
