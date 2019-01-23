@@ -69,15 +69,6 @@ void getInput(std::string &msg){
 			socket->disconnect();
 			break;
 		}
-
-		sf::Packet receivePacket;
-		std::string receiveString;
-	
-		socket->receive(receivePacket);
-
-		if(receivePacket >> receiveString){
-			std::cout << receiveString;
-		}
 	}
 }
 
