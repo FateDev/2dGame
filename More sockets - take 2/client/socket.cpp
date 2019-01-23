@@ -95,6 +95,6 @@ void client(std::string IPADDRESS, unsigned short PORT){
 			std::cout << "Connected to " << IPADDRESS << ":" << PORT << std::endl;
 			break;
 		}
-		std::cout << socket->connect(IPADDRESS, PORT) << std::endl;
+		std::cout << socket->connect(IPADDRESS.c_str(), PORT) << std::endl;
 	}
 }
