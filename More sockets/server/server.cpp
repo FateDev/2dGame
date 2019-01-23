@@ -1,4 +1,5 @@
 #include <iostream>
+#include <vector>
 #include <SFML/Network.hpp>
 
 const unsigned int PORT = 5000;
@@ -6,9 +7,12 @@ const std::string reserved = "#";
 const std::string delmiter = "####";
 const std::string hash = "{hash}";
 
+std::vector<sf::TcpSocket*> clients;
+sf::TcpListener listener;
+
 std::string msg;
 std::string userName;
-sf::TcpSocket socket;
+sf::TcpSocket* activeSocket;
 
 void extractInfo(std::string input){
 	size_t pos = input.find(delmiter); //finds the first #
@@ -26,7 +30,7 @@ void extractInfo(std::string input){
 		userName.replace(pos, hash.length(), reserved); //replace it with #
 		pos = userName.find(hash); //find the next occurence
 	}
-	
+
 	msg = input; //what is left of the input is now stored in the msg variable
 
 	pos = msg.find(hash); //find if the contents have {hash}
@@ -41,28 +45,61 @@ void extractInfo(std::string input){
 
 void processLoop(void){
 	while(true){
-		sf::Packet packetReceive;
-		std::string receiveMsg;
+		std::cout << clients.size() << std::endl;
+		
+		activeSocket = new sf::TcpSocket;
 
-		socket.receive(packetReceive);
+		if(listener.accept(*activeSocket) == sf::Socket::Done){
+			clients.push_back(activeSocket);
 
-		if((packetReceive >> receiveMsg) && !receiveMsg.empty()){
-			extractInfo(receiveMsg);
-			
-			std::cout << userName << ": " << msg << std::endl;
+			std::cout <<  "Server: New client connected: " << activeSocket->getRemoteAddress() << std::endl;
+		}else{
+			delete activeSocket;
+		}
+
+		for(int i = 0;i < clients.size();i++){
+			/*
+			if(clients[i]->getRemoteAddress() == sf::IpAddress::None){
+				std::cout << "Server: A user has disconnected." << std::endl;
+
+				clients.erase(clients.begin() + i); //erases the disconnected client
+				
+				continue;
+			}
+			*/
+
+			sf::Packet packetReceive;
+			std::string receiveMsg;
+			clients[i]->receive(packetReceive);
+
+			if((packetReceive >> receiveMsg) && !receiveMsg.empty()){
+				extractInfo(receiveMsg);
+
+				std::cout << userName << ": " << msg << std::endl;
+			}
 		}
 	}
 }
 
 void server(void){
-	sf::TcpListener listener;
 	listener.listen(PORT);
-	listener.accept(socket);
-	std::cout <<  "New client connected: " << socket.getRemoteAddress() << std::endl;
+
+	activeSocket = new sf::TcpSocket;
+
+	if(listener.accept(*activeSocket) == sf::Socket::Done){
+		clients.push_back(activeSocket);
+
+		std::cout <<  "Server: New client connected: " << activeSocket->getRemoteAddress() << std::endl;
+	}else{
+		delete activeSocket;
+	}
 }
 
 int main(){
-	std::cout << " ** SERVER STARTED ** " << std::endl;
+	std::vector<sf::TcpSocket*> clients;
+
+	std::cout << "Server: Server Started" << std::endl;
+
 	server();
 
 	processLoop();
