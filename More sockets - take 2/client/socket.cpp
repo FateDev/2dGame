@@ -9,6 +9,7 @@ void stayAlive();
 sf::Clock keepAliveTimer;
 sf::Time pingTime;
 sf::TcpSocket* socket = new sf::TcpSocket;
+std::string username;
 
 int main(){
 	const std::string IPADDRESS("erewhon.xyz");
@@ -22,6 +23,9 @@ int main(){
 
 	pingThread = new sf::Thread(&stayAlive);
 	pingThread->launch();
+
+	std::cout << "Set your username: ";
+	getline(std::cin, username);
 	
 	getInput(msg);
 
@@ -57,7 +61,8 @@ void getInput(std::string &msg){
 		if(msg != ""){
 			sendPacket = new sf::Packet;
 
-			*sendPacket << msg;
+			msg = "USER::USERNAME::" + username + "USER::MESSAGE::" + msg;
+			*sendPacket << msg.c_str();
 
 			socket->send(*sendPacket);
 
@@ -73,7 +78,7 @@ void getInput(std::string &msg){
 
 void client(std::string IPADDRESS, unsigned short PORT){
 	while(true){
-		if(socket->connect(IPADDRESS, PORT) == sf::Socket::Done){
+		if(socket->connect(IPADDRESS.c_str(), PORT) == sf::Socket::Done){
 			std::cout << "Connected to " << IPADDRESS << ":" << PORT << std::endl;
 			break;
 		}
