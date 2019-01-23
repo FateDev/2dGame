@@ -4,6 +4,7 @@
 
 void client(std::string IPADDRESS, unsigned short PORT);
 void getInput(std::string &msg);
+void getResponses();
 void stayAlive();
 
 sf::Clock keepAliveTimer;
@@ -18,8 +19,12 @@ int main(){
 	std::string msg;
 
 	sf::Thread* pingThread = 0;
+	sf::Thread* receiveThread = 0;
 
 	client(IPADDRESS, PORT);
+	
+	receiveThread = new sf::Thread(&getResponses);
+	receiveThread->launch();
 
 	pingThread = new sf::Thread(&stayAlive);
 	pingThread->launch();
@@ -35,38 +40,46 @@ int main(){
 	}
 }
 
-void stayAlive(){
-	sf::Packet* sendPacket;
+void getResponses(){
+	while(true){
+		sf::Packet receivePacket;
+		std::string receiveString;
 
-	while(true){		
-		if(keepAliveTimer.getElapsedTime().asSeconds() >= pingTime.asSeconds()){
+		socket->receive(receivePacket);
+
+		receivePacket >> receiveString;
+
+		std::cout << receiveString;
+
+	}
+}
+
+void stayAlive(){
+	while(true){
+		sf::Packet sendPacket;
+
+		if(keepAliveTimer.getElapsedTime().asSeconds() >= pingTime.asSeconds()){ //pings every ~3 seconds
 			pingTime = sf::seconds(keepAliveTimer.getElapsedTime().asSeconds() + 3);
 
-			sendPacket = new sf::Packet;
-			*sendPacket << "SERVER::PING::3SEC";
-			socket->send(*sendPacket);
-
-			delete sendPacket;
+			sendPacket << "SERVER::PING::3SEC";
+			socket->send(sendPacket);
 		}
 	}
 }
 
 void getInput(std::string &msg){
-	sf::Packet* sendPacket;
+	std::cout << "Enter a message: " << std::endl;
 
 	while(true){
-		std::cout << "Enter a message or DISCONNECT to leave: ";
+		sf::Packet sendPacket;
+
 		getline(std::cin, msg);
 		
 		if(msg != ""){
-			sendPacket = new sf::Packet;
-
 			msg = "USER::USERNAME::" + username + "USER::MESSAGE::" + msg;
-			*sendPacket << msg.c_str();
+			sendPacket << msg.c_str();
 
-			socket->send(*sendPacket);
-
-			delete sendPacket;
+			socket->send(sendPacket);
 		}
 
 		if(msg == "DISCONNECT"){
