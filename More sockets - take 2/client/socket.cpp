@@ -12,6 +12,8 @@ sf::Time pingTime;
 sf::TcpSocket* socket = new sf::TcpSocket;
 std::string username;
 
+sf::Mutex globalMutex;
+
 int main(){
 	const std::string IPADDRESS("erewhon.xyz");
 	const unsigned short PORT = 5000;
@@ -45,11 +47,13 @@ void getResponses(){
 		sf::Packet receivePacket;
 		std::string receiveString;
 
+		globalMutex.lock();
 		socket->receive(receivePacket);
+		globalMutex.unlock();
 
-		receivePacket >> receiveString;
-
-		std::cout << receiveString;
+		if(receivePacket >> receiveString){
+			std::cout << receiveString;
+		}
 
 	}
 }
@@ -62,7 +66,10 @@ void stayAlive(){
 			pingTime = sf::seconds(keepAliveTimer.getElapsedTime().asSeconds() + 3);
 
 			sendPacket << "SERVER::PING::3SEC";
+
+			globalMutex.lock();
 			socket->send(sendPacket);
+			globalMutex.unlock();
 		}
 	}
 }
@@ -79,7 +86,9 @@ void getInput(std::string &msg){
 			msg = "USER::USERNAME::" + username + "USER::MESSAGE::" + msg;
 			sendPacket << msg.c_str();
 
+			globalMutex.lock();
 			socket->send(sendPacket);
+			globalMutex.unlock();
 		}
 
 		if(msg == "DISCONNECT"){
