@@ -1,5 +1,11 @@
+**/*.tlog
 **/.vscode
-**\.vs
+**/.vs
+**/*.iobj
+**/*.ipdb
+**/*.log
+**/*.pdb
+**/*.obj
 **/*.vcxproj
 **/*.vcxproj.filters
 **/*.dll
