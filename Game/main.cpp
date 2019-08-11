@@ -17,7 +17,7 @@ bool loggedIn = false;
 bool serverResponse = false;
 
 int main() {
-	const std::string IPADDRESS("erewhon.xyz"); //the IP address to connect to
+	const std::string IPADDRESS("192.168.0.15"); //the IP address to connect to
 	const unsigned short PORT = 5000; //the port to connect to
 
 	std::string msg; //the string used in getInput(...)
