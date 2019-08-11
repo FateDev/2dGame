@@ -1,8 +1,10 @@
 <?php
 require 'info.php';
 
-$username = $_GET['username'];
-$password = $_GET['password'];
+//this basically checks login details
+
+$username = urldecode($_GET['username']);
+$password = urldecode($_GET['password']);
 
 if(strlen($password) > 20){
     echo "Invalid password.";
