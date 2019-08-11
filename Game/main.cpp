@@ -3,7 +3,7 @@
 #include "SFML/Network.hpp"
 
 //prototypes
-void client(std::string IPADDRESS, unsigned short PORT);
+void loginLoop(std::string IPADDRESS, int PORT);
 void getInput(std::string &msg);
 void getResponses();
 void stayAlive();
@@ -25,13 +25,7 @@ int main() {
 	sf::Thread* pingThread = 0; //thread for pinging the server
 	sf::Thread* receiveThread = 0; //thread for waiting for incoming messages
 
-	std::cout << "Enter username: "; //asks for username
-	getline(std::cin, username); //and makes it the value of the global variable defined earlier
-
-	std::cout << "Enter password: "; //asks for password
-	getline(std::cin, password); //and makes it the value of the global variable defined earlier
-
-	client(IPADDRESS, PORT); //initialises the client
+	loginLoop(IPADDRESS, PORT); //this will ask the user to login over and over
 
 	receiveThread = new sf::Thread(&getResponses); //make the getResponses() function run on this thread
 	receiveThread->launch(); //launches the thread
@@ -61,8 +55,33 @@ int main() {
 	return 0;
 }
 
-void getResponses() { //retrieves incoming message
-	while (true) { //loop endlessly
+void loginLoop(std::string IPADDRESS, int PORT) {
+	while (true) {
+		std::cout << "Enter username: "; //asks for username
+		getline(std::cin, username); //and makes it the value of the global variable defined earlier
+
+		std::cout << "Enter password: "; //asks for password
+		getline(std::cin, password); //and makes it the value of the global variable defined earlier
+
+		while (true) {
+			if (socket.connect(IPADDRESS.c_str(), PORT) == sf::Socket::Done) { //if the socket successfully connects to the specified IP address at the specified port...
+				//the IP address has to be a C style array as well
+				//std::cout << "Connected to " << IPADDRESS << ":" << PORT << std::endl; //output that it has connected to that IP address and that port
+
+				sf::Packet logonPacket;
+				std::string msg = "SERVER::LOGON::USERNAME::" + username + "SERVER::LOGON::PASSWORD::" + password;
+
+				logonPacket << msg.c_str();
+
+				//std::cout << msg << std::endl;
+
+				socket.send(logonPacket); //sends the username and password to the server for authentication
+
+				break; //and break the loop
+			}
+			//otherwise it will loop endlessly until it does connect
+		}
+
 		sf::Packet receivePacket; //a packet variable to hold the incoming packet
 		char* receiveCharArray = NULL; //a char pointer to hold what will be a dynamically allocated char array
 
@@ -81,21 +100,31 @@ void getResponses() { //retrieves incoming message
 			if (receiveString == "true") {
 				serverResponse = true;
 				loggedIn = true;
-			}
-			else {
-				loggedIn = false;
-				serverResponse = true;
-
-				socket.disconnect();
-
 				break;
 			}
-		}
-		else {
-			std::cout << receiveCharArray; //outputs the message which was received
+			else {
+				std::cout << "Incorrect details." << std::endl;
+			}
 		}
 
 		delete receiveCharArray; //then deletes the char array
+	}
+}
+
+void getResponses() { //retrieves incoming message
+	while (true) { //loop endlessly
+		sf::Packet receivePacket; //a packet variable to hold the incoming packet
+		char* receiveCharArray = NULL; //a char pointer to hold what will be a dynamically allocated char array
+
+		socket.receive(receivePacket); //receives the packet
+
+		receiveCharArray = new char[receivePacket.getDataSize()]; //makes a new char array the exact size of the data from the just received packet
+		receivePacket >> receiveCharArray; //puts the packet's data into the char array variable we just put
+		//need to do this as all of the data transmitted from the server was string with .c_str() applied to it, so was a C style string (char array)
+
+		std::string receiveString(receiveCharArray);
+
+		std::cout << receiveCharArray; //outputs the message which was received
 	}
 }
 
@@ -128,24 +157,5 @@ void getInput(std::string &msg) { //gets input from the user
 
 			socket.send(sendPacket); //sends the packet
 		}
-	}
-}
-
-void client(std::string IPADDRESS, unsigned short PORT) { //for connecting to the server
-	while (true) {
-		if (socket.connect(IPADDRESS.c_str(), PORT) == sf::Socket::Done) { //if the socket successfully connects to the specified IP address at the specified port...
-			//the IP address has to be a C style array as well
-			std::cout << "Connected to " << IPADDRESS << ":" << PORT << std::endl; //output that it has connected to that IP address and that port
-			
-			sf::Packet logonPacket;
-			std::string msg = "SERVER::LOGON::USERNAME::" + username + "SERVER::LOGON::PASSWORD::" + password;
-			
-			logonPacket << msg.c_str();
-
-			socket.send(logonPacket); //sends the username and password to the server for authentication
-
-			break; //and break the loop
-		}
-		//otherwise it will loop endlessly until it does connect
 	}
 }
