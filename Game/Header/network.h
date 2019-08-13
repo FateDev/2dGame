@@ -8,9 +8,10 @@
 class networking {
 private:
 	std::string usernameReal = ""; //this global variable would store the username
+	std::string msg;
+
 	sf::Clock* keepAliveTimer = NULL;
 	sf::Time pingTime;
-	std::string msg;
 public:
 	bool active = false; //this single global variable allows us to indicate whether or not the server connection is active
 	//we make the above public so that we can see in the GUI bit whether or not there is a connection
