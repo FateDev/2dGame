@@ -18,7 +18,7 @@
 
 int main() {
 	sf::Clock* globalClock = new sf::Clock; //the clock which is used to check when to ping the server
-	networking* networkObject = new networking("192.168.0.15", 5000, globalClock);
+	networking* networkObject = new networking("erewhon.xyz", 5000, globalClock);
 
 	sf::Thread* receiveThread = new sf::Thread(&networking::getResponses, networkObject); //make the getResponses() function run on this thread
 	sf::Thread* pingThread = new sf::Thread(&networking::stayAlive, networkObject); //makes the stayAlive() function run on this thread

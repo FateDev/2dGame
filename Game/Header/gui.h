@@ -28,6 +28,7 @@ private:
 	sf::Clock *notifClock; //will hold the global clock
 
 	void loginFunctionFromWindow(tgui::EditBox::Ptr usernameBox, tgui::EditBox::Ptr passwordBox); //function prototype to check login
+	void helpFunction(); //function prototype to open the help page in browser
 public:
 	tgui::Gui *gui = NULL; //will be initialised later when the window object has been received, to hold the necessary widgets
 
