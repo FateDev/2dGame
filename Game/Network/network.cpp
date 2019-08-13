@@ -3,8 +3,6 @@
 #include <iostream>
 #include "SFML/Network.hpp"
 
-
-
 bool networking::login(std::string username, std::string password) {
 	if (active == true) { //if the user is already logged in, ignore any input and just return true
 		return true;
@@ -76,6 +74,13 @@ void networking::getResponses() { //retrieves incoming message
 		if (receiveString == "SERVER::DIE") {
 			active = false;
 			std::cout << "Press the enter key to exit.";
+			continue;
+		}
+
+		std::string usernameToken = "USER::USERNAME::";
+		std::string messageToken = "USER::MESSAGE::";
+
+		if (receiveString.find(usernameToken) != 0 || receiveString.find(messageToken) == std::string::npos) {
 			continue;
 		}
 
