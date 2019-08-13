@@ -77,13 +77,6 @@ void networking::getResponses() { //retrieves incoming message
 			continue;
 		}
 
-		std::string usernameToken = "USER::USERNAME::";
-		std::string messageToken = "USER::MESSAGE::";
-
-		if (receiveString.find(usernameToken) != 0 || receiveString.find(messageToken) == std::string::npos) {
-			continue;
-		}
-
 		std::cout << receiveCharArray; //outputs the message which was received
 	}
 }
