@@ -4,8 +4,6 @@
 #include <network.h>
 #include <TGUI/TGUI.hpp>
 
-#include <gui.h>
-
 class launcher {
 private:
 	sf::Time notifTime; //the amount of time a notification has been on screen (should be in milliseconds)

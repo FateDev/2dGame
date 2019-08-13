@@ -4,7 +4,7 @@
 
 #include <gui.h>
 #include <TGUI/TGUI.hpp>
-#include <windows.h> 
+#include <windows.h>
 
 launcher::launcher(networking *networkObject, sf::RenderWindow* mainWindow, sf::Thread *ping, sf::Thread *receive, sf::Thread *inputThread, sf::Clock *globalClock) : networkBit(networkObject), pingThread(ping), receiveThread(receive), window(mainWindow), input(inputThread), notifClock(globalClock) {
 	//all this stuff is using TGUI and draws the window
@@ -131,16 +131,14 @@ void launcher::loginFunctionFromWindow(tgui::EditBox::Ptr usernameBox, tgui::Edi
 	std::string username = usernameBox->getText().toAnsiString();
 	std::string password = passwordBox->getText().toAnsiString();
 
-	if (networkBit->active == 0) { //so long as the network connection is inactive
-		if (networkBit->login(username, password)) { //this will ask the verify login details, true or false depending on whether or not verified
-			pingThread->launch(); //will maintain the connection by pinging every so often
-			receiveThread->launch(); //will receive any server orders
-			input->launch(); //launch the input thread so to talk to other users
-			playButton->setEnabled(false); //disables the playButton as you've managed to log in at this point
-		}
-		else {
-			loginError = 1; //uf you can login then it'll show the error message, rather part 1 of it
-		}
+	if (networkBit->login(username, password)) { //this will ask the verify login details, true or false depending on whether or not verified
+		pingThread->launch(); //will maintain the connection by pinging every so often
+		receiveThread->launch(); //will receive any server orders
+		input->launch(); //launch the input thread so to talk to other users
+		playButton->setEnabled(false); //disables the playButton as you've managed to log in at this point
+	}
+	else {
+		loginError = 1; //uf you can login then it'll show the error message, rather part 1 of it
 	}
 }
 
