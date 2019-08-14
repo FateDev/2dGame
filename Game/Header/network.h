@@ -11,6 +11,8 @@ private:
 	std::string msg;
 
 	sf::Clock* keepAliveTimer = NULL;
+
+
 	sf::Time pingTime;
 public:
 	bool active = false; //this single global variable allows us to indicate whether or not the server connection is active

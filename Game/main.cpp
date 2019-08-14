@@ -26,8 +26,8 @@ int main() {
 	sf::Thread* getInputThread = new sf::Thread(&networking::getInput, networkObject); //thread for getting user input
 
 	//launcher window bit, everything for the launcher is draw and the login is done and stuff
-	if (launcherBit(networkObject, pingThread, receiveThread, getInputThread, globalClock)) {
-		gameBit();
+	if (/*launcherBit(networkObject, pingThread, receiveThread, getInputThread, globalClock) commenting this out for now so i can skip the login*/true) {
+		gameBit(globalClock);
 	}
 
 	clearResources(networkObject, pingThread, receiveThread, getInputThread, globalClock);
