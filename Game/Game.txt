@@ -134,3 +134,29 @@ Label.Label3 {
         borders = (0, 0, 0, 0);
         textcolor = white;
 }
+
+chatBoxContainer {
+        backgroundcolor = rgba(255, 255, 255, 200);
+        titlebarheight = 40;
+}
+
+chatBox {
+        backgroundcolor = transparent;
+}
+
+msg {
+        backgroundcolor = transparent;
+}
+
+msg.username {
+        backgroundcolor = transparent;
+        textcolor = #2b284a;
+}
+
+msg.content {
+        backgroundcolor = transparent;
+}
+
+timeLabel {
+        textcolor = #4c4684;
+}
