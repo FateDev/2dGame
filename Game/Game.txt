@@ -1,0 +1,136 @@
+Panel.Panel2 {
+        backgroundcolor = #1A191E;
+        bordercolor = black;
+}
+
+Panel.Panel1 {
+        backgroundcolor = #BBBBBB;
+        bordercolor = black;
+}
+
+Picture.Picture1 {
+        texture = "resources/default.jpg";
+        transparenttexture = false;
+}
+
+EditBox {
+        backgroundcolor = #F5F5F5;
+        backgroundcolordisabled = #E6E6E6;
+        backgroundcolorhover = white;
+        bordercolor = #CCCCCC;
+        bordercolordisabled = #7D7D7D;
+        bordercolorhover = #3498db;
+        borders = (1, 1, 1, 1);
+        caretcolor = black;
+        caretwidth = 1;
+        defaulttextcolor = #A0A0A0;
+        padding = (0, 0, 0, 0);
+        selectedtextbackgroundcolor = #006EFF;
+        selectedtextcolor = white;
+        textcolor = #3C3C3C;
+        textcolordisabled = #7D7D7D;
+        texture = None;
+        texturedisabled = None;
+        texturefocused = None;
+        texturehover = None;
+}
+
+Button {
+        backgroundcolor = #201f2a;
+        backgroundcolordisabled = #E6E6E6;
+	backgroundcolordown = #403f52;
+        backgroundcolorhover = #2b2a38;
+        textcolor = white;
+        textcolordisabled = #7D7D7D;
+        texture = None;
+        texturedisabled = None;
+        texturedown = None;
+        texturefocused = None;
+        texturehover = None;
+}
+
+Button2 {
+        backgroundcolor = #201f2a;
+        backgroundcolordisabled = #E6E6E6;
+	backgroundcolordown = #403f52;
+        backgroundcolorhover = #2b2a38;
+        textcolor = white;
+        textcolordisabled = #7D7D7D;
+        bordercolor = #2b2a38;
+        borders = (2, 0, 2, 0);
+        texture = None;
+        texturedisabled = None;
+        texturedown = None;
+        texturefocused = None;
+        texturehover = None;
+}
+
+Button3 {
+        backgroundcolor = #201f2a;
+        backgroundcolordisabled = #E6E6E6;
+	backgroundcolordown = #403f52;
+        backgroundcolorhover = #2b2a38;
+        textcolor = white;
+        textcolordisabled = #7D7D7D;
+        bordercolor = #2b2a38;
+        borders = (0, 0, 2, 0);
+        texture = None;
+        texturedisabled = None;
+        texturedown = None;
+        texturefocused = None;
+        texturehover = None;
+}
+
+Button4 {
+        backgroundcolor = #201f2a;
+        backgroundcolordisabled = #E6E6E6;
+	backgroundcolordown = #403f52;
+        backgroundcolorhover = #2b2a38;
+        textcolor = white;
+        textcolordisabled = #7D7D7D;
+        bordercolor = #2b2a38;
+        borders = (2, 0, 0, 0);
+        texture = None;
+        texturedisabled = None;
+        texturedown = None;
+        texturefocused = None;
+        texturehover = None;
+}
+
+Label.Label1 {
+        backgroundcolor = transparent;
+        bordercolor = #3C3C3C;
+        borders = (0, 0, 0, 0);
+        textcolor = #111111;
+}
+
+Label.Label2 {
+        backgroundcolor = transparent;
+        bordercolor = #3C3C3C;
+        borders = (0, 0, 0, 0);
+        textcolor = #111111;
+}
+
+Panel.Panel3 {
+        backgroundcolor = #263048;
+        bordercolor = black;
+}
+
+Label.Label0 {
+        backgroundcolor = transparent;
+        bordercolor = #3C3C3C;
+        borders = (0, 0, 0, 0);
+        textcolor = white;
+}
+
+Panel.Panel4 {
+        backgroundcolor = #C0392B;
+        bordercolor = black;
+}
+
+Label.Label3 {
+        backgroundcolor = transparent;
+        bordercolor = #3C3C3C;
+        borders = (0, 0, 0, 0);
+        textcolor = white;
+}
