@@ -17,63 +17,9 @@ void helpFunction() { //the function to make the help button open the help setti
 	//6th is how to show the application once opened, so it shows it
 }
 
-tgui::Panel::Ptr msgMaker(std::string usernameText, std::string messageText, int percent, std::string imgLocation) {
-	float imgRatio = 0;
-	float percentOfScreenX = (float(sf::VideoMode::getDesktopMode().width) / 100) * percent; //max set by params
-	float halfScreen = (float(sf::VideoMode::getDesktopMode().height) / 100) * 50; //max anything should be, set right here
-
-	auto username = tgui::Label::create(usernameText);
-	username->setSize({ percentOfScreenX, 20 });
-	username->setPosition({ 10, 10 });
-	username->setVerticalAlignment(tgui::Label::VerticalAlignment::Center);
-
-	auto msg = tgui::Label::create(messageText);
-	msg->setPosition(30, 30);
-	msg->setMaximumTextWidth(percentOfScreenX - 40);
-
-	auto img = tgui::Picture::create(imgLocation);
-	img->setPosition({ 10, 30 + msg->getSize().y + 5 });
-	imgRatio = img->getSize().y / img->getSize().x; //gets y/x of image
-
-	if (img->getSize().y > halfScreen) {
-		img->setSize(percentOfScreenX - 20, (percentOfScreenX - 20) * imgRatio); //if the height is greater than half the screen, then resize the width instead
-	}
-	else {
-		img->setSize(1/imgRatio * halfScreen, halfScreen); //otherwise resize the height
-	}
-
-	auto msgContainer = tgui::Panel::create({ msg->getSize().x + 40, msg->getSize().y + username->getSize().y + img->getSize().y + 25 });
-
-	msgContainer->add(username);
-	msgContainer->add(msg);
-	msgContainer->add(img);
-
-	return msgContainer;
-}
-
-tgui::Panel::Ptr msgMaker(std::string usernameText, std::string messageText, int percent) {
-	float percentOfScreenX = (float(sf::VideoMode::getDesktopMode().width) / 100) * percent;
-
-	auto username = tgui::Label::create(usernameText);
-	username->setSize({ percentOfScreenX, 20 });
-	username->setPosition({ 10, 10 });
-	username->setVerticalAlignment(tgui::Label::VerticalAlignment::Center);
-
-	auto msg = tgui::Label::create(messageText);
-	msg->setPosition(30, 30);
-	msg->setMaximumTextWidth(percentOfScreenX - 40);
-
-	auto msgContainer = tgui::Panel::create({ msg->getSize().x + 40, msg->getSize().y + username->getSize().y + 25 });
-
-	msgContainer->add(username);
-	msgContainer->add(msg);
-
-	return msgContainer;
-}
-
-bool launcherBit(networking* networkObject, sf::Thread* pingThread, sf::Thread* receiveThread, sf::Thread* getInputThread, sf::Clock* globalClock) {
+bool launcherBit(networking* networkObject, sf::Thread* pingThread, sf::Thread* receiveThread, sf::Clock* globalClock) {
 	sf::RenderWindow *launcherWindow = new sf::RenderWindow(sf::VideoMode(800, 600), "window", sf::Style::Close); //window, the one used for the launcher
-	launcher* launcherObject = new launcher(networkObject, launcherWindow, pingThread, receiveThread, getInputThread, globalClock); //launcher
+	launcher* launcherObject = new launcher(networkObject, launcherWindow, pingThread, receiveThread, globalClock); //launcher
 
 	while (launcherWindow->isOpen())
 	{
@@ -110,7 +56,7 @@ bool launcherBit(networking* networkObject, sf::Thread* pingThread, sf::Thread* 
 	}
 }
 
-void gameBit(sf::Clock* globalClock){
+void gameBit(sf::Clock* globalClock, networking* networkObject){
 	sf::ContextSettings settings;
 	settings.antialiasingLevel = 8;
 
@@ -125,31 +71,28 @@ void gameBit(sf::Clock* globalClock){
 	mainScreen mainGameScreen(gameWindow, gui);
 	mainGameScreen.setActive(true);
 
-	tgui::Panel::Ptr msg1 = msgMaker("Username", "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent venenatis ac ligula et laoreet. Nunc at facilisis orci. Nullam urna massa, scelerisque quis libero a, pretium gravida erat. Sed porta libero ex. Aenean pharetra nibh et tincidunt interdum. Pellentesque leo dui, fermentum nec ultrices rutrum, fermentum sit amet arcu. Duis sollicitudin sapien ut lacus mollis, ac dictum ligula dignissim.", 23);
-	tgui::Panel::Ptr msg2 = msgMaker("Username", "epic message dude", 23, "resources/snow.jpg");
-	msg1->setPosition({ 0,  100 });
-	msg2->setPosition({ 0,  msg1->getFullSize().y + 100 });
+	chat chatBox(25, 50);
 
-	gui.add(msg1);
-	gui.add(msg2);
-	
+	gui.add(chatBox.chatBoxContainer);
 
+	networkObject->chatBoxObject = &chatBox;
+	networkObject->chatBoxActive = true;
 
 	while (gameWindow->isOpen())
 	{
 		sf::Event event;
 		while (gameWindow->pollEvent(event)) //check for events
 		{
-			if (event.type == sf::Event::Closed)
+			if (event.type == sf::Event::Closed) {
 				gameWindow->close(); //close the window when you find the close event basically
-			
+			}
+
 			gui.handleEvent(event); // Pass the event to the widgets
 		}
 
 		gameWindow->clear(); //clears the previous contents of the screen off
 
 		//stuff to draw here
-		/*
 		if (loadingScreenRemove.asSeconds() - globalClock->getElapsedTime().asSeconds() <= 0 && loadingBit != NULL) {
 			delete loadingBit;
 			loadingBit = NULL;
@@ -157,7 +100,12 @@ void gameBit(sf::Clock* globalClock){
 		}
 		else if (loadingBit != NULL) {
 			loadingBit->liveUpdate();
-		}*/
+		}
+
+		if (chatBox.active == true && chatBox.active == true) {
+			chatBox.liveUpdate(networkObject);
+		}
+
 		gui.draw();
 
 		gameWindow->display(); //the contents of the screen are shown
@@ -167,7 +115,7 @@ void gameBit(sf::Clock* globalClock){
 	delete gameWindow;
 }
 
-void clearResources(networking* networkObject, sf::Thread* pingThread, sf::Thread* receiveThread, sf::Thread* getInputThread, sf::Clock* globalClock){
+void clearResources(networking* networkObject, sf::Thread* pingThread, sf::Thread* receiveThread, sf::Clock* globalClock){
 	//From here on, the TCP connection is severed, the threads are waited on and then destroyed, and then the network and launcher objects are deleted, and 0 is returned
 	std::string msg; //the string used in getInput(...)
 	sf::Packet sendPacket; //the packet which will contain the data to send
@@ -184,11 +132,6 @@ void clearResources(networking* networkObject, sf::Thread* pingThread, sf::Threa
 	if (receiveThread) { //if the receiveThread exists...
 		receiveThread->wait(); //wait for it's current bit of code to finish
 		delete receiveThread; //then delete it
-	}
-
-	if (getInputThread) {
-		getInputThread->wait();
-		delete getInputThread;
 	}
 
 	//when delete is called, the destructor is called before deallocating the memory

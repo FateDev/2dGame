@@ -1,9 +1,11 @@
 #ifndef GUI_HEADER
 #define GUI_HEADER
 
-#include <network.h>
+//#include "network.h"
 #include <SFML/Window.hpp>
 #include <TGUI/TGUI.hpp>
+
+class networking;
 
 class launcher {
 private:
@@ -15,7 +17,6 @@ private:
 	//will hold the 3 main threads
 	sf::Thread *pingThread = NULL;
 	sf::Thread *receiveThread = NULL;
-	sf::Thread *input = NULL;
 
 	//makes these 3 tgui widgets here rather than in the constructor as I need these in other functions as well
 	tgui::Label::Ptr unsuccessfulLabel = tgui::Label::create();
@@ -32,7 +33,7 @@ public:
 	tgui::Gui *gui = NULL; //will be initialised later when the window object has been received, to hold the necessary widgets
 
 	void liveUpdate(); //the function to do stuff during the main loop
-	launcher(networking *networkObject, sf::RenderWindow* mainWindow, sf::Thread *ping, sf::Thread *receive, sf::Thread *inputThread, sf::Clock *globalClock);
+	launcher(networking *networkObject, sf::RenderWindow* mainWindow, sf::Thread *ping, sf::Thread *receive, sf::Clock *globalClock);
 	//the constructor gets the necessary data from outside and stores references inside the object for use whenever
 
 	~launcher(); //the destructor, it deletes the gui which is made in the constructor
@@ -64,10 +65,29 @@ private:
 	friend void helpFunction(); //function prototype, for function to open the help page in the default browser
 	void exitFunction(); //function prototype, for function to exit the game
 public:
-
 	void setActive(bool active);
 	mainScreen(sf::RenderWindow *window, tgui::Gui &gui);
 	~mainScreen() {};
+};
+
+class chat {
+private:
+	tgui::Panel::Ptr msgMaker(int time, std::string usernameText, std::string messageText, std::string imgLocation);
+	tgui::Panel::Ptr msgMaker(int time, std::string usernameText, std::string messageText);
+
+	tgui::EditBox::Ptr enterMessage = tgui::EditBox::create();
+	tgui::ScrollablePanel::Ptr chatBox = tgui::ScrollablePanel::create();
+	int percent = 23;
+	float currentMaxHeight = 0;
+public:
+	bool active = true;
+	tgui::ChildWindow::Ptr chatBoxContainer = tgui::ChildWindow::create("Chat");
+	chat(float percentWidth, float percentHeight);
+
+	void addMessages(int time, std::string usernameText, std::string messageText, std::string imgLocation);
+	void addMessages(int time, std::string usernameText, std::string messageText);
+
+	void liveUpdate(networking* networkObject);
 };
 
 #endif // !GUI_HEADER
