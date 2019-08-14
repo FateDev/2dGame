@@ -1,8 +1,5 @@
-//you need to define this to make sure <windows.h> doesn't conflict with any min()/max() functions, 
-//as this header file has min() and max() functions as macros, so would otherwise cause conflix
-#define NOMINMAX
-
 #include <gui.h>
+#include <header.h>
 #include <TGUI/TGUI.hpp>
 #include <windows.h>
 
@@ -118,11 +115,14 @@ launcher::launcher(networking *networkObject, sf::RenderWindow* mainWindow, sf::
 	loginUnsuccessful->setVisible(false);
 	unsuccessfulLabel->setVisible(false);
 
-	helpButton->connect("pressed", &launcher::helpFunction, this); //executres the function to open a help page in the browser
+	helpButton->connect("pressed", &helpFunction); //executres the function to open a help page in the browser
 
 	//connects the playButton with the loginFunction
 	playButton->connect("pressed", &launcher::loginFunctionFromWindow, this, usernameField, passwordField);
-	//the 1st param is the event, the 2nd param is a reference (&) to the general function, the 3rd is a reference to the instance of the object for that function from 2nd param, and 3rd and 4th are the 2 text fields to get credentials from
+	//the 1st param is the event, 
+	//the 2nd param is a reference (&) to the general function, 
+	//the 3rd is a reference to the instance of the object for that function from 2nd param, 
+	//and 3rd and 4th are the 2 text fields to get credentials from
 }
 
 void launcher::loginFunctionFromWindow(tgui::EditBox::Ptr usernameBox, tgui::EditBox::Ptr passwordBox) //function will take the text in username and password boxes and pass it to the login function
@@ -164,17 +164,6 @@ void launcher::liveUpdate() {
 		loginError = 0;
 	}
 	gui->draw(); // Draw all widgets
-}
-
-void launcher::helpFunction() { //the function to make the help button open the help setting in browser
-	ShellExecute(0, 0, L"https://erewhon.xyz/game/help/", 0, 0, SW_SHOW);
-	//opens URL in browser,
-	//1st param is handle to parent windows, but we're using SFML rather than win32 windows so this is NULL or 0
-	//2nd param is the action, which isnt necessary here
-	//3rd is the thing to 'do' (the URL), so the default browser would be used on windows
-	//4th would be parameters to pass to the file, but not necessary for opening a URL
-	//5th is the working directory of the action, none specified so current one used
-	//6th is how to show the application once opened, so it shows it
 }
 
 launcher::~launcher() {

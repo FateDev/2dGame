@@ -1,0 +1,8 @@
+Panel.Panel1 {
+        backgroundcolor = #1a191e;
+}
+
+Label.Label1 {
+        backgroundcolor = transparent;
+        textcolor = #fff;
+}
