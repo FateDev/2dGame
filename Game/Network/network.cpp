@@ -1,7 +1,8 @@
 #include <network.h>
 #include <string>
 #include <iostream>
-#include "SFML/Network.hpp"
+#include <gui.h>
+#include <SFML/Network.hpp>
 
 bool networking::login(std::string username, std::string password) {
 	if (active == true) { //if the user is already logged in, ignore any input and just return true
@@ -13,14 +14,11 @@ bool networking::login(std::string username, std::string password) {
 	while (true) {
 		if (socket->connect(ip.c_str(), port) == sf::Socket::Done) { //if the socket successfully connects to the specified IP address at the specified port...
 			//the IP address has to be a C style array as well
-			//std::cout << "Connected to " << IPADDRESS << ":" << PORT << std::endl; //output that it has connected to that IP address and that port
 
 			sf::Packet logonPacket;
 			msg = "SERVER::LOGON::USERNAME::" + username + "SERVER::LOGON::PASSWORD::" + password;
 
 			logonPacket << msg.c_str();
-
-			//std::cout << msg << std::endl;
 
 			socket->send(logonPacket); //sends the username and password to the server for authentication
 
@@ -49,7 +47,6 @@ bool networking::login(std::string username, std::string password) {
 			usernameReal = username;
 		}
 		else {
-			std::cout << "Incorrect details." << std::endl;
 			active = false;
 		}
 	}
@@ -71,13 +68,36 @@ void networking::getResponses() { //retrieves incoming message
 
 		std::string receiveString(receiveCharArray);
 
+		std::string username = receiveString;
+		std::string msgContent = receiveString;
+		std::string imgLocation = "";
+		int time = 0;
+
+		if (username.find("USER::USERNAME::") == 0) {
+			username.erase(username.begin(), username.begin() + std::string("USER::USERNAME::").length());
+			username.erase(username.find("USER::MSG::"), username.size());
+
+			msgContent.erase(msgContent.begin(), msgContent.begin() + msgContent.find("USER::MSG::") + std::string("USER::MSG::").length());
+			msgContent.erase(msgContent.find("USER::TIME::"), msgContent.size());
+
+			receiveString.erase(receiveString.begin(), receiveString.begin() + receiveString.find("USER::TIME::") + std::string("USER::TIME::").length());
+			time = std::stoi(receiveString);
+		}
+
+		if (chatBoxActive == true) {
+			if (imgLocation == "") {
+				chatBoxObject->addMessages(time, username, msgContent);
+			}
+			else {
+				chatBoxObject->addMessages(time, username, msgContent, imgLocation);
+			}
+		}
+
 		if (receiveString == "SERVER::DIE") {
 			active = false;
 			std::cout << "Press the enter key to exit.";
 			continue;
 		}
-
-		std::cout << receiveCharArray; //outputs the message which was received
 	}
 }
 
@@ -94,25 +114,18 @@ void networking::stayAlive() { //for pinging the server
 	}
 }
 
-void networking::getInput() { //gets input from the user
-	std::cout << "Enter a message: " << std::endl; //prompted to enter a message once
+void networking::sendMessage(std::string msg) {
+	sf::Packet sendPacket; //the packet which will contain the data to send
 
-	while (active) { //loop so long as active is true
-		sf::Packet sendPacket; //the packet which will contain the data to send
+	msg = "USER::USERNAME::" + usernameReal + "USER::MESSAGE::" + msg; //puts USER::USERNAME:: before appending the chosen username and USER::MESSAGE:: before appending the message
+	//this will help with decoding the data on the server side
 
-		getline(std::cin, msg); //gets the string to send and puts it in the msg variable declared in int main()
+	sendPacket << msg.c_str(); //converts the string into a C style array, and puts it into the packet which will be sent
 
-		if (msg != "") { //if the message isn't empty
-			msg = "USER::USERNAME::" + usernameReal + "USER::MESSAGE::" + msg; //puts USER::USERNAME:: before appending the chosen username and USER::MESSAGE:: before appending the message
-			//this will help with decoding the data on the server side
-
-			sendPacket << msg.c_str(); //converts the string into a C style array, and puts it into the packet which will be sent
-
-			socket->send(sendPacket); //sends the packet
-		}
-	}
+	socket->send(sendPacket); //sends the packet
 }
 
 networking::~networking() {
 	delete socket; //destructor just deletes the socket
 }
+
