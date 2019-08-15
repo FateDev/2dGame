@@ -67,7 +67,8 @@ void networking::getResponses() { //retrieves incoming message
 		//need to do this as all of the data transmitted from the server was string with .c_str() applied to it, so was a C style string (char array)
 
 		std::string receiveString(receiveCharArray);
-
+		
+		//below basically gets the received string and splits it into username, message and time of message
 		std::string username = receiveString;
 		std::string msgContent = receiveString;
 		std::string imgLocation = "";
@@ -85,15 +86,10 @@ void networking::getResponses() { //retrieves incoming message
 		}
 
 		if (chatBoxActive == true) {
-			if (imgLocation == "") {
-				chatBoxObject->addMessages(time, username, msgContent);
-			}
-			else {
-				chatBoxObject->addMessages(time, username, msgContent, imgLocation);
-			}
+			chatBoxObject->addMessages(time, username, msgContent, imgLocation); //sends a message with the extracted data
 		}
 
-		if (receiveString == "SERVER::DIE") {
+		if (receiveString == "SERVER::DIE") { //when the server sends a message for it to shut down, it shuts down
 			active = false;
 			std::cout << "Press the enter key to exit.";
 			continue;

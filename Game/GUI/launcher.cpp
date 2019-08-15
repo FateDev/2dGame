@@ -8,6 +8,7 @@ launcher::launcher(networking *networkObject, sf::RenderWindow* mainWindow, sf::
 	gui = new tgui::Gui(*window);
 
 	tgui::Theme theme( "Launcher.txt" );
+	//the above is for loading a file with the colours and stuff
 
 	auto background = tgui::Panel::create();
 	background->setRenderer(theme.getRenderer("Panel.Panel2"));
@@ -166,5 +167,5 @@ void launcher::liveUpdate() {
 }
 
 launcher::~launcher() {
-	delete gui;
+	delete gui; //when the launcher is deleted, delete the gui object too
 }

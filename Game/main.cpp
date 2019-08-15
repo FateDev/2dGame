@@ -25,11 +25,11 @@ int main() {
 	sf::Thread* pingThread = new sf::Thread(&networking::stayAlive, networkObject); //makes the stayAlive() function run on this thread
 
 	//launcher window bit, everything for the launcher is draw and the login is done and stuff
-	if (launcherBit(networkObject, pingThread, receiveThread, globalClock)/* commenting this out for now so i can skip the logintrue*/) {
+	if (/*launcherBit(networkObject, pingThread, receiveThread, globalClock) commenting this out for now so i can skip the login*/true) {
 		gameBit(globalClock, networkObject);
 	}
 
-	clearResources(networkObject, pingThread, receiveThread, globalClock);
+	clearResources(networkObject, pingThread, receiveThread, globalClock); //deletes objects and stuff
 
 	return 0;
 }
