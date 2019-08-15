@@ -4,17 +4,14 @@
 loadingScreen::loadingScreen(sf::RenderWindow *window, sf::Clock *clock) : gameWindow(window), loadingScreenClock(clock) {
 	gui = new tgui::Gui(*gameWindow);
 	tgui::Theme theme("Loading.txt");
+	//above sets the theme, which can load properties describing colour and stuff
 
+	//below makes a circle centered at the center of the screen
 	shape = new sf::CircleShape(50.0f);
 	shape->setOrigin(50, 50);
 	shape->setPosition(sf::VideoMode::getDesktopMode().width / 2, sf::VideoMode::getDesktopMode().height / 2);
 
-	auto background = tgui::Panel::create();
-	background->setRenderer(theme.getRenderer("Panel.Panel1"));
-	background->setSize("100%", "100%");
-	background->setPosition(0, 0);
-	gui->add(background);
-
+	//below creates a label just below the center of the screen which just says "Loading"
 	auto loading = tgui::Label::create();
 	loading->setRenderer(theme.getRenderer("Label.Label1"));
 	loading->setSize(200, 50);
@@ -27,10 +24,11 @@ loadingScreen::loadingScreen(sf::RenderWindow *window, sf::Clock *clock) : gameW
 }
 
 void loadingScreen::liveUpdate() {
-	shape->setScale((sin(float(loadingScreenClock->getElapsedTime().asMilliseconds()) / 200) + 1.5) / 2, (sin(float(loadingScreenClock->getElapsedTime().asMilliseconds()) / 200) + 1.5) / 2);
+	//below uses time and a sin function to make a loading icon
+	shape->setScale((sin(float(loadingScreenClock->getElapsedTime().asMilliseconds()) / 1000) + 1.5) / 2, (sin(float(loadingScreenClock->getElapsedTime().asMilliseconds()) / 1000) + 1.5) / 2);
 	
-	gui->draw();
-	gameWindow->draw(*shape);
+	gui->draw(); //draws the loading label
+	gameWindow->draw(*shape); //draws the loading icon
 }
 
 loadingScreen::~loadingScreen(){
