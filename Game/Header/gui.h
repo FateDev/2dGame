@@ -5,9 +5,10 @@
 #include <SFML/Window.hpp>
 #include <TGUI/TGUI.hpp>
 
-class networking;
+class networking; //forward declaration of the networking class, so when we use it here, the compiler knows it exists
+//this is so we don't incude network.h in gui.h, and vice versa which would be recursively including files
 
-class launcher {
+class launcher { //this would be the 'login' window, the launcher
 private:
 	sf::Time notifTime; //the amount of time a notification has been on screen (should be in milliseconds)
 	int loginError = 0; //0 = no error; 1 = error; 2 = error displayed, waiting to take it off
@@ -39,25 +40,44 @@ public:
 	~launcher(); //the destructor, it deletes the gui which is made in the constructor
 };
 
-class loadingScreen {
+class loadingScreen { //this is for the loading screen
 private:
 	sf::Clock* loadingScreenClock = NULL; //need the clock for the loading animation
-	sf::RenderWindow *gameWindow = NULL;
-	tgui::Gui *gui = NULL;
-	sf::CircleShape *shape;
+	sf::RenderWindow *gameWindow = NULL; //holds window
+	tgui::Gui *gui = NULL; //holds gui
+	sf::CircleShape *shape; //holds shape
 public:
-	loadingScreen(sf::RenderWindow *window, sf::Clock *clock);
+	loadingScreen(sf::RenderWindow *window, sf::Clock *clock); //initialises the loading screen
 	void liveUpdate(); //the function to do stuff during the main loop
-	~loadingScreen();
+	~loadingScreen(); //called when the loading screen is deleted
 };
 
-class mainScreen {
+class chat { //this would be the chat box on the main screen (maybe on other screens too later)
 private:
-	sf::RenderWindow *gameWindow = NULL;
-	tgui::Group::Ptr mainScreenGroup = tgui::Group::create({sf::VideoMode::getDesktopMode().width , sf::VideoMode::getDesktopMode().height });
+	tgui::Panel::Ptr msgMaker(int time, std::string usernameText, std::string messageText, std::string imgLocation);
+	//function above is one that returns a tgui::Panel object with time, message, image (if specified) and username formatted nicely in a box thing
 
-	bool active = false; //we can use this to decide which of the loaded GUIs to draw
+	tgui::EditBox::Ptr enterMessage = tgui::EditBox::create(); //where you enter a message
+	tgui::ScrollablePanel::Ptr chatBox = tgui::ScrollablePanel::create(); //a tgui::Panel but has a scrollbar that appears if stuff overflows
 
+	float percentWidth = 0; //the user defined maximum width of the chatbox
+	float percentHeight = 0; //user defined maximum height of the chatbox
+	float currentMaxHeight = 0; 
+	//above is internal float to get the lowest y coord currently being used, so that we can give this to new messages for their y coord, 
+	//and to jump down to this value for new messages
+
+public:
+	void addMessages(int time, std::string usernameText, std::string messageText, std::string imgLocation); //this will directly allow for messages to be added to the chat box
+
+	tgui::ChildWindow::Ptr chatBoxContainer = tgui::ChildWindow::create("Chat"); //this would be the final container holding the chat box (a draggable window from tgui)
+	chat(float percentWidth, float percentHeight, float posPercentX, float posPercentY); //the constructor, first 2 are the size of the box, last 2 are the starting position
+	void liveUpdate(networking* networkObject); 
+	//the above would send whatever message a user enters when they press enter (uses network object to send through the network obviously)
+};
+
+class toolbar { //this contains the buttons in the top left of the screen
+private:
+	sf::RenderWindow *window = NULL; //would hold the window object
 	std::vector<tgui::BitmapButton::Ptr> buttons; //will contain all of the buttons needed
 	std::string icons[10] = { "resources/commerce.png", "resources/social.png", "resources/map.png", "resources/sound_on.png", "resources/settings.png", "resources/help.png", "resources/exit.png", "resources/return.png", "resources/more.png", "resources/sound_off.png" };
 	//the resource locations for the images used in the bitmap buttons
@@ -65,29 +85,27 @@ private:
 	friend void helpFunction(); //function prototype, for function to open the help page in the default browser
 	void exitFunction(); //function prototype, for function to exit the game
 public:
-	void setActive(bool active);
-	mainScreen(sf::RenderWindow *window, tgui::Gui &gui);
-	~mainScreen() {};
+	toolbar(sf::RenderWindow *window, tgui::Gui &gui); //would initialise the toolbar and construct it
+	tgui::Group::Ptr toolbarGroup = tgui::Group::create({ sf::VideoMode::getDesktopMode().width , sf::VideoMode::getDesktopMode().height });
+	//the above would be an invisible container from tgui which holds everything that gets drawn for the toolbar, it's public so we can set it visible/invisible
 };
 
-class chat {
+class mainScreen { //this is the first screen to be displayed after the loading screen disappears
 private:
-	tgui::Panel::Ptr msgMaker(int time, std::string usernameText, std::string messageText, std::string imgLocation);
-	tgui::Panel::Ptr msgMaker(int time, std::string usernameText, std::string messageText);
+	std::vector<tgui::BitmapButton::Ptr> smallInventoryButtons; //the buttons on the top left for the small inventory task bar thing or whatever
 
-	tgui::EditBox::Ptr enterMessage = tgui::EditBox::create();
-	tgui::ScrollablePanel::Ptr chatBox = tgui::ScrollablePanel::create();
-	int percent = 23;
-	float currentMaxHeight = 0;
+	sf::RenderWindow *window = NULL; //would hold the window object
+	tgui::Group::Ptr mainScreenGroup = tgui::Group::create({sf::VideoMode::getDesktopMode().width , sf::VideoMode::getDesktopMode().height });
+	//the above would be an invisible container from tgui which holds everything that gets drawn for this screen
+
+	chat* chatBox = NULL; //this will hold the chat box
+
+	networking* networkObject = NULL; //this will hold the network object for use in the chat
 public:
-	bool active = true;
-	tgui::ChildWindow::Ptr chatBoxContainer = tgui::ChildWindow::create("Chat");
-	chat(float percentWidth, float percentHeight);
-
-	void addMessages(int time, std::string usernameText, std::string messageText, std::string imgLocation);
-	void addMessages(int time, std::string usernameText, std::string messageText);
-
-	void liveUpdate(networking* networkObject);
+	bool active = false; //we can use this to decide whether or not we should have the liveUpdate() function execute
+	void setActive(bool active); //this would make the above boolean active, and also would make the main screen group visible
+	mainScreen(tgui::Gui &gui, networking* networkObject); //the constructor, has networking object because needs to pass it to the chat
+	void liveUpdate(); //simply calls the chat's live update function
 };
 
 #endif // !GUI_HEADER

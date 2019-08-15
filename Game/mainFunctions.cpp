@@ -48,6 +48,7 @@ bool launcherBit(networking* networkObject, sf::Thread* pingThread, sf::Thread* 
 	delete launcherWindow;
 	delete launcherObject;
 
+	//below would evaluate whether or not a login was succesful and would return the appropriate value
 	if (networkObject->active == true) {
 		return true;
 	}
@@ -57,57 +58,54 @@ bool launcherBit(networking* networkObject, sf::Thread* pingThread, sf::Thread* 
 }
 
 void gameBit(sf::Clock* globalClock, networking* networkObject){
+	//the below is just the settings stuff for it
 	sf::ContextSettings settings;
-	settings.antialiasingLevel = 8;
+	settings.antialiasingLevel = 0; //so drawn objects don't look too sharp (especially for circles and stuff)
 
 	sf::RenderWindow *gameWindow = new sf::RenderWindow(sf::VideoMode(sf::VideoMode::getDesktopMode().width, sf::VideoMode::getDesktopMode().height), "window", sf::Style::Fullscreen, settings); 
 	//fullscreen window for the game
 
 	tgui::Gui gui(*gameWindow); //the main gui for the entire game bit
 
-	loadingScreen *loadingBit = new loadingScreen(gameWindow, globalClock); //the loading screen object
-	sf::Time loadingScreenRemove = sf::milliseconds(globalClock->getElapsedTime().asMilliseconds() + 1500); //so it sets the duration of the loading screen as 2 seconds
+	sf::Time loadingScreenRemove = sf::milliseconds(globalClock->getElapsedTime().asMilliseconds() + 5000); //so it sets the duration of the loading screen as 2 seconds
 
-	mainScreen mainGameScreen(gameWindow, gui);
-	mainGameScreen.setActive(true);
+	//below makes the loading screen, main screen, and tool bar (buttons in the top left) objects
+	loadingScreen *loadingBit = new loadingScreen(gameWindow, globalClock);  
+	//the above is dynamically allocated because we won't need it after and so we can know it's actually gone (as we can set it to NULL)
+	mainScreen mainGameScreen(gui, networkObject);
+	toolbar mainToolbar(gameWindow, gui);
 
-	chat chatBox(25, 50);
-
-	gui.add(chatBox.chatBoxContainer);
-
-	networkObject->chatBoxObject = &chatBox;
-	networkObject->chatBoxActive = true;
-
-	while (gameWindow->isOpen())
+	while (gameWindow->isOpen()) //so long as the window is open
 	{
-		sf::Event event;
+		sf::Event event; //will store the current event
 		while (gameWindow->pollEvent(event)) //check for events
 		{
-			if (event.type == sf::Event::Closed) {
+			if (event.type == sf::Event::Closed) 
 				gameWindow->close(); //close the window when you find the close event basically
-			}
 
 			gui.handleEvent(event); // Pass the event to the widgets
 		}
 
-		gameWindow->clear(); //clears the previous contents of the screen off
+		gameWindow->clear(sf::Color(26, 25, 30)); //clears the previous contents of the screen off, and replaces it with a nice colour
 
-		//stuff to draw here
-		/*
+		//below is the stuff for the loading screen, basically it says that if the expiry time has passed and the loading screen isn't null, delete it, set it to null
+		//and then make the main screen active, otherwise draw the loading screen stuff and that little animation too
 		if (loadingScreenRemove.asSeconds() - globalClock->getElapsedTime().asSeconds() <= 0 && loadingBit != NULL) {
 			delete loadingBit;
 			loadingBit = NULL;
 			mainGameScreen.setActive(true);
+			mainToolbar.toolbarGroup->setVisible(true); //sets the toolbar as visible too
 		}
 		else if (loadingBit != NULL) {
 			loadingBit->liveUpdate();
 		}
-		*/
-		if (chatBox.active == true && chatBox.active == true) {
-			chatBox.liveUpdate(networkObject);
-		}
 
-		gui.draw();
+		//the below would check if the main game screen has been made active, and to then call the live update method, 
+		//which calls the chat's live update method (for sending messages and stuff)
+		if (mainGameScreen.active == true)
+			mainGameScreen.liveUpdate();
+
+		gui.draw(); //draws everything that's been added to it (hopefully just groups of tgui objects for the different screens)
 
 		gameWindow->display(); //the contents of the screen are shown
 		sf::sleep(sf::milliseconds(15)); //so the program doesnt just fry your CPU
