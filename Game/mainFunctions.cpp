@@ -93,6 +93,7 @@ void gameBit(sf::Clock* globalClock, networking* networkObject){
 		gameWindow->clear(); //clears the previous contents of the screen off
 
 		//stuff to draw here
+		/*
 		if (loadingScreenRemove.asSeconds() - globalClock->getElapsedTime().asSeconds() <= 0 && loadingBit != NULL) {
 			delete loadingBit;
 			loadingBit = NULL;
@@ -101,7 +102,7 @@ void gameBit(sf::Clock* globalClock, networking* networkObject){
 		else if (loadingBit != NULL) {
 			loadingBit->liveUpdate();
 		}
-
+		*/
 		if (chatBox.active == true && chatBox.active == true) {
 			chatBox.liveUpdate(networkObject);
 		}
