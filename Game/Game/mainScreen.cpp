@@ -1,51 +1,55 @@
 #include <header.h>
 #include <gui.h>
 
-mainScreen::mainScreen(sf::RenderWindow *window, tgui::Gui &gui) : gameWindow(window) {
-	
+mainScreen::mainScreen(tgui::Gui &gui, networking* networkObject) : window(window), networkObject(networkObject) {
 	tgui::Theme theme("Game.txt");
+	//the above loads the colours and stuff for the widgets from the file "Game.txt"
 
+	//below makes the inventory items buttons
 	for (int i = 0; i < 7; i++) {
-		buttons.push_back(tgui::BitmapButton::create());
-		buttons[i]->setRenderer(theme.getRenderer("Button"));
-		buttons[i]->setSize("5%", "8%");
-		buttons[i]->setPosition(std::to_string(5 * i) + "%", 0);
-		buttons[i]->setImage(icons[i]);
+		smallInventoryButtons.push_back(tgui::BitmapButton::create());
+		smallInventoryButtons[i]->setRenderer(theme.getRenderer("Button2"));
+		smallInventoryButtons[i]->setSize("5%", "8%");
+		smallInventoryButtons[i]->setPosition(std::to_string(65 + 5 * i) + "%", 0);
 
-		mainScreenGroup->add(buttons[i]);
+		mainScreenGroup->add(smallInventoryButtons[i]); //adds current one to the main group
 	}
 
-	for (int i = 7; i < 14; i++) {
-		buttons.push_back(tgui::BitmapButton::create());
-		buttons[i]->setRenderer(theme.getRenderer("Button2"));
-		buttons[i]->setSize("5%", "8%");
-		buttons[i]->setPosition(std::to_string(65 + 5 * (i - 7)) + "%", 0);
-
-		mainScreenGroup->add(buttons[i]);
-	}
-
-	buttons[7]->setRenderer(theme.getRenderer("Button3"));
-	buttons[13]->setRenderer(theme.getRenderer("Button4"));
-	buttons[13]->setImage(icons[8]);
-
-	buttons[5]->connect("pressed", &helpFunction); //executres the function to open a help page in the browser
-	buttons[6]->connect("pressed", &mainScreen::exitFunction, this); //executes the function to open a help page in the browser
+	smallInventoryButtons[0]->setRenderer(theme.getRenderer("Button3"));
+	smallInventoryButtons[6]->setRenderer(theme.getRenderer("Button4"));
+	smallInventoryButtons[6]->setImage("resources/more.png");
+	//the above set some special cases which aren't possible through the loops
 
 	/////////////////////////////
 	////////ADD GROUP STUFF
+
+	//makes a chat object and then adds it to the main screen group
+	chatBox = new chat(25, 50, 2, 10);
+	mainScreenGroup->add(chatBox->chatBoxContainer);
+
+	//gives the network object the chatBox object, and sets the bool indicating whether the chatBox is active to true
+	networkObject->chatBoxObject = chatBox;
+	networkObject->chatBoxActive = true;
+
+	//adds the main screen group to the gui and makes sure that it is invisible
 	gui.add(mainScreenGroup);
 	mainScreenGroup->setVisible(false);
 }
 
+void mainScreen::liveUpdate(){
+	chatBox->liveUpdate(networkObject); //calls the live update function for the chat box, so basically allows for sending messages
+}
+
 void mainScreen::setActive(bool active) { //by setting the visibility through this, groups are really easy to manage so multiple screens are easy to manage
-	if (active == true) {
+	if (active == true) { 
+		//for the above, when the input parameter is true, it makes the group visible and sets the active boolean in the object as 
+		//true (used to decide whether or not to have the live update function be active or not in the main game loop)
+		this->active = true;
 		mainScreenGroup->setVisible(true);
 	}
 	else {
-		mainScreenGroup->setVisible(false);
+		//sets the active variable false and makes the main screen group invisible so they won't be drawn
+		this->active = false;
+		mainScreenGroup->setVisible(false); 
 	}
-}
-
-void mainScreen::exitFunction() {
-	gameWindow->close();
 }
