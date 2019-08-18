@@ -17,7 +17,7 @@ loadingScreen::loadingScreen(sf::RenderWindow *window, sf::Clock *clock) : gameW
 	loading->setSize(200, 50);
 	loading->setText("Loading");
 	loading->setTextSize(40);
-	loading->setPosition(sf::VideoMode::getDesktopMode().width / 2 - loading->getSize().x / 2.f, sf::VideoMode::getDesktopMode().height / 2 - loading->getSize().y / 2.f + 110);
+	loading->setPosition(sf::VideoMode::getDesktopMode().width / 2 - loading->getFullSize().x / 2.f, sf::VideoMode::getDesktopMode().height / 2 - loading->getFullSize().y / 2.f + 110);
 	loading->setHorizontalAlignment(tgui::Label::HorizontalAlignment::Center);
 	loading->setScrollbarPolicy(tgui::Scrollbar::Policy::Never);
 	gui->add(loading);

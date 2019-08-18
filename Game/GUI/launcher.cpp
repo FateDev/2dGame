@@ -31,7 +31,7 @@ launcher::launcher(networking *networkObject, sf::RenderWindow* mainWindow, sf::
 	title->setRenderer(theme.getRenderer("Label.Label0"));
 	title->setPosition(30, 21.4);
 	title->setSize(738.4, 100);
-	title->setText("window");
+	title->setText("One More Time");
 	title->setTextSize(60);
 	title->setVerticalAlignment(tgui::Label::VerticalAlignment::Center);
 	title->setHorizontalAlignment(tgui::Label::HorizontalAlignment::Center);
@@ -141,7 +141,6 @@ void launcher::loginFunctionFromWindow(tgui::EditBox::Ptr usernameBox, tgui::Edi
 		loginError = 1; //uf you can login then it'll show the error message, rather part 1 of it
 	}
 }
-
 
 void launcher::liveUpdate() {
 	if (loginError == 1) { //this is part 1 of the error message

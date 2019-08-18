@@ -18,7 +18,7 @@ void helpFunction() { //the function to make the help button open the help setti
 }
 
 bool launcherBit(networking* networkObject, sf::Thread* pingThread, sf::Thread* receiveThread, sf::Clock* globalClock) {
-	sf::RenderWindow *launcherWindow = new sf::RenderWindow(sf::VideoMode(800, 600), "window", sf::Style::Close); //window, the one used for the launcher
+	sf::RenderWindow *launcherWindow = new sf::RenderWindow(sf::VideoMode(800, 600), "One More Time", sf::Style::Close); //window, the one used for the launcher
 	launcher* launcherObject = new launcher(networkObject, launcherWindow, pingThread, receiveThread, globalClock); //launcher
 
 	while (launcherWindow->isOpen())
@@ -62,12 +62,12 @@ void gameBit(sf::Clock* globalClock, networking* networkObject){
 	sf::ContextSettings settings;
 	settings.antialiasingLevel = 0; //so drawn objects don't look too sharp (especially for circles and stuff)
 
-	sf::RenderWindow *gameWindow = new sf::RenderWindow(sf::VideoMode(sf::VideoMode::getDesktopMode().width, sf::VideoMode::getDesktopMode().height), "window", sf::Style::Fullscreen, settings); 
+	sf::RenderWindow *gameWindow = new sf::RenderWindow(sf::VideoMode(sf::VideoMode::getDesktopMode().width, sf::VideoMode::getDesktopMode().height), "One More Time", sf::Style::Fullscreen, settings); 
 	//fullscreen window for the game
 
 	tgui::Gui gui(*gameWindow); //the main gui for the entire game bit
 
-	sf::Time loadingScreenRemove = sf::milliseconds(globalClock->getElapsedTime().asMilliseconds() + 5000); //so it sets the duration of the loading screen as 2 seconds
+	sf::Time loadingScreenRemove = sf::milliseconds(globalClock->getElapsedTime().asMilliseconds() + 2000); //so it sets the duration of the loading screen as 2 seconds
 
 	//below makes the loading screen, main screen, and tool bar (buttons in the top left) objects
 	loadingScreen *loadingBit = new loadingScreen(gameWindow, globalClock);  
@@ -103,7 +103,7 @@ void gameBit(sf::Clock* globalClock, networking* networkObject){
 		//the below would check if the main game screen has been made active, and to then call the live update method, 
 		//which calls the chat's live update method (for sending messages and stuff)
 		if (mainGameScreen.active == true)
-			mainGameScreen.liveUpdate();
+			mainGameScreen.liveUpdate(globalClock);
 
 		gui.draw(); //draws everything that's been added to it (hopefully just groups of tgui objects for the different screens)
 
