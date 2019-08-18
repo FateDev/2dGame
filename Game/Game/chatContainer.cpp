@@ -11,7 +11,8 @@ chat::chat(float percentWidth, float percentHeight, float posPercentX, float pos
 
 	chatBox->setSize(float(sf::VideoMode::getDesktopMode().width)*0.01*percentWidth, float(sf::VideoMode::getDesktopMode().height)*0.01*percentHeight);
 	//the above sets the chatBox scrollable panel to be the percentage of the window that the parameters specified
-	chatBox->m_horizontalScrollbar->setSize(0, 0); //makes it so that the horizontal scrollbar is impossible to use because it wouldn't go away even when disabled properly
+	chatBox->setVerticalScrollbarPolicy(tgui::ScrollablePanel::ScrollbarPolicy::Always);
+	chatBox->setHorizontalScrollbarPolicy(tgui::ScrollablePanel::ScrollbarPolicy::Never);
 	chatBox->setRenderer(theme.getRenderer("chatBox"));
 
 	enterMessage->setPosition(10, float(sf::VideoMode::getDesktopMode().height)*0.01*percentHeight + 7);
@@ -47,10 +48,10 @@ tgui::Panel::Ptr chat::msgMaker(int time, std::string usernameText, std::string 
 
 	std::time_t result = time;
 	auto timeLabel = tgui::Label::create(std::asctime(std::localtime(&result)));
-	timeLabel->setPosition({ 10, 10 + username->getSize().y });
+	timeLabel->setPosition(10, 10 + username->getFullSize().y);
 	//gets the time which was in seconds when received and converts to a readable date and time
 
-	maxWidth = username->getSize().x - 10; //so the maximum any image can be, is the text size
+	maxWidth = username->getFullSize().x - 10; //so the maximum any image can be, is the text size
 
 	tgui::Theme theme("Game.txt");
 	//the above loads the colours and stuff for the widgets from the file "Game.txt"
@@ -64,12 +65,12 @@ tgui::Panel::Ptr chat::msgMaker(int time, std::string usernameText, std::string 
 	if (imgLocation != "") { //if the image was specified, so the image location isn't empty
 		if (messageText != "") { //and if the message was not
 			//below just positions and sizes everything to appear right
-			msg->setPosition(10, username->getSize().y + timeLabel->getSize().y - 3);
+			msg->setPosition(10, username->getFullSize().y + timeLabel->getFullSize().y - 3);
 			msg->setMaximumTextWidth(percentOfScreenX - 40);  //sets the maximum width that the message can be
-			img->setPosition({ 10, username->getSize().y + timeLabel->getSize().y + msg->getSize().y });
-			imgRatio = img->getSize().y / img->getSize().x; //gets y/x of image
+			img->setPosition({ 10, username->getFullSize().y + timeLabel->getFullSize().y + msg->getFullSize().y });
+			imgRatio = img->getFullSize().y / img->getFullSize().x; //gets y/x of image
 
-			if (img->getSize().y > maxWidth) {
+			if (img->getFullSize().y > maxWidth) {
 				img->setSize(percentOfScreenX - 20, (percentOfScreenX - 20) * imgRatio); //if the height is greater than half the screen, then resize the width instead
 			}
 			else {
@@ -77,7 +78,7 @@ tgui::Panel::Ptr chat::msgMaker(int time, std::string usernameText, std::string 
 				img->setSize(percentOfScreenX - 20, (percentOfScreenX - 20) * imgRatio); //if the height is greater than half the screen, then resize the width instead
 			}
 
-			auto msgContainer = tgui::Panel::create({ username->getSize().x + 40, 10 + username->getSize().y + timeLabel->getSize().y + msg->getSize().y + img->getSize().y + 10 });
+			auto msgContainer = tgui::Panel::create({ username->getFullSize().x + 40, 10 + username->getFullSize().y + timeLabel->getFullSize().y + msg->getFullSize().y + img->getFullSize().y + 10 });
 			//the y parameter of the above is the sum of the heights of every element + 10px for the size of the box containing the full message
 
 			//adds all of the elements to the message container panel 
@@ -91,17 +92,17 @@ tgui::Panel::Ptr chat::msgMaker(int time, std::string usernameText, std::string 
 		}
 		else { //if the message was specified though do this
 			//again, this just sets the sizes and positions of stuff, pretty self explanatory if you give it a read
-			img->setPosition({ 10, username->getSize().y + timeLabel->getSize().y });
-			imgRatio = img->getSize().y / img->getSize().x; //gets y/x of image
+			img->setPosition({ 10, username->getFullSize().y + timeLabel->getFullSize().y });
+			imgRatio = img->getFullSize().y / img->getFullSize().x; //gets y/x of image
 
-			if (img->getSize().y > maxWidth) {
+			if (img->getFullSize().y > maxWidth) {
 				img->setSize(percentOfScreenX - 20, (percentOfScreenX - 20) * imgRatio); //if the height is greater than half the screen, then resize the width instead
 			}
 			else {
 				img->setSize(1 / imgRatio * maxWidth, maxWidth); //otherwise resize the height
 			}
 
-			auto msgContainer = tgui::Panel::create({ username->getSize().x + 40, username->getSize().y + timeLabel->getSize().y + img->getSize().y + 10 });
+			auto msgContainer = tgui::Panel::create({ username->getFullSize().x + 40, username->getFullSize().y + timeLabel->getFullSize().y + img->getFullSize().y + 10 });
 			//the y parameter of the above is the sum of the heights of every element + 10px for the size of the box containing the full message
 
 			//adds all of the elements to the message container panel 
@@ -115,10 +116,10 @@ tgui::Panel::Ptr chat::msgMaker(int time, std::string usernameText, std::string 
 	}
 	else { //in the case that an image was not specified
 		//below just positions and sizes everything to appear right
-		msg->setPosition(10, username->getSize().y + timeLabel->getSize().y - 3);
+		msg->setPosition(10, username->getFullSize().y + timeLabel->getFullSize().y - 3);
 		msg->setMaximumTextWidth(percentOfScreenX - 40);
 
-		auto msgContainer = tgui::Panel::create({ float(sf::VideoMode::getDesktopMode().width)*0.01*percentWidth - chatBox->getScrollbarWidth(), msg->getSize().y + username->getSize().y + timeLabel->getSize().y });
+		auto msgContainer = tgui::Panel::create({ float(sf::VideoMode::getDesktopMode().width)*0.01*percentWidth - chatBox->getScrollbarWidth(), msg->getFullSize().y + username->getFullSize().y + timeLabel->getFullSize().y });
 		//the y parameter of the above is the sum of the heights of every element + 10px for the size of the box containing the full message
 
 		//adds all of the elements to the message container panel 
@@ -131,35 +132,47 @@ tgui::Panel::Ptr chat::msgMaker(int time, std::string usernameText, std::string 
 	}
 }
 
-void chat::addMessages(int time, std::string usernameText, std::string messageText, std::string imgLocation) {
-	tgui::Panel::Ptr msg = msgMaker(time, usernameText, messageText, imgLocation);
-	//this gets the message panel made using the msgMaker function
+void chat::addMessages(int time, std::string usernameText, std::string messageText, std::string imgLocation, int msgID) {
+	auto msg = msgMaker(time, usernameText, messageText, imgLocation);
+	//above just makes the msg panel
 
 	//sets it's y position to be at the maximum current y position, so at the bottom of the chat box scrollable panel
 	msg->setPosition(0, currentMaxHeight);
-	currentMaxHeight += msg->getSize().y; //updates the maximum y pos for the next message (assuming there is one)
+
+	currentMaxHeight += msg->getFullSize().y; //updates the maximum y pos for the next message (assuming there is one)
 
 	//and adds the message to the chat box scrollable panel
 	chatBox->add(msg);
+	
+	if (chatBox->getWidgets().size() >= 50) { //checks if the current amount of elements is more than 50
+		float firstElemSizeY = chatBox->getWidgets()[0]->getFullSize().y; //if it is retrieve the height of the oldest element
+		for (int i = 1; i < 50; i++) {
+			chatBox->getWidgets()[i]->setPosition(chatBox->getWidgets()[i]->getPosition().x, chatBox->getWidgets()[i]->getPosition().y - firstElemSizeY);
+			//and loop through and set the height of the other elements as their y positions minus the y size
+		}
+		currentMaxHeight -= firstElemSizeY; //and decrease the size of the current max height variable so that it is still correct
+
+		chatBox->remove(chatBox->getWidgets()[0]); //and finally remove the oldest element
+	}
 
 	tgui::Theme theme("Game.txt");
 	//the above loads the colours and stuff for the widgets from the file "Game.txt"
 	msg->setRenderer(theme.getRenderer("msg"));
 
-	chatBox->m_verticalScrollbar->setValue(chatBox->m_verticalScrollbar->getMaximum()); 
+	chatBox->setVerticalScrollbarValue(currentMaxHeight);
 	//and the above sets the scrollbar to be the new maximum y value so we see the new message
 }
 
-void chat::liveUpdate(networking* networkObject){ //called during the main game loop every frame
+void chat::liveUpdate(networking* networkObject, sf::Clock* globalClock){ //called during the main game loop every frame
 	if (enterMessage->isFocused() == true) { //checks if the enter message input box is focused
-		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Enter)) { //checks if the enter key has been pressed
+		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Enter) && globalClock->getElapsedTime().asMilliseconds()-lastMsgTime > 1000) { //checks if the enter key has been pressed
+			lastMsgTime = globalClock->getElapsedTime().asMilliseconds();
 			std::string msgContents = enterMessage->getText().toAnsiString(); //gets the contents of the enter message input box
 
 			if (msgContents != "") { //if the contents of the input box weren't empty
 				networkObject->sendMessage(msgContents); //then use the network object's sendMessage method to send the contents as a message
 
 				enterMessage->setText(""); //and sets the input boxes contents to be empty
-				addMessages(std::time(nullptr), networkObject->usernameReal, msgContents, ""); 
 
 				//and adds the message to the chat box scrollable panel with the current time as the time bit
 			}
