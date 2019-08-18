@@ -1,13 +1,5 @@
 # Goals
 
-- connect to database
-
-
-
-- make it load 50 messages at first
-
-- then make it load 50 more messages when at top of that, and 50 more and so on
-
 - keep the jump to bottom thing for now
 
   - but you'll need to make a special case of it to prevent jump to bottom when old messages are loaded
@@ -32,6 +24,8 @@
 - fix the button scaling, so like 0.7 for everything
 - get rid of loading animation, too slow, just have "Loading..." instead
 - make the buttons redirect to empty pages wherever necessary (like in the designs), and make the tabs in those too
+- connect to database
+- make it load 50 messages at first
 
 # Achieved Goals
 
@@ -40,6 +34,13 @@
 - fix that nullptr issue --this was done by the refactoring alone, as the error arose because i believe that the chatBox would be active one loop after the the main screen object told the window to close, and it was then checking for keyboard presses which caused a runtime error, but now that the chatBox was made part of the mainScreenGame object, it would stop checking for keyboard presses at the same time as as when the window was told to close so it fixes the error
 - made the chatBox code a bit cleaner and made it easy to reuse elsewhere (like the planned social tab)
 - refactored some more and split the main screen group off from the toolbar (the ones in the top right), as they will appear on all screens except the loading and launcher screens
+- simple xor encryption (really simple, easily hackable but it sets a precedent)
+
+
+
+# Abandoned Goals
+
+- then make it load 50 more messages when at top of that, and 50 more and so on
 
 # Stuff I've changed in the include files
 

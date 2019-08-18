@@ -1,18 +1,3 @@
-Panel.Panel2 {
-        backgroundcolor = #1A191E;
-        bordercolor = black;
-}
-
-Panel.Panel1 {
-        backgroundcolor = #BBBBBB;
-        bordercolor = black;
-}
-
-Picture.Picture1 {
-        texture = "resources/default.jpg";
-        transparenttexture = false;
-}
-
 EditBox {
         backgroundcolor = #F5F5F5;
         backgroundcolordisabled = #E6E6E6;
@@ -97,46 +82,8 @@ Button4 {
         texturehover = None;
 }
 
-Label.Label1 {
-        backgroundcolor = transparent;
-        bordercolor = #3C3C3C;
-        borders = (0, 0, 0, 0);
-        textcolor = #111111;
-}
-
-Label.Label2 {
-        backgroundcolor = transparent;
-        bordercolor = #3C3C3C;
-        borders = (0, 0, 0, 0);
-        textcolor = #111111;
-}
-
-Panel.Panel3 {
-        backgroundcolor = #263048;
-        bordercolor = black;
-}
-
-Label.Label0 {
-        backgroundcolor = transparent;
-        bordercolor = #3C3C3C;
-        borders = (0, 0, 0, 0);
-        textcolor = white;
-}
-
-Panel.Panel4 {
-        backgroundcolor = #C0392B;
-        bordercolor = black;
-}
-
-Label.Label3 {
-        backgroundcolor = transparent;
-        bordercolor = #3C3C3C;
-        borders = (0, 0, 0, 0);
-        textcolor = white;
-}
-
 chatBoxContainer {
-        backgroundcolor = rgba(255, 255, 255, 200);
+        backgroundcolor = rgba(255, 255, 255, 240);
         titlebarheight = 40;
 }
 
@@ -150,7 +97,8 @@ msg {
 
 msg.username {
         backgroundcolor = transparent;
-        textcolor = #2b284a;
+        textcolor = #40558B;
+        textstyle = Italic;
 }
 
 msg.content {
@@ -158,5 +106,5 @@ msg.content {
 }
 
 timeLabel {
-        textcolor = #4c4684;
+        textcolor = #2980b9;
 }
