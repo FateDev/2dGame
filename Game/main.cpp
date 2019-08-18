@@ -1,7 +1,6 @@
 #include <iostream>
 #include <string>
 #include <functional>
-
 #include <SFML/Network.hpp>
 #include <TGUI/TGUI.hpp>
 
@@ -15,6 +14,7 @@
 #	pragma comment(lib, "tgui-d.lib")
 #else
 #	pragma comment(lib, "tgui.lib")
+#	pragma comment(lib, "libcurl_a.lib")
 #endif
 
 int main() {
@@ -25,7 +25,7 @@ int main() {
 	sf::Thread* pingThread = new sf::Thread(&networking::stayAlive, networkObject); //makes the stayAlive() function run on this thread
 
 	//launcher window bit, everything for the launcher is draw and the login is done and stuff
-	if (/*launcherBit(networkObject, pingThread, receiveThread, globalClock) commenting this out for now so i can skip the login*/true) {
+	if (launcherBit(networkObject, pingThread, receiveThread, globalClock) /*commenting this out for now so i can skip the logintrue*/) {
 		gameBit(globalClock, networkObject);
 	}
 

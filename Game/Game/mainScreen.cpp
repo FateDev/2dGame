@@ -25,6 +25,22 @@ mainScreen::mainScreen(tgui::Gui &gui, networking* networkObject) : window(windo
 
 	//makes a chat object and then adds it to the main screen group
 	chatBox = new chat(25, 50, 2, 10);
+
+	//the below for loop loops through the json object from the networking object, and adds all of them to the chat box scrollable panel
+	for (int i = networkObject->messages.size() - 1; i >= 0; i--) {
+		int time = std::stoi(networkObject->messages[i]["time"].get<std::string>());
+		int msgID = std::stoi(networkObject->messages[i]["msgID"].get<std::string>());
+		std::string imgLocation = networkObject->messages[i]["imgURL"].get<std::string>();
+		std::string from = networkObject->messages[i]["from"].get<std::string>();
+		std::string msg = networkObject->messages[i]["msg"].get<std::string>();
+
+		if (imgLocation == "EMPTY") {
+			imgLocation = "";
+		}
+
+		chatBox->addMessages(time, from, msg, imgLocation, msgID);
+	}
+
 	mainScreenGroup->add(chatBox->chatBoxContainer);
 
 	//gives the network object the chatBox object, and sets the bool indicating whether the chatBox is active to true
@@ -36,8 +52,8 @@ mainScreen::mainScreen(tgui::Gui &gui, networking* networkObject) : window(windo
 	mainScreenGroup->setVisible(false);
 }
 
-void mainScreen::liveUpdate(){
-	chatBox->liveUpdate(networkObject); //calls the live update function for the chat box, so basically allows for sending messages
+void mainScreen::liveUpdate(sf::Clock* globalClock){
+	chatBox->liveUpdate(networkObject, globalClock); //calls the live update function for the chat box, so basically allows for sending messages
 }
 
 void mainScreen::setActive(bool active) { //by setting the visibility through this, groups are really easy to manage so multiple screens are easy to manage

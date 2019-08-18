@@ -4,7 +4,10 @@
 #include <iostream>
 #include <string>
 #include "gui.h"
+#include <curl/curl.h>
 #include <SFML/Network.hpp>
+#include <json.hpp>
+using json = nlohmann::json;
 
 class networking {
 private:
@@ -14,8 +17,11 @@ private:
 
 	sf::Time pingTime;
 public:
+	json messages;
+
 	chat *chatBoxObject = NULL;
 	std::string usernameReal = ""; //this global variable would store the username
+	std::string currentRoomGuild = "main.alpha"; //this would store the current room/guild
 	bool chatBoxActive = false; //is the small chat box active or not
 
 	bool active = false; //this single global variable allows us to indicate whether or not the server connection is active
