@@ -54,7 +54,7 @@ public:
 
 class chat { //this would be the chat box on the main screen (maybe on other screens too later)
 private:
-	tgui::Panel::Ptr msgMaker(int time, std::string usernameText, std::string messageText, std::string imgLocation);
+	tgui::Panel::Ptr msgMaker(int time, std::string usernameText, std::string messageText, std::string imgLocation, bool continueFromLast);
 	//function above is one that returns a tgui::Panel object with time, message, image (if specified) and username formatted nicely in a box thing
 
 	tgui::EditBox::Ptr enterMessage = tgui::EditBox::create(); //where you enter a message
@@ -66,7 +66,10 @@ private:
 	//above is internal float to get the lowest y coord currently being used, so that we can give this to new messages for their y coord, 
 	//and to jump down to this value for new messages
 
-	int lastMsgTime = 0;
+	int lastMsgTime = 0; //this is used internally with SFML to check if it has been 1 second since the user has messages (to prevent spam_
+
+	std::string lastUsername = ""; //the username of the person who sent the last message
+	int lastTimeInSeconds = 0; //the time of the last message
 
 public:
 	void addMessages(int time, std::string usernameText, std::string messageText, std::string imgLocation, int msgID); //this will directly allow for messages to be added to the chat box
