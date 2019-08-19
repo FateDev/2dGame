@@ -33,7 +33,10 @@ chat::chat(float percentWidth, float percentHeight, float posPercentX, float pos
 	chatBoxContainer->add(chatBox);
 }
 
-tgui::Panel::Ptr chat::msgMaker(int time, std::string usernameText, std::string messageText, std::string imgLocation) {
+tgui::Panel::Ptr chat::msgMaker(int time, std::string usernameText, std::string messageText, std::string imgLocation, bool continueFromLast) {
+	lastTimeInSeconds = time;
+	lastUsername = usernameText;
+
 	float imgRatio = 0; //gets the y/x of the image
 	float percentOfScreenX = float(sf::VideoMode::getDesktopMode().width) * 0.01 * percentWidth; //max set by params
 	float maxWidth = 0; //the maximum width
@@ -61,6 +64,11 @@ tgui::Panel::Ptr chat::msgMaker(int time, std::string usernameText, std::string 
 	msg->setRenderer(theme.getRenderer("msg.content"));
 	timeLabel->setTextSize(10);
 	timeLabel->setRenderer(theme.getRenderer("timeLabel"));
+
+	if (continueFromLast == true) {
+		timeLabel->setSize(0, 0);
+		username->setSize(0, 0);
+	}
 
 	if (imgLocation != "") { //if the image was specified, so the image location isn't empty
 		if (messageText != "") { //and if the message was not
@@ -133,7 +141,14 @@ tgui::Panel::Ptr chat::msgMaker(int time, std::string usernameText, std::string 
 }
 
 void chat::addMessages(int time, std::string usernameText, std::string messageText, std::string imgLocation, int msgID) {
-	auto msg = msgMaker(time, usernameText, messageText, imgLocation);
+	tgui::Panel::Ptr msg;
+
+	if (lastTimeInSeconds + 600 >= time && usernameText == lastUsername) {
+		msg = msgMaker(time, usernameText, messageText, imgLocation, true);
+	}
+	else {
+		msg = msgMaker(time, usernameText, messageText, imgLocation, false);
+	}
 	//above just makes the msg panel
 
 	//sets it's y position to be at the maximum current y position, so at the bottom of the chat box scrollable panel
