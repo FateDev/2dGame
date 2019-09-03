@@ -35,6 +35,8 @@
 - made the chatBox code a bit cleaner and made it easy to reuse elsewhere (like the planned social tab)
 - refactored some more and split the main screen group off from the toolbar (the ones in the top right), as they will appear on all screens except the loading and launcher screens
 - simple xor encryption (really simple, easily hackable but it sets a precedent)
+- made it so messages from the same user in the last 10 minutes are grouped together
+- i changed the include files and tried to use those to store msgID, but i was unaware this would cause undefined behaviour as this requires recompilation of the DLLs as well, so i've reversed that action and undefined behaviour (containers of objects just not working correctly whatsoever), and am now just going to use tgui labels inside tgui panels to hold any extra information from now on (if need be)
 
 
 
@@ -46,10 +48,11 @@
 
 > - in ScrollablePanel.hpp (TGUI/Widgets), I've moves 2 lines from private to public:
 >   - CopiedSharedPtr<ScrollbarChildWidget> m_verticalScrollbar;
->     CopiedSharedPtr<ScrollbarChildWidget> m_horizontalScrollbar;
+>  CopiedSharedPtr<ScrollbarChildWidget> m_horizontalScrollbar;
 >   - this allowed me to access the vertical scroll value of the panel's scrollbar
 > - In Panel.hpp I've added 4 lines to public, so I can store the message ID's and stuff:
 >   - int relativeMsgID = 0;
->     int roomID = 0;
->     int networkID = 0;
->     int msgID = 0;
+>  int roomID = 0;
+>  int networkID = 0;
+>  int msgID = 0;
+> - and I've reversed everything I did, because not only did the developer of tgui implement ability to manipulate the scrollbars without editing the class, it also causes undefined behaviour (as noted above)

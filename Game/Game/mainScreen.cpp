@@ -18,6 +18,7 @@ mainScreen::mainScreen(tgui::Gui &gui, networking* networkObject) : window(windo
 	smallInventoryButtons[0]->setRenderer(theme.getRenderer("Button3"));
 	smallInventoryButtons[6]->setRenderer(theme.getRenderer("Button4"));
 	smallInventoryButtons[6]->setImage("resources/more.png");
+	smallInventoryButtons[6]->setImageScaling(0.7);
 	//the above set some special cases which aren't possible through the loops
 
 	/////////////////////////////
@@ -26,21 +27,7 @@ mainScreen::mainScreen(tgui::Gui &gui, networking* networkObject) : window(windo
 	//makes a chat object and then adds it to the main screen group
 	chatBox = new chat(25, 50, 2, 10);
 
-	//the below for loop loops through the json object from the networking object, and adds all of them to the chat box scrollable panel
-	for (int i = networkObject->messages.size() - 1; i >= 0; i--) {
-		int time = std::stoi(networkObject->messages[i]["time"].get<std::string>());
-		int msgID = std::stoi(networkObject->messages[i]["msgID"].get<std::string>());
-		std::string imgLocation = networkObject->messages[i]["imgURL"].get<std::string>();
-		std::string from = networkObject->messages[i]["from"].get<std::string>();
-		std::string msg = networkObject->messages[i]["msg"].get<std::string>();
-
-		if (imgLocation == "EMPTY") {
-			imgLocation = "";
-		}
-
-		chatBox->addMessages(time, from, msg, imgLocation, msgID);
-	}
-
+	chatBoxBulkAdd(this->networkObject, chatBox); //will add messages to the chat box
 	mainScreenGroup->add(chatBox->chatBoxContainer);
 
 	//gives the network object the chatBox object, and sets the bool indicating whether the chatBox is active to true
@@ -62,6 +49,14 @@ void mainScreen::setActive(bool active) { //by setting the visibility through th
 		//true (used to decide whether or not to have the live update function be active or not in the main game loop)
 		this->active = true;
 		mainScreenGroup->setVisible(true);
+
+		//these three functions below will remove the contents of the chatbox, then get the new messages from the database, and then add those to the chatbox
+		chatBox->flushMessages();
+		networkObject->getMessagesFromDB();
+		chatBoxBulkAdd(networkObject, chatBox);
+
+		//the below 2 lines will make it so that the current chat box is the one to send messages to
+		networkObject->chatBoxObject = chatBox;
 	}
 	else {
 		//sets the active variable false and makes the main screen group invisible so they won't be drawn

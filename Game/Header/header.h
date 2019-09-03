@@ -21,4 +21,7 @@ void gameBit(sf::Clock* globalClock, networking* networkObject);
 void clearResources(networking* networkObject, sf::Thread* pingThread, sf::Thread* receiveThread, sf::Clock* globalClock); 
 //this will delete stuff, like objects/threads so no memory leaks
 
+void chatBoxBulkAdd(networking* networkObject, chat* chatBox);
+//this will be a friend function to both the social and main screen classes, and will update the contents of the chat box
+
 #endif

@@ -16,8 +16,13 @@ private:
 	sf::Clock* keepAliveTimer = NULL;
 
 	sf::Time pingTime;
+
 public:
-	json messages;
+	std::string roomGuild = "main.alpha"; //public because we need to change this
+
+	json messages; //messages from DB container
+
+	void getMessagesFromDB(); //this will update the internal messages buffer
 
 	chat *chatBoxObject = NULL;
 	std::string usernameReal = ""; //this global variable would store the username
