@@ -16,6 +16,30 @@ size_t WriteCallback(char *contents, size_t size, size_t nmemb, void *userp) //f
 	return size * nmemb;
 }
 
+void networking::getMessagesFromDB() {
+	//the code below gets a json object from my website of the last 50 messages and parses them into a c++ json object from the json library
+	//and also decrypts the message contents with the simple xor function
+
+	messages.clear(); //clears the contents of the buffer for a new request
+
+	CURL* curl = curl_easy_init(); //we can set options for this to make it control how a transfer/transfers will be made
+	std::string readBuffer; //string for the returning data
+
+	curl_easy_setopt(curl, CURLOPT_URL, std::string("http://erewhon.xyz/game/serverMessages.php?save=false&roomGuild=" + roomGuild).c_str());
+	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback); //the callback
+	curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer); //will write data to the string, so the fourth param of the last callback is stored here
+
+	curl_easy_perform(curl);
+	delete curl;
+
+	messages = json::parse(readBuffer);
+
+	for (int i = 0; i < messages.size(); i++) {
+		messages[i]["msg"] = xorFunction(messages[i]["msg"]);
+	}
+}
+
 bool networking::login(std::string username, std::string password) {
 	if (active == true) { //if the user is already logged in, ignore any input and just return true
 		return true;
@@ -58,27 +82,9 @@ bool networking::login(std::string username, std::string password) {
 			active = true;
 			usernameReal = username;
 
-			//the code below gets a json object from my website of the last 50 messages and parses them into a c++ json object from the json library
-			//and also decrypts the message contents with the simple xor function
+			curl_global_init(CURL_GLOBAL_ALL); //initialise libcurl functionality globally, as it'll be used now that login was successful
 
-			curl_global_init(CURL_GLOBAL_ALL); //initialise libcurl functionality globally
-
-			CURL* curl = curl_easy_init(); //we can set options for this to make it control how a transfer/transfers will be made
-			std::string readBuffer; //string for the returning data
-
-			curl_easy_setopt(curl, CURLOPT_URL, "http://erewhon.xyz/game/serverMessages.php?save=false&roomGuild=main.alpha");
-			curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-			curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback); //the callback
-			curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer); //will write data to the string, so the fourth param of the last callback is stored here
-
-			curl_easy_perform(curl);
-			delete curl;
-
-			messages = json::parse(readBuffer);
-
-			for (int i = 0; i < messages.size(); i++) {
-				messages[i]["msg"] = xorFunction(messages[i]["msg"]);
-			}
+			getMessagesFromDB(); //this will get messages from the database as soon as login was successful
 		}
 		else {
 			active = false;
