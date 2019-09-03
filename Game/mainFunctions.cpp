@@ -57,6 +57,23 @@ bool launcherBit(networking* networkObject, sf::Thread* pingThread, sf::Thread* 
 	}
 }
 
+void chatBoxBulkAdd(networking* networkObject, chat* chatBox) {
+	//the below for loop loops through the json object from the networking object, and adds all of them to the chat box scrollable panel
+	for (int i = networkObject->messages.size() - 1; i >= 0; i--) {
+		int time = std::stoi(networkObject->messages[i]["time"].get<std::string>());
+		int msgID = std::stoi(networkObject->messages[i]["msgID"].get<std::string>());
+		std::string imgLocation = networkObject->messages[i]["imgURL"].get<std::string>();
+		std::string from = networkObject->messages[i]["from"].get<std::string>();
+		std::string msg = networkObject->messages[i]["msg"].get<std::string>();
+
+		if (imgLocation == "EMPTY") {
+			imgLocation = "";
+		}
+
+		chatBox->addMessages(time, from, msg, imgLocation, msgID);
+	}
+}
+
 void gameBit(sf::Clock* globalClock, networking* networkObject){
 	//the below is just the settings stuff for it
 	sf::ContextSettings settings;
@@ -73,7 +90,14 @@ void gameBit(sf::Clock* globalClock, networking* networkObject){
 	loadingScreen *loadingBit = new loadingScreen(gameWindow, globalClock);  
 	//the above is dynamically allocated because we won't need it after and so we can know it's actually gone (as we can set it to NULL)
 	mainScreen mainGameScreen(gui, networkObject);
-	toolbar mainToolbar(gameWindow, gui);
+
+	socialTabClass socialTabBit(gui, networkObject);
+
+	toolbar mainToolbar(gameWindow, &mainGameScreen, &socialTabBit, gui);
+
+	//remove bottom 2 lines for the loading screen stuff
+	mainGameScreen.setActive(true);
+	mainToolbar.toolbarGroup->setVisible(true); //sets the toolbar as visible too
 
 	while (gameWindow->isOpen()) //so long as the window is open
 	{
@@ -90,6 +114,7 @@ void gameBit(sf::Clock* globalClock, networking* networkObject){
 
 		//below is the stuff for the loading screen, basically it says that if the expiry time has passed and the loading screen isn't null, delete it, set it to null
 		//and then make the main screen active, otherwise draw the loading screen stuff and that little animation too
+		/*
 		if (loadingScreenRemove.asSeconds() - globalClock->getElapsedTime().asSeconds() <= 0 && loadingBit != NULL) {
 			delete loadingBit;
 			loadingBit = NULL;
@@ -99,11 +124,14 @@ void gameBit(sf::Clock* globalClock, networking* networkObject){
 		else if (loadingBit != NULL) {
 			loadingBit->liveUpdate();
 		}
+		*/
 
 		//the below would check if the main game screen has been made active, and to then call the live update method, 
 		//which calls the chat's live update method (for sending messages and stuff)
 		if (mainGameScreen.active == true)
 			mainGameScreen.liveUpdate(globalClock);
+		if (socialTabBit.active == true)
+			socialTabBit.liveUpdate(globalClock);
 
 		gui.draw(); //draws everything that's been added to it (hopefully just groups of tgui objects for the different screens)
 

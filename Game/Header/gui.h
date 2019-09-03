@@ -74,36 +74,24 @@ private:
 public:
 	void addMessages(int time, std::string usernameText, std::string messageText, std::string imgLocation, int msgID); //this will directly allow for messages to be added to the chat box
 
+	void flushMessages(); //removes all messages from the container
+
 	tgui::ChildWindow::Ptr chatBoxContainer = tgui::ChildWindow::create("Chat"); //this would be the final container holding the chat box (a draggable window from tgui)
 	chat(float percentWidth, float percentHeight, float posPercentX, float posPercentY); //the constructor, first 2 are the size of the box, last 2 are the starting position
 	void liveUpdate(networking* networkObject, sf::Clock* clock); 
 	//the above would send whatever message a user enters when they press enter (uses network object to send through the network obviously)
 };
 
-class toolbar { //this contains the buttons in the top left of the screen
-private:
-	sf::RenderWindow *window = NULL; //would hold the window object
-	std::vector<tgui::BitmapButton::Ptr> buttons; //will contain all of the buttons needed
-	std::string icons[10] = { "resources/commerce.png", "resources/social.png", "resources/map.png", "resources/sound_on.png", "resources/settings.png", "resources/help.png", "resources/exit.png", "resources/return.png", "resources/more.png", "resources/sound_off.png" };
-	//the resource locations for the images used in the bitmap buttons
-
-	friend void helpFunction(); //function prototype, for function to open the help page in the default browser
-	void exitFunction(); //function prototype, for function to exit the game
-public:
-	toolbar(sf::RenderWindow *window, tgui::Gui &gui); //would initialise the toolbar and construct it
-	tgui::Group::Ptr toolbarGroup = tgui::Group::create({ sf::VideoMode::getDesktopMode().width , sf::VideoMode::getDesktopMode().height });
-	//the above would be an invisible container from tgui which holds everything that gets drawn for the toolbar, it's public so we can set it visible/invisible
-};
-
 class mainScreen { //this is the first screen to be displayed after the loading screen disappears
 private:
 	std::vector<tgui::BitmapButton::Ptr> smallInventoryButtons; //the buttons on the top left for the small inventory task bar thing or whatever
 
-	sf::RenderWindow *window = NULL; //would hold the window object
-	tgui::Group::Ptr mainScreenGroup = tgui::Group::create({sf::VideoMode::getDesktopMode().width , sf::VideoMode::getDesktopMode().height });
+	tgui::Group::Ptr mainScreenGroup = tgui::Group::create({ sf::VideoMode::getDesktopMode().width , sf::VideoMode::getDesktopMode().height });
 	//the above would be an invisible container from tgui which holds everything that gets drawn for this screen
 
+	sf::RenderWindow *window = NULL; //would hold the window object
 	networking* networkObject = NULL; //this will hold the network object for use in the chat
+	friend void chatBoxBulkAdd(networking* networkObject, chat* chatBox); //this will parse messages in the network object's buffer and add them
 public:
 	chat* chatBox = NULL; //this will hold the chat box
 
@@ -111,6 +99,43 @@ public:
 	void setActive(bool active); //this would make the above boolean active, and also would make the main screen group visible
 	mainScreen(tgui::Gui &gui, networking* networkObject); //the constructor, has networking object because needs to pass it to the chat
 	void liveUpdate(sf::Clock* globalClock); //simply calls the chat's live update function
+};
+
+class socialTabClass {
+private:
+	tgui::Group::Ptr socialTabGroup = tgui::Group::create({ sf::VideoMode::getDesktopMode().width , sf::VideoMode::getDesktopMode().height });
+	//the above would be an invisible container from tgui which holds everything that gets drawn for this screen
+
+	sf::RenderWindow *window = NULL; //would hold the window object
+	networking* networkObject = NULL; //this will hold the network object for use in the chat
+	chat* chatBox = NULL; //this will hold the chat box
+	friend void chatBoxBulkAdd(networking* networkObject, chat* chatBox); //this will parse messages in the network object's buffer and add them
+public:
+	bool active = false; //we can use this to decide whether or not we should have the liveUpdate() function execute
+	void setActive(bool active); //this would make the above boolean active, and also would make the main screen group visible
+	socialTabClass(tgui::Gui &gui, networking* networkObject); //the constructor, has networking object because needs to pass it to the chat
+	void liveUpdate(sf::Clock* globalClock); //simply calls the chat's live update function
+
+};
+
+class toolbar { //this contains the buttons in the top left of the screen
+private:
+	sf::RenderWindow *window = NULL; //would hold the window object
+	mainScreen* main_screen = NULL; //holds the main screen (for switching using buttons
+	socialTabClass* socialTabBit = NULL; //holds the social tab bit
+
+	std::vector<tgui::BitmapButton::Ptr> buttons; //will contain all of the buttons needed
+	std::string icons[11] = { "resources/home.png", "resources/commerce.png", "resources/social.png", "resources/map.png", "resources/sound_on.png", "resources/settings.png", "resources/help.png", "resources/exit.png", "resources/return.png", "resources/more.png", "resources/sound_off.png" };
+	//the resource locations for the images used in the bitmap buttons
+
+	friend void helpFunction(); //function prototype, for function to open the help page in the default browser
+	void exitFunction(); //function prototype, for function to exit the game
+	void socialTab(); //this will open the social tab/panel
+	void returnToMain(); //this will go back to the main game screen
+public:
+	toolbar(sf::RenderWindow *window, mainScreen* main_screen, socialTabClass* socialTabBit, tgui::Gui &gui); //would initialise the toolbar and construct it
+	tgui::Group::Ptr toolbarGroup = tgui::Group::create({ sf::VideoMode::getDesktopMode().width , sf::VideoMode::getDesktopMode().height });
+	//the above would be an invisible container from tgui which holds everything that gets drawn for the toolbar, it's public so we can set it visible/invisible
 };
 
 #endif // !GUI_HEADER

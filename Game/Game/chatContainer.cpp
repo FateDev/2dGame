@@ -19,7 +19,7 @@ chat::chat(float percentWidth, float percentHeight, float posPercentX, float pos
 	//above puts the enter message box 7px below the chatBox scrollable panel
 	enterMessage->setSize(float(sf::VideoMode::getDesktopMode().width)*0.01*percentWidth - chatBox->getScrollbarWidth(), 30);
 	enterMessage->setRenderer(theme.getRenderer("EditBox"));
-	enterMessage->setDefaultText("Press enter to send a message..."); //sets the default text in the input box
+	enterMessage->setDefaultText("Press enter to send a message... (3000 chars max)"); //sets the default text in the input box
 
 	chatBoxContainer->setSize(float(sf::VideoMode::getDesktopMode().width)*0.01*percentWidth, float(sf::VideoMode::getDesktopMode().height)*0.01*percentHeight + 50);
 	//the above sets the chatBoxContainer child window to be the percentage of the window that the parameters specified
@@ -184,7 +184,7 @@ void chat::liveUpdate(networking* networkObject, sf::Clock* globalClock){ //call
 			lastMsgTime = globalClock->getElapsedTime().asMilliseconds();
 			std::string msgContents = enterMessage->getText().toAnsiString(); //gets the contents of the enter message input box
 
-			if (msgContents != "") { //if the contents of the input box weren't empty
+			if (msgContents.length() < 3000) { //if the contents of the input box weren't empty
 				networkObject->sendMessage(msgContents); //then use the network object's sendMessage method to send the contents as a message
 
 				enterMessage->setText(""); //and sets the input boxes contents to be empty
@@ -193,4 +193,9 @@ void chat::liveUpdate(networking* networkObject, sf::Clock* globalClock){ //call
 			}
 		}
 	}
+}
+
+void chat::flushMessages() {
+	chatBox->removeAllWidgets();
+	lastUsername = "";
 }
