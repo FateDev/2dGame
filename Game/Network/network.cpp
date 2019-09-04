@@ -9,12 +9,7 @@
 #include <gui.h>
 #include <SFML/Network.hpp>
 #include "../xorFunction.h"
-
-size_t WriteCallback(char *contents, size_t size, size_t nmemb, void *userp) //first one is pointer to data, second is to the size of one data item,
-{ //third is how many there are, so size * nmemb is data size, and fourth is pointer to the data you get back, which you actually access using CURLOPT_WRITEDATA and a reference
-	((std::string*)userp)->append((char*)contents, size * nmemb);
-	return size * nmemb;
-}
+#include <header.h>
 
 void networking::getMessagesFromDB() {
 	//the code below gets a json object from my website of the last 50 messages and parses them into a c++ json object from the json library
@@ -171,7 +166,7 @@ void networking::sendMessage(std::string msg) {
 
 	msg = xorFunction(msg);
 
-	msg = "USER::USERNAME::" + usernameReal + "USER::MESSAGE::" + msg; //puts USER::USERNAME:: before appending the chosen username and USER::MESSAGE:: before appending the message
+	msg = "USER::USERNAME::" + usernameReal + "USER::ROOMGUILD::" + roomGuild + "USER::MESSAGE::" + msg; //puts USER::USERNAME:: before appending the chosen username and USER::MESSAGE:: before appending the message
 	//this will help with decoding the data on the server side
 
 	sendPacket << msg.c_str(); //converts the string into a C style array, and puts it into the packet which will be sent
