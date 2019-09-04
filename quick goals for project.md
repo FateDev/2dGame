@@ -38,6 +38,8 @@
 - made it so messages from the same user in the last 10 minutes are grouped together
 - i changed the include files and tried to use those to store msgID, but i was unaware this would cause undefined behaviour as this requires recompilation of the DLLs as well, so i've reversed that action and undefined behaviour (containers of objects just not working correctly whatsoever), and am now just going to use tgui labels inside tgui panels to hold any extra information from now on (if need be)
 - added social tab panel
+- newest build of TGUI was needed for right click behaviour, and i forgot to put the DLLs in the x64 folder too, which is necessary
+- you can left click on the listed room/guild things and you will be switched to that one accordingly, and the chat box on the main screen will switch to the currently selected one too
 
 # Abandoned Goals
 
