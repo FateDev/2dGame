@@ -121,8 +121,6 @@ private:
 	void addButtonToPanel(tgui::ScrollablePanel::Ptr panel, std::string text, float percentWidth);
 	void populateRoomGuildSelectBox(); //will fill up the room guild select box
 
-	int roomGuildListMaxHeight = 0;
-
 	void changeRoomGuild(std::string buttonText);
 
 	json roomGuildList; //this will contain the room guild stuff so a user can select and switch and stuff
