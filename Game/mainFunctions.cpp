@@ -90,7 +90,7 @@ void gameBit(sf::Clock* globalClock, networking* networkObject){
 
 	tgui::Gui gui(*gameWindow); //the main gui for the entire game bit
 
-	sf::Time loadingScreenRemove = sf::milliseconds(globalClock->getElapsedTime().asMilliseconds() + 2000); //so it sets the duration of the loading screen as 2 seconds
+	sf::Time loadingScreenRemove = sf::milliseconds(globalClock->getElapsedTime().asMilliseconds() + 1000); //so it sets the duration of the loading screen as 1 second
 
 	//below makes the loading screen, main screen, and tool bar (buttons in the top left) objects
 	loadingScreen *loadingBit = new loadingScreen(gameWindow, globalClock);  
@@ -100,10 +100,6 @@ void gameBit(sf::Clock* globalClock, networking* networkObject){
 	socialTabClass socialTabBit(gui, networkObject);
 
 	toolbar mainToolbar(gameWindow, &mainGameScreen, &socialTabBit, gui);
-
-	//remove bottom 2 lines for the loading screen stuff
-	mainGameScreen.setActive(true);
-	mainToolbar.toolbarGroup->setVisible(true); //sets the toolbar as visible too
 
 	while (gameWindow->isOpen()) //so long as the window is open
 	{
@@ -120,7 +116,7 @@ void gameBit(sf::Clock* globalClock, networking* networkObject){
 
 		//below is the stuff for the loading screen, basically it says that if the expiry time has passed and the loading screen isn't null, delete it, set it to null
 		//and then make the main screen active, otherwise draw the loading screen stuff and that little animation too
-		/*
+
 		if (loadingScreenRemove.asSeconds() - globalClock->getElapsedTime().asSeconds() <= 0 && loadingBit != NULL) {
 			delete loadingBit;
 			loadingBit = NULL;
@@ -130,7 +126,6 @@ void gameBit(sf::Clock* globalClock, networking* networkObject){
 		else if (loadingBit != NULL) {
 			loadingBit->liveUpdate();
 		}
-		*/
 
 		//the below would check if the main game screen has been made active, and to then call the live update method, 
 		//which calls the chat's live update method (for sending messages and stuff)
