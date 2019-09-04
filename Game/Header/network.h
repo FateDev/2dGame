@@ -3,16 +3,33 @@
 
 #include <iostream>
 #include <string>
-#include "SFML/Network.hpp"
+#include "gui.h"
+#include <curl/curl.h>
+#include <SFML/Network.hpp>
+#include <json.hpp>
+
+using json = nlohmann::json;
 
 class networking {
 private:
-	std::string usernameReal = ""; //this global variable would store the username
 	std::string msg;
 
 	sf::Clock* keepAliveTimer = NULL;
+
 	sf::Time pingTime;
+
+	friend size_t WriteCallback(char *contents, size_t size, size_t nmemb, void *userp); //friend function to get data from curl, this is forward declaring the function as we can't include the header file here, as this file is included in it
 public:
+	std::string roomGuild = "main.alpha"; //public because we need to update this a lot, stores current room/guild
+
+	json messages; //messages from DB container
+
+	void getMessagesFromDB(); //this will update the internal messages buffer
+
+	chat *chatBoxObject = NULL;
+	std::string usernameReal = ""; //this global variable would store the username
+	bool chatBoxActive = false; //is the small chat box active or not
+
 	bool active = false; //this single global variable allows us to indicate whether or not the server connection is active
 	//we make the above public so that we can see in the GUI bit whether or not there is a connection
 
@@ -23,8 +40,8 @@ public:
 	bool login(std::string username, std::string password);
 	//this will loop repeatedly until either the user crosses it off or gets the correct login details
 
-	void getInput();
-	//once the user has got the correct login details, this is run on the main thread, so that they can type, and then send messages by pressing enter
+	void sendMessage(std::string msg);
+	//sends any message passed to it, to the server
 
 	void getResponses();
 	//this will get any responses from the server, decode them, and output them, and it's run on a separate thread

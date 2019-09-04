@@ -1,16 +1,14 @@
-//you need to define this to make sure <windows.h> doesn't conflict with any min()/max() functions, 
-//as this header file has min() and max() functions as macros, so would otherwise cause conflix
-#define NOMINMAX
-
 #include <gui.h>
+#include <header.h>
 #include <TGUI/TGUI.hpp>
-#include <windows.h> 
+#include <windows.h>
 
-launcher::launcher(networking *networkObject, sf::RenderWindow* mainWindow, sf::Thread *ping, sf::Thread *receive, sf::Thread *inputThread, sf::Clock *globalClock) : networkBit(networkObject), pingThread(ping), receiveThread(receive), window(mainWindow), input(inputThread), notifClock(globalClock) {
+launcher::launcher(networking *networkObject, sf::RenderWindow* mainWindow, sf::Thread *ping, sf::Thread *receive, sf::Clock *globalClock) : networkBit(networkObject), pingThread(ping), receiveThread(receive), window(mainWindow), notifClock(globalClock) {
 	//all this stuff is using TGUI and draws the window
 	gui = new tgui::Gui(*window);
 
 	tgui::Theme theme( "Launcher.txt" );
+	//the above is for loading a file with the colours and stuff
 
 	auto background = tgui::Panel::create();
 	background->setRenderer(theme.getRenderer("Panel.Panel2"));
@@ -33,7 +31,7 @@ launcher::launcher(networking *networkObject, sf::RenderWindow* mainWindow, sf::
 	title->setRenderer(theme.getRenderer("Label.Label0"));
 	title->setPosition(30, 21.4);
 	title->setSize(738.4, 100);
-	title->setText("window");
+	title->setText("One More Time");
 	title->setTextSize(60);
 	title->setVerticalAlignment(tgui::Label::VerticalAlignment::Center);
 	title->setHorizontalAlignment(tgui::Label::HorizontalAlignment::Center);
@@ -118,11 +116,14 @@ launcher::launcher(networking *networkObject, sf::RenderWindow* mainWindow, sf::
 	loginUnsuccessful->setVisible(false);
 	unsuccessfulLabel->setVisible(false);
 
-	helpButton->connect("pressed", &launcher::helpFunction, this); //executres the function to open a help page in the browser
+	helpButton->connect("pressed", &helpFunction); //executres the function to open a help page in the browser
 
 	//connects the playButton with the loginFunction
 	playButton->connect("pressed", &launcher::loginFunctionFromWindow, this, usernameField, passwordField);
-	//the 1st param is the event, the 2nd param is a reference (&) to the general function, the 3rd is a reference to the instance of the object for that function from 2nd param, and 3rd and 4th are the 2 text fields to get credentials from
+	//the 1st param is the event, 
+	//the 2nd param is a reference (&) to the general function, 
+	//the 3rd is a reference to the instance of the object for that function from 2nd param, 
+	//and 3rd and 4th are the 2 text fields to get credentials from
 }
 
 void launcher::loginFunctionFromWindow(tgui::EditBox::Ptr usernameBox, tgui::EditBox::Ptr passwordBox) //function will take the text in username and password boxes and pass it to the login function
@@ -131,19 +132,15 @@ void launcher::loginFunctionFromWindow(tgui::EditBox::Ptr usernameBox, tgui::Edi
 	std::string username = usernameBox->getText().toAnsiString();
 	std::string password = passwordBox->getText().toAnsiString();
 
-	if (networkBit->active == 0) { //so long as the network connection is inactive
-		if (networkBit->login(username, password)) { //this will ask the verify login details, true or false depending on whether or not verified
-			pingThread->launch(); //will maintain the connection by pinging every so often
-			receiveThread->launch(); //will receive any server orders
-			input->launch(); //launch the input thread so to talk to other users
-			playButton->setEnabled(false); //disables the playButton as you've managed to log in at this point
-		}
-		else {
-			loginError = 1; //uf you can login then it'll show the error message, rather part 1 of it
-		}
+	if (networkBit->login(username, password)) { //this will ask the verify login details, true or false depending on whether or not verified
+		pingThread->launch(); //will maintain the connection by pinging every so often
+		receiveThread->launch(); //will receive any server orders
+		playButton->setEnabled(false); //disables the playButton as you've managed to log in at this point
+	}
+	else {
+		loginError = 1; //uf you can login then it'll show the error message, rather part 1 of it
 	}
 }
-
 
 void launcher::liveUpdate() {
 	if (loginError == 1) { //this is part 1 of the error message
@@ -168,17 +165,6 @@ void launcher::liveUpdate() {
 	gui->draw(); // Draw all widgets
 }
 
-void launcher::helpFunction() { //the function to make the help button open the help setting in browser
-	ShellExecute(0, 0, L"https://erewhon.xyz/game/help/", 0, 0, SW_SHOW);
-	//opens URL in browser,
-	//1st param is handle to parent windows, but we're using SFML rather than win32 windows so this is NULL or 0
-	//2nd param is the action, which isnt necessary here
-	//3rd is the thing to 'do' (the URL), so the default browser would be used on windows
-	//4th would be parameters to pass to the file, but not necessary for opening a URL
-	//5th is the working directory of the action, none specified so current one used
-	//6th is how to show the application once opened, so it shows it
-}
-
 launcher::~launcher() {
-	delete gui;
+	delete gui; //when the launcher is deleted, delete the gui object too
 }
