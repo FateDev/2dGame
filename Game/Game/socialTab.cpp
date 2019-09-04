@@ -94,6 +94,10 @@ void socialTabClass::changeRoomGuild(std::string buttonText) {
 
 	networkObject->roomGuild = buttonText; //the button text is the room guild name in this case, which we can use to request whatever data we need
 
+	sf::Packet sendPacket; //the packet which will contain the data to send
+	sendPacket << std::string("USER::CHANGEROOMGUILD::" + buttonText).c_str(); //converts the string into a C style array, and puts it into the packet which will be sent
+	networkObject->socket->send(sendPacket);
+
 	networkObject->getMessagesFromDB();
 	chatBoxBulkAdd(this->networkObject, chatBox);
 }
