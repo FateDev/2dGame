@@ -4,6 +4,9 @@
 //#include "network.h"
 #include <SFML/Window.hpp>
 #include <TGUI/TGUI.hpp>
+#include <json.hpp>
+
+using json = nlohmann::json;
 
 class networking; //forward declaration of the networking class, so when we use it here, the compiler knows it exists
 //this is so we don't incude network.h in gui.h, and vice versa which would be recursively including files
@@ -110,12 +113,26 @@ private:
 	networking* networkObject = NULL; //this will hold the network object for use in the chat
 	chat* chatBox = NULL; //this will hold the chat box
 	friend void chatBoxBulkAdd(networking* networkObject, chat* chatBox); //this will parse messages in the network object's buffer and add them
+
+	tgui::ScrollablePanel::Ptr roomGuildSelectBox; //this will be the box on the left of the screen which will contain buttons for selecting room/guild
+	
+	float currentMaxHeightRoomGuildSelect = 0; //the max height of the room guild select box
+
+	void addButtonToPanel(tgui::ScrollablePanel::Ptr panel, std::string text, float percentWidth);
+	void populateRoomGuildSelectBox(); //will fill up the room guild select box
+
+	int roomGuildListMaxHeight = 0;
+
+	void changeRoomGuild(std::string buttonText);
+
+	json roomGuildList; //this will contain the room guild stuff so a user can select and switch and stuff
+
+	friend size_t WriteCallback(char *contents, size_t size, size_t nmemb, void *userp); //friend function to get data from curl, this is forward declaring the function as we can't include the header file here, as this file is included in it
 public:
 	bool active = false; //we can use this to decide whether or not we should have the liveUpdate() function execute
 	void setActive(bool active); //this would make the above boolean active, and also would make the main screen group visible
 	socialTabClass(tgui::Gui &gui, networking* networkObject); //the constructor, has networking object because needs to pass it to the chat
 	void liveUpdate(sf::Clock* globalClock); //simply calls the chat's live update function
-
 };
 
 class toolbar { //this contains the buttons in the top left of the screen
