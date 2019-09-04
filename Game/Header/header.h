@@ -24,4 +24,7 @@ void clearResources(networking* networkObject, sf::Thread* pingThread, sf::Threa
 void chatBoxBulkAdd(networking* networkObject, chat* chatBox);
 //this will be a friend function to both the social and main screen classes, and will update the contents of the chat box
 
+size_t WriteCallback(char *contents, size_t size, size_t nmemb, void *userp);
+//this will be a friend function to the network and social tab classes
+
 #endif

@@ -198,4 +198,5 @@ void chat::liveUpdate(networking* networkObject, sf::Clock* globalClock){ //call
 void chat::flushMessages() {
 	chatBox->removeAllWidgets();
 	lastUsername = "";
+	currentMaxHeight = 0;
 }
