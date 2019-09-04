@@ -17,6 +17,12 @@ void helpFunction() { //the function to make the help button open the help setti
 	//6th is how to show the application once opened, so it shows it
 }
 
+size_t WriteCallback(char *contents, size_t size, size_t nmemb, void *userp) //first one is pointer to data, second is to the size of one data item,
+{ //third is how many there are, so size * nmemb is data size, and fourth is pointer to the data you get back, which you actually access using CURLOPT_WRITEDATA and a reference
+	((std::string*)userp)->append((char*)contents, size * nmemb);
+	return size * nmemb;
+}
+
 bool launcherBit(networking* networkObject, sf::Thread* pingThread, sf::Thread* receiveThread, sf::Clock* globalClock) {
 	sf::RenderWindow *launcherWindow = new sf::RenderWindow(sf::VideoMode(800, 600), "One More Time", sf::Style::Close); //window, the one used for the launcher
 	launcher* launcherObject = new launcher(networkObject, launcherWindow, pingThread, receiveThread, globalClock); //launcher

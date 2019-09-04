@@ -7,6 +7,7 @@
 #include <curl/curl.h>
 #include <SFML/Network.hpp>
 #include <json.hpp>
+
 using json = nlohmann::json;
 
 class networking {
@@ -17,8 +18,9 @@ private:
 
 	sf::Time pingTime;
 
+	friend size_t WriteCallback(char *contents, size_t size, size_t nmemb, void *userp); //friend function to get data from curl, this is forward declaring the function as we can't include the header file here, as this file is included in it
 public:
-	std::string roomGuild = "main.alpha"; //public because we need to change this
+	std::string roomGuild = "main.gamma"; //public because we need to update this a lot, stores current room/guild
 
 	json messages; //messages from DB container
 
@@ -26,7 +28,6 @@ public:
 
 	chat *chatBoxObject = NULL;
 	std::string usernameReal = ""; //this global variable would store the username
-	std::string currentRoomGuild = "main.alpha"; //this would store the current room/guild
 	bool chatBoxActive = false; //is the small chat box active or not
 
 	bool active = false; //this single global variable allows us to indicate whether or not the server connection is active
