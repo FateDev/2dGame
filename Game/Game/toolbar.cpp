@@ -33,11 +33,15 @@ void toolbar::exitFunction() { //this is triggered by the exit button
 }
 
 void toolbar::returnToMain() {
-	main_screen->setActive(true);
-	socialTabBit->setActive(false);
+	if (main_screen->active != true) {
+		main_screen->setActive(true);
+		socialTabBit->setActive(false);
+	}
 }
 
 void toolbar::socialTab() {
-	main_screen->setActive(false);
-	socialTabBit->setActive(true);
+	if (socialTabBit->active != true) {
+		main_screen->setActive(false);
+		socialTabBit->setActive(true);
+	}
 }

@@ -9,14 +9,10 @@ socialTabClass::socialTabClass(tgui::Gui &gui, networking* networkObject) : wind
 	chatBox->chatBoxContainer->setPosition(std::to_string(percentX) + "%", sf::VideoMode::getDesktopMode().height - chatBox->chatBoxContainer->getFullSize().y - 30);
 	chatBox->chatBoxContainer->setPositionLocked(true); //so that it can't move
 
-	float roomGuildSelectBoxPercentWidth = 100 - percentWidth;
-	float roomGuildBoxPercentY = float(sf::VideoMode::getDesktopMode().height - chatBox->chatBoxContainer->getFullSize().y - 30)/sf::VideoMode::getDesktopMode().height * 100;
-	float roomGuildBoxHeight = chatBox->chatBoxContainer->getFullSize().y;
-	
-	roomGuildSelectBox = tgui::ScrollablePanel::create({ std::to_string(roomGuildSelectBoxPercentWidth) + "%", roomGuildBoxHeight });
+	roomGuildSelectBox = tgui::ScrollablePanel::create({ std::to_string(100 - percentWidth) + "%", chatBox->chatBoxContainer->getFullSize().y+1 });
+	roomGuildSelectBox->setPosition(0, chatBox->chatBoxContainer->getPosition().y-1);
 	roomGuildSelectBox->setVerticalScrollbarPolicy(tgui::Scrollbar::Policy::Always);
 	roomGuildSelectBox->setHorizontalScrollbarPolicy(tgui::Scrollbar::Policy::Never);
-	roomGuildSelectBox->setPosition(0, std::to_string(roomGuildBoxPercentY) + "%");
 	//this will make the above occupy the left of the screen and have the same height as the chat box
 
 	socialTabGroup->add(chatBox->chatBoxContainer);
@@ -51,10 +47,10 @@ void socialTabClass::setActive(bool active) { //by setting the visibility throug
 		this->active = false;
 		socialTabGroup->setVisible(false);
 
-
+		roomGuildSelectBox->removeAllWidgets();
 		chatBox->flushMessages();
 
-		roomGuildListMaxHeight = 0; //this will reset the max height so that it doesn't start from this offset the next time this stuff is displayed
+		currentMaxHeightRoomGuildSelect = 0; //this will reset the max height so that it doesn't start from this offset the next time this stuff is displayed
 	}
 }
 
@@ -67,7 +63,7 @@ void socialTabClass::addButtonToPanel(tgui::ScrollablePanel::Ptr panel, std::str
 
 	currentMaxHeightRoomGuildSelect += button->getFullSize().y; //updates the maximum y pos for the next message (assuming there is one)
 
-	button->connect("pressed", &socialTabClass::changeRoomGuild, this, button->getText());
+	button->connect("Clicked", &socialTabClass::changeRoomGuild, this, button->getText());
 
 	panel->add(button);
 }
@@ -100,6 +96,4 @@ void socialTabClass::changeRoomGuild(std::string buttonText) {
 
 	networkObject->getMessagesFromDB();
 	chatBoxBulkAdd(this->networkObject, chatBox);
-
-
 }
