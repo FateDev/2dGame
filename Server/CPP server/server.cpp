@@ -7,9 +7,12 @@
 
 struct user{ //struct to hold user's sockets, usernames, and the time left until their socket expires
 	sf::TcpSocket* socket;
+	int userID;
 	std::string username;
 	sf::Time timeOfExpiry;
 	bool loggedIn;
+	std::string roomGuild = "main.alpha";
+	std::string tempNewestMsgID = "";
 };
 
 std::vector<user> users; //vector to hold users
@@ -25,8 +28,13 @@ sf::Clock expiryTimer; //this is the global clock against which long polling is 
 //prototypes
 void server(unsigned short PORT);
 bool processString(std::string msg);
-void extractInformation(std::string &msg);
+bool extractInformation(std::string &msg);
 void process();
+size_t WriteCallback(char *contents, size_t size, size_t nmemb, void *userp);
+void saveMsgDB(std::string msg, int userNum, int time);
+bool checkLeave(std::string &msg);
+void forwardToAllUsers(std::string msg, int userNum);
+bool login(std::string input, user* userPtr);
 
 int main(){
 	curl_global_init(CURL_GLOBAL_ALL); //initialise libcurl functionality globally
@@ -48,6 +56,24 @@ int main(){
 	return 0;
 }
 
+void saveMsgDB(std::string msg, int userNum, int time){
+	CURL* curl = curl_easy_init(); //we can set options for this to make it control how a transfer/transfers will be made
+	std::string readBuffer; //string for the returning data
+	
+	int id = users[userNum].userID;
+	msg = curl_easy_escape(curl, msg.c_str(), msg.length());
+	std::string roomGuild = users[userNum].roomGuild;
+	
+	curl_easy_setopt(curl, CURLOPT_URL, ("https://erewhon.xyz/game/serverMessages.php?save=true&id="+std::to_string(id)+"&msg="+msg+"&roomGuild="+roomGuild+"&time="+std::to_string(time)).c_str());
+	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback); //the callback
+	curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer); //will write data to the string, so the fourth param of the last callback is stored here
+
+	curl_easy_perform(curl);
+
+	users[userNum].tempNewestMsgID = readBuffer;
+}
+
 bool processString(std::string msg){ //for checking if the server has been pinged by a socket
 	if(msg.find("SERVER::PING::3SEC") == 0){
 		return true;
@@ -67,40 +93,31 @@ bool checkLeave(std::string &msg){
 	}
 }
 
-bool extractInformation(std::string &msg, int clientNum){ //extracts username and the message
+bool extractInformation(std::string &msg){ //extracts username and the message
 	std::string usernameToken = "USER::USERNAME::";
 	std::string messageToken = "USER::MESSAGE::";
-	std::string username;
 
 	if(msg.find(usernameToken) != 0 || msg.find(messageToken) == std::string::npos){
 		return false; //if USER::USERNAME:: and USER::MESSAGE:: are not found don't process this
 	}else{
-		username = msg;
-		username.erase(username.begin(), username.begin() + usernameToken.length()); //erase everything from the beginning to the end of USER::USERNAME::
-		username.erase(username.find(messageToken), username.length()); //erase everything from the beginning of USER::MESSAGE:: to the end of the string
-
-		users[clientNum].username = username; //what is left is the username of the client
-
 		msg.erase(msg.begin(), msg.begin() + (msg.find(messageToken) + messageToken.length())); //erase from the beginning of the string to the end of USER::MESSAGE::
 		
 		return true;
 	}
 }
 
-void forwardToAllUsers(std::string msg, int userNum){ //forwards to every user, other than the one specified by userNum
+void forwardToAllUsers(std::string msg, int userNum){ //forwards to every user
 	for(int i = 0; i < users.size(); i++){
-		if(i == userNum){ //userNum can be something like -1 so that the message is sent to every user
-			continue;
-		}
-
 		if(users[i].loggedIn != true){
 			continue;
 		}
 
-		sf::Packet packet; //a packet to hold a string
-		packet << msg.c_str(); //putting the c style string into the packet
+		if(users[i].roomGuild == users[userNum].roomGuild){
+			sf::Packet packet; //a packet to hold a string
+			packet << msg.c_str(); //putting the c style string into the packet
 
-		users[i].socket->send(packet); //sending the packet
+			users[i].socket->send(packet); //sending the packet
+		}
 	}
 }
 
@@ -132,7 +149,6 @@ void process(){
 							sf::Packet packet; //a packet to hold a string
 							packet << std::string("SERVER::DIE").c_str(); //putting the c style string into the packet
 							users[i].socket->send(packet); //sending the packet
-
 							
 							users.erase(users.begin() + i); //removes them from the array if it is
 
@@ -140,13 +156,26 @@ void process(){
 							std::cout << msgString; //outputs this string
 						}
 
-						if(!extractInformation(receiveString, i)){ //if username and message could not be extracted...
+						if(receiveString.find("USER::CHANGEROOMGUILD::") == 0){
+							receiveString.erase(receiveString.begin(), receiveString.begin() + (receiveString.find("USER::CHANGEROOMGUILD::") + std::string("USER::CHANGEROOMGUILD::").length()));
+
+							users[i].roomGuild = receiveString;
+							std::cout << receiveString << std::endl;
+							continue;
+						}
+
+						if(!extractInformation(receiveString)){ //if username and message could not be extracted...
 							continue; //then continue
 						}
 
+						saveMsgDB(receiveString, i, t);
+
+						std::string time = std::to_string(t);
+
+						sendString += "USER::ID::" + users[i].tempNewestMsgID; //USER::ID is actually the message ID
 						sendString += "USER::USERNAME::" + users[i].username;
+						sendString += "USER::TIME::" + time;
 						sendString += "USER::MSG::" + receiveString;
-						sendString += "USER::TIME::" + std::to_string(t);
 
 						std::cout << sendString << std::endl;
 
@@ -177,7 +206,7 @@ size_t WriteCallback(char *contents, size_t size, size_t nmemb, void *userp) //f
     return size * nmemb;
 }
 
-bool login(std::string input) {
+bool login(std::string input, user* userPtr) {
 	std::string usernameToken = "SERVER::LOGON::USERNAME::";
 	std::string passwordToken = "SERVER::LOGON::PASSWORD::";
 	std::string username = input;
@@ -204,8 +233,14 @@ bool login(std::string input) {
 		curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer); //will write data to the string, so the fourth param of the last callback is stored here
 
 		curl_easy_perform(curl);
+		
+		if(readBuffer.find("USER::ID::") != 0 || readBuffer.find("USER::ID::") == std::string::npos){
+			return false; //login failed if no ID found
+		} else {
+			readBuffer.erase(readBuffer.begin(), readBuffer.begin() + std::string("USER::ID::").length());
+			userPtr->userID = std::stoi(readBuffer);
+			userPtr->username = username;
 
-		if(readBuffer == "Verified!"){
 			return true;
 		}
 	}
@@ -240,7 +275,7 @@ void server(unsigned short PORT){ //the function for server initialisation
 
 			sf::Packet sendPacket;
 
-			if(!login(std::string(receiveString))){
+			if(!login(std::string(receiveString), userPtr)){
 				sendPacket << "SERVER::LOGON::RESPONSE::false";
 				socket->send(sendPacket);
 
