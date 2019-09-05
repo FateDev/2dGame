@@ -121,9 +121,22 @@ private:
 	void addButtonToPanel(tgui::ScrollablePanel::Ptr panel, std::string text, float percentWidth);
 	void populateRoomGuildSelectBox(); //will fill up the room guild select box
 
-	void changeRoomGuild(std::string buttonText);
+	void changeRoomGuild(std::string buttonText); //function which changes the room/guild in the rooms bit
+
+	//the buttons for the various tabs
+	tgui::Button::Ptr roomsBtn;
+	tgui::Button::Ptr areaChatBtn;
+	tgui::Button::Ptr guildSelectBtn;
+	tgui::Button::Ptr privateMessagingBtn;
+
+	float chatBoxContainerHeight = 0;
+	float chatBoxContainerYCoord = 0;
 
 	json roomGuildList; //this will contain the room guild stuff so a user can select and switch and stuff
+
+	std::string activeTab = "rooms";
+
+	void switchTabs(std::string buttonText);
 
 	friend size_t WriteCallback(char *contents, size_t size, size_t nmemb, void *userp); //friend function to get data from curl, this is forward declaring the function as we can't include the header file here, as this file is included in it
 public:

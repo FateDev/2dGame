@@ -9,12 +9,36 @@ socialTabClass::socialTabClass(tgui::Gui &gui, networking* networkObject) : wind
 	chatBox->chatBoxContainer->setPosition(std::to_string(percentX) + "%", sf::VideoMode::getDesktopMode().height - chatBox->chatBoxContainer->getFullSize().y - 30);
 	chatBox->chatBoxContainer->setPositionLocked(true); //so that it can't move
 
+	chatBoxContainerHeight = sf::VideoMode::getDesktopMode().height * 0.7 + 50;
+	chatBoxContainerYCoord = sf::VideoMode::getDesktopMode().height - chatBox->chatBoxContainer->getFullSize().y - 30;
+
 	roomGuildSelectBox = tgui::ScrollablePanel::create({ std::to_string(100 - percentWidth) + "%", chatBox->chatBoxContainer->getFullSize().y+1 });
 	roomGuildSelectBox->setPosition(0, chatBox->chatBoxContainer->getPosition().y-1);
 	roomGuildSelectBox->setVerticalScrollbarPolicy(tgui::Scrollbar::Policy::Always);
 	roomGuildSelectBox->setHorizontalScrollbarPolicy(tgui::Scrollbar::Policy::Never);
 	//this will make the above occupy the left of the screen and have the same height as the chat box
 
+	roomsBtn = tgui::Button::create("Rooms");
+	roomsBtn->setPosition(0, chatBox->chatBoxContainer->getPosition().y - 40);
+	roomsBtn->setSize("25%", 40);
+	roomsBtn->connect("Clicked", &socialTabClass::switchTabs, this, roomsBtn->getText());
+	areaChatBtn = tgui::Button::create("Area Chat");
+	areaChatBtn->setPosition("25%", chatBox->chatBoxContainer->getPosition().y - 40);
+	areaChatBtn->setSize("25%", 40);
+	areaChatBtn->connect("Clicked", &socialTabClass::switchTabs, this, areaChatBtn->getText());
+	guildSelectBtn = tgui::Button::create("Guilds");
+	guildSelectBtn->setPosition("50%", chatBox->chatBoxContainer->getPosition().y - 40);
+	guildSelectBtn->setSize("25%", 40);
+	guildSelectBtn->connect("Clicked", &socialTabClass::switchTabs, this, guildSelectBtn->getText());
+	privateMessagingBtn = tgui::Button::create("Private Messaging");
+	privateMessagingBtn->setPosition("75%", chatBox->chatBoxContainer->getPosition().y - 40);
+	privateMessagingBtn->setSize("25%", 40);
+	privateMessagingBtn->connect("Clicked", &socialTabClass::switchTabs, this, privateMessagingBtn->getText());
+
+	socialTabGroup->add(roomsBtn);
+	socialTabGroup->add(areaChatBtn);
+	socialTabGroup->add(guildSelectBtn);
+	socialTabGroup->add(privateMessagingBtn);
 	socialTabGroup->add(chatBox->chatBoxContainer);
 	socialTabGroup->add(roomGuildSelectBox);
 	this->setActive(false);
@@ -100,4 +124,54 @@ void socialTabClass::changeRoomGuild(std::string buttonText) {
 
 	networkObject->getMessagesFromDB();
 	chatBoxBulkAdd(this->networkObject, chatBox);
+}
+
+void socialTabClass::switchTabs(std::string buttonText) { //this will enable switching tabs and stuff
+	if (buttonText == "Area Chat") {
+		if (activeTab == "Rooms") {
+			//code to disable the area chat stuff
+		}
+		if (activeTab == "Guilds") {
+			//code to disable the guilds stuff
+		}
+		if (activeTab == "Private Messaging") {
+			//code to disable the private messaging stuff
+		}
+		if (activeTab != "Area Chat") {
+			roomGuildSelectBox->setVisible(false);
+			chatBox->chatBoxContainer->setVisible(true);
+			chatBox->chatBoxContainer->setPosition("10%", sf::VideoMode::getDesktopMode().height - chatBox->chatBoxContainer->getFullSize().y - 30);
+			chatBox->chatBoxContainer->setSize("80%", chatBoxContainerHeight);
+
+			changeRoomGuild("LOCALCHAT");
+			
+			networkObject->roomGuild = "LOCALCHAT";
+
+			activeTab = "Area Chat";
+		}
+	}
+	else if (buttonText == "Rooms") {
+		if (activeTab == "Area Chat") {
+			//code to disable the area chat stuff
+		}
+		if (activeTab == "Guilds") {
+			//code to disable the guilds stuff
+		}
+		if (activeTab == "Private Messaging") {
+			//code to disable the private messaging stuff
+		}
+		if (activeTab != "Rooms") {
+			float percentX = (float)(400.0f / (float)sf::VideoMode::getDesktopMode().width) * 100;
+
+			chatBox->chatBoxContainer->setSize(std::to_string(100 - percentX) + "%", chatBoxContainerHeight);
+			chatBox->chatBoxContainer->setPosition(std::to_string(percentX) + "%", chatBoxContainerYCoord);
+
+			roomGuildSelectBox->setVisible(true);
+
+			changeRoomGuild("main.alpha");
+			networkObject->roomGuild = "main.alpha";
+
+			activeTab = "Rooms";
+		}
+	}
 }

@@ -20,7 +20,9 @@ private:
 
 	friend size_t WriteCallback(char *contents, size_t size, size_t nmemb, void *userp); //friend function to get data from curl, this is forward declaring the function as we can't include the header file here, as this file is included in it
 public:
-	std::string roomGuild = "main.alpha"; //public because we need to update this a lot, stores current room/guild
+	std::string roomGuild = "main.alpha"; //public because we need to update this a lot, stores current room/guild (this is the one you start in)
+
+	sf::Vector2f coordinates = { 0, 0 };
 
 	json messages; //messages from DB container
 
