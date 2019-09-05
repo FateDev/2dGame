@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <ctime>
+#include <cmath>
 #include <fstream>
 #include <SFML/Network.hpp>
 #include <curl/curl.h>
@@ -13,6 +14,7 @@ struct user{ //struct to hold user's sockets, usernames, and the time left until
 	bool loggedIn;
 	std::string roomGuild = "main.alpha";
 	std::string tempNewestMsgID = "";
+	sf::Vector2f coordinates = { 0, 0 };
 };
 
 std::vector<user> users; //vector to hold users
@@ -121,6 +123,23 @@ void forwardToAllUsers(std::string msg, int userNum){ //forwards to every user
 	}
 }
 
+void broadcastToLocal(std::string msg, int userNum){ //this broadcasts to users within 100 units of the player (hence the 100 in the if statement below)
+	for(int i = 0; i < users.size(); i++){
+		if(users[i].loggedIn != true){
+			continue;
+		}
+
+		if(users[i].roomGuild == users[userNum].roomGuild){
+			if(abs(sqrt(pow(users[userNum].coordinates.x, 2) + pow(users[userNum].coordinates.x, 2)) - sqrt(pow(users[i].coordinates.x, 2) + pow(users[i].coordinates.x, 2))) < 100){
+				sf::Packet packet; //a packet to hold a string
+				packet << msg.c_str(); //putting the c style string into the packet
+
+				users[i].socket->send(packet); //sending the packet
+			}
+		}
+	}
+}
+
 void process(){
 	std::time_t t; //current time
 	std::tm* now; //object which processes into year, month, day, etc
@@ -160,15 +179,20 @@ void process(){
 							receiveString.erase(receiveString.begin(), receiveString.begin() + (receiveString.find("USER::CHANGEROOMGUILD::") + std::string("USER::CHANGEROOMGUILD::").length()));
 
 							users[i].roomGuild = receiveString;
-							std::cout << receiveString << std::endl;
+
 							continue;
 						}
 
 						if(!extractInformation(receiveString)){ //if username and message could not be extracted...
 							continue; //then continue
 						}
-
-						saveMsgDB(receiveString, i, t);
+						
+						//below is basically saying to set the local message id to 0 if LOCALCHAT, you'd only use it to make sure your messages aren't recorded whatsoever
+						if(users[i].roomGuild != "LOCALCHAT"){
+							saveMsgDB(receiveString, i, t);
+						}else{
+							users[i].tempNewestMsgID = "-1"; //ID is not
+						}
 
 						std::string time = std::to_string(t);
 
@@ -178,9 +202,13 @@ void process(){
 						sendString += "USER::MSG::" + receiveString;
 
 						std::cout << sendString << std::endl;
-
-						forwardToAllUsers(sendString, i); //also sends to all users but the one which just sent this
-
+						
+						if(users[i].roomGuild != "LOCALCHAT"){
+							forwardToAllUsers(sendString, i); //also sends to all users but the one which just sent this
+						}else{
+							broadcastToLocal(sendString, i);
+						}
+						
 						currentTime = ""; //empties this string
 					}
 				}
