@@ -1,15 +1,21 @@
 #include <iostream>
 #include <vector>
 #include <ctime>
+#include <cmath>
 #include <fstream>
 #include <SFML/Network.hpp>
 #include <curl/curl.h>
 
 struct user{ //struct to hold user's sockets, usernames, and the time left until their socket expires
 	sf::TcpSocket* socket;
+	int userID;
 	std::string username;
 	sf::Time timeOfExpiry;
 	bool loggedIn;
+	std::string roomGuild = "main.alpha";
+	std::string tempNewestMsgID = "";
+	sf::Vector2f coordinates = { 0, 0 };
+	std::string accessToken = "";
 };
 
 std::vector<user> users; //vector to hold users
@@ -25,8 +31,13 @@ sf::Clock expiryTimer; //this is the global clock against which long polling is 
 //prototypes
 void server(unsigned short PORT);
 bool processString(std::string msg);
-void extractInformation(std::string &msg);
+bool extractInformation(std::string &msg);
 void process();
+size_t WriteCallback(char *contents, size_t size, size_t nmemb, void *userp);
+void saveMsgDB(std::string msg, int userNum, int time);
+bool checkLeave(std::string &msg);
+void forwardToAllUsers(std::string msg, int userNum);
+bool login(std::string input, user* userPtr);
 
 int main(){
 	curl_global_init(CURL_GLOBAL_ALL); //initialise libcurl functionality globally
@@ -48,6 +59,24 @@ int main(){
 	return 0;
 }
 
+void saveMsgDB(std::string msg, int userNum, int time){
+	CURL* curl = curl_easy_init(); //we can set options for this to make it control how a transfer/transfers will be made
+	std::string readBuffer; //string for the returning data
+	
+	int id = users[userNum].userID;
+	msg = curl_easy_escape(curl, msg.c_str(), msg.length());
+	std::string roomGuild = users[userNum].roomGuild;
+	
+	curl_easy_setopt(curl, CURLOPT_URL, ("https://erewhon.xyz/game/serverMessages.php?save=true&id="+std::to_string(id)+"&msg="+msg+"&roomGuild="+roomGuild+"&time="+std::to_string(time)).c_str());
+	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback); //the callback
+	curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer); //will write data to the string, so the fourth param of the last callback is stored here
+
+	curl_easy_perform(curl);
+
+	users[userNum].tempNewestMsgID = readBuffer;
+}
+
 bool processString(std::string msg){ //for checking if the server has been pinged by a socket
 	if(msg.find("SERVER::PING::3SEC") == 0){
 		return true;
@@ -67,40 +96,48 @@ bool checkLeave(std::string &msg){
 	}
 }
 
-bool extractInformation(std::string &msg, int clientNum){ //extracts username and the message
+bool extractInformation(std::string &msg){ //extracts username and the message
 	std::string usernameToken = "USER::USERNAME::";
 	std::string messageToken = "USER::MESSAGE::";
-	std::string username;
 
 	if(msg.find(usernameToken) != 0 || msg.find(messageToken) == std::string::npos){
 		return false; //if USER::USERNAME:: and USER::MESSAGE:: are not found don't process this
 	}else{
-		username = msg;
-		username.erase(username.begin(), username.begin() + usernameToken.length()); //erase everything from the beginning to the end of USER::USERNAME::
-		username.erase(username.find(messageToken), username.length()); //erase everything from the beginning of USER::MESSAGE:: to the end of the string
-
-		users[clientNum].username = username; //what is left is the username of the client
-
 		msg.erase(msg.begin(), msg.begin() + (msg.find(messageToken) + messageToken.length())); //erase from the beginning of the string to the end of USER::MESSAGE::
 		
 		return true;
 	}
 }
 
-void forwardToAllUsers(std::string msg, int userNum){ //forwards to every user, other than the one specified by userNum
+void forwardToAllUsers(std::string msg, int userNum){ //forwards to every user
 	for(int i = 0; i < users.size(); i++){
-		if(i == userNum){ //userNum can be something like -1 so that the message is sent to every user
-			continue;
-		}
-
 		if(users[i].loggedIn != true){
 			continue;
 		}
 
-		sf::Packet packet; //a packet to hold a string
-		packet << msg.c_str(); //putting the c style string into the packet
+		if(users[i].roomGuild == users[userNum].roomGuild){
+			sf::Packet packet; //a packet to hold a string
+			packet << msg.c_str(); //putting the c style string into the packet
 
-		users[i].socket->send(packet); //sending the packet
+			users[i].socket->send(packet); //sending the packet
+		}
+	}
+}
+
+void broadcastToLocal(std::string msg, int userNum){ //this broadcasts to users within 100 units of the player (hence the 100 in the if statement below)
+	for(int i = 0; i < users.size(); i++){
+		if(users[i].loggedIn != true){
+			continue;
+		}
+
+		if(users[i].roomGuild == users[userNum].roomGuild){
+			if(abs(sqrt(pow(users[userNum].coordinates.x, 2) + pow(users[userNum].coordinates.x, 2)) - sqrt(pow(users[i].coordinates.x, 2) + pow(users[i].coordinates.x, 2))) < 100){
+				sf::Packet packet; //a packet to hold a string
+				packet << msg.c_str(); //putting the c style string into the packet
+
+				users[i].socket->send(packet); //sending the packet
+			}
+		}
 	}
 }
 
@@ -121,6 +158,7 @@ void process(){
 					now = std::localtime(&t); //makes it into an object which we can extract time from
 
 					users[i].socket->receive(receivePacket); //receives packet
+						
 
 					if((receivePacket >> receiveString) && receiveString != ""){ //if the packet data can be extracted, and it is not empty
 						if(processString(receiveString)){ //if this contains the ping flag which is to be received every few seconds, update the socket expiry time
@@ -129,29 +167,63 @@ void process(){
 						}
 
 						if(checkLeave(receiveString)){
+							//have to get the values below before removing the user from the array, so we can send a request to the HTTP server and have their online/offline status updated
+							std::string token = users[i].accessToken;
+							std::string id = std::to_string(users[i].userID);
+
 							sf::Packet packet; //a packet to hold a string
 							packet << std::string("SERVER::DIE").c_str(); //putting the c style string into the packet
 							users[i].socket->send(packet); //sending the packet
-
 							
 							users.erase(users.begin() + i); //removes them from the array if it is
 
 							std::string msgString = "SERVER: A USER HAS LEFT\nSERVER: CLIENTS ONLINE: " + std::to_string(users.size()) + "\n"; //outputs some server info to indicate that the user is gone
 							std::cout << msgString; //outputs this string
+
+							CURL* curl = curl_easy_init(); //we can set options for this to make it control how a transfer/transfers will be made
+							std::string readBuffer = ""; //string for the returning data
+
+							curl_easy_setopt(curl, CURLOPT_URL, std::string("https://erewhon.xyz/game/logout.php?token="+token+"&id="+id).c_str());
+							curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+							curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback); //the callback
+							curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer); //will write data to the string, so the fourth param of the last callback is stored here
+							curl_easy_perform(curl);
 						}
 
-						if(!extractInformation(receiveString, i)){ //if username and message could not be extracted...
+						if(receiveString.find("USER::CHANGEROOMGUILD::") == 0){
+							receiveString.erase(receiveString.begin(), receiveString.begin() + (receiveString.find("USER::CHANGEROOMGUILD::") + std::string("USER::CHANGEROOMGUILD::").length()));
+
+							users[i].roomGuild = receiveString;
+
+							continue;
+						}
+
+						if(!extractInformation(receiveString)){ //if username and message could not be extracted...
 							continue; //then continue
 						}
+						
+						//below is basically saying to set the local message id to 0 if LOCALCHAT, you'd only use it to make sure your messages aren't recorded whatsoever
+						if(users[i].roomGuild != "LOCALCHAT"){
+							saveMsgDB(receiveString, i, t);
+						}else{
+							users[i].tempNewestMsgID = "-1"; //ID is not
+						}
 
+						std::string time = std::to_string(t);
+
+						sendString += "USER::ID::" + users[i].tempNewestMsgID; //USER::ID is actually the message ID
 						sendString += "USER::USERNAME::" + users[i].username;
+						sendString += "USER::TIME::" + time;
 						sendString += "USER::MSG::" + receiveString;
-						sendString += "USER::TIME::" + std::to_string(t);
 
 						std::cout << sendString << std::endl;
-
-						forwardToAllUsers(sendString, i); //also sends to all users but the one which just sent this
-
+						
+						if(users[i].roomGuild != "LOCALCHAT"){
+							forwardToAllUsers(sendString, i); //also sends to all users but the one which just sent this
+						}else{
+							broadcastToLocal(sendString, i);
+						}
+						
 						currentTime = ""; //empties this string
 					}
 				}
@@ -177,35 +249,42 @@ size_t WriteCallback(char *contents, size_t size, size_t nmemb, void *userp) //f
     return size * nmemb;
 }
 
-bool login(std::string input) {
+bool login(std::string input, user* userPtr) {
 	std::string usernameToken = "SERVER::LOGON::USERNAME::";
-	std::string passwordToken = "SERVER::LOGON::PASSWORD::";
+	std::string accessTokenToken = "SERVER::LOGON::TOKEN::";
 	std::string username = input;
-	std::string password = input;
+	std::string accessToken = input;
 
-	if (input.find(usernameToken) == 0 && input.find(passwordToken) != std::string::npos) {
+
+	if (input.find(usernameToken) == 0 && input.find(accessTokenToken) != std::string::npos) {
 		username.erase(username.begin(), (username.begin() + usernameToken.size()));
-		username.erase(username.find(passwordToken), username.size());
+		username.erase(username.find(accessTokenToken), username.size());
 		
-		password.erase(password.begin(), password.begin() + password.find(passwordToken) + passwordToken.size());
-		//the above basically extracts the username and password
-
-		//std::cout << "Username: " << username << " - Password: " << password << std::endl;
+		accessToken.erase(accessToken.begin(), accessToken.begin() + accessToken.find(accessTokenToken) + accessTokenToken.size());
+		//the above basically extracts the username and access token
 		
 		CURL* curl = curl_easy_init(); //we can set options for this to make it control how a transfer/transfers will be made
 		std::string readBuffer; //string for the returning data
 		
+		userPtr->accessToken = accessToken;
+
 		username = curl_easy_escape(curl, username.c_str(), username.length());
-		password = curl_easy_escape(curl, password.c_str(), password.length());
+		accessToken = curl_easy_escape(curl, accessToken.c_str(), accessToken.length());
 		
-		curl_easy_setopt(curl, CURLOPT_URL, ("http://erewhon.xyz/game/serverLogin.php?username="+username+"&password="+password).c_str());
+		curl_easy_setopt(curl, CURLOPT_URL, ("http://erewhon.xyz/game/serverLogin.php?username="+username+"&token="+accessToken).c_str());
 		curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
 		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback); //the callback
 		curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer); //will write data to the string, so the fourth param of the last callback is stored here
 
 		curl_easy_perform(curl);
+		
+		if(readBuffer.find("USER::ID::") != 0 || readBuffer.find("USER::ID::") == std::string::npos){
+			return false; //login failed if no ID found
+		} else {
+			readBuffer.erase(readBuffer.begin(), readBuffer.begin() + std::string("USER::ID::").length());
+			userPtr->userID = std::stoi(readBuffer);
+			userPtr->username = username;
 
-		if(readBuffer == "Verified!"){
 			return true;
 		}
 	}
@@ -240,15 +319,15 @@ void server(unsigned short PORT){ //the function for server initialisation
 
 			sf::Packet sendPacket;
 
-			if(!login(std::string(receiveString))){
-				sendPacket << "SERVER::LOGON::RESPONSE::false";
+			if(!login(std::string(receiveString), userPtr)){
+				sendPacket << "SERVER::LOGON::RESPONSE::falseUSER::ID::-1";
 				socket->send(sendPacket);
 
 				delete userPtr;
 				delete socket;
 				continue;
 			}else{
-				sendPacket << "SERVER::LOGON::RESPONSE::true";
+				sendPacket << std::string("SERVER::LOGON::RESPONSE::trueUSER::ID::" + std::to_string(userPtr->userID)).c_str();
 				socket->send(sendPacket);
 
 				outputString = "SERVER: NEW CONNECTION @ " + socket->getRemoteAddress().toString() + "\n"; //make a string which includes their IP address...
