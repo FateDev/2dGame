@@ -6,7 +6,7 @@
 #include <SFML/Network.hpp>
 #include <curl/curl.h>
 
-struct user{ //struct to hold user's sockets, usernames, and the time left until their socket expires
+struct user{ //struct to hold user's sockets, usernames, and the time left until their socket expires, as well as some other stuff
 	sf::TcpSocket* socket;
 	int userID;
 	std::string username;
