@@ -15,6 +15,7 @@ struct user{ //struct to hold user's sockets, usernames, and the time left until
 	std::string roomGuild = "main.alpha";
 	std::string tempNewestMsgID = "";
 	sf::Vector2f coordinates = { 0, 0 };
+	std::string accessToken = "";
 };
 
 std::vector<user> users; //vector to hold users
@@ -157,6 +158,7 @@ void process(){
 					now = std::localtime(&t); //makes it into an object which we can extract time from
 
 					users[i].socket->receive(receivePacket); //receives packet
+						
 
 					if((receivePacket >> receiveString) && receiveString != ""){ //if the packet data can be extracted, and it is not empty
 						if(processString(receiveString)){ //if this contains the ping flag which is to be received every few seconds, update the socket expiry time
@@ -165,6 +167,10 @@ void process(){
 						}
 
 						if(checkLeave(receiveString)){
+							//have to get the values below before removing the user from the array, so we can send a request to the HTTP server and have their online/offline status updated
+							std::string token = users[i].accessToken;
+							std::string id = std::to_string(users[i].userID);
+
 							sf::Packet packet; //a packet to hold a string
 							packet << std::string("SERVER::DIE").c_str(); //putting the c style string into the packet
 							users[i].socket->send(packet); //sending the packet
@@ -173,6 +179,15 @@ void process(){
 
 							std::string msgString = "SERVER: A USER HAS LEFT\nSERVER: CLIENTS ONLINE: " + std::to_string(users.size()) + "\n"; //outputs some server info to indicate that the user is gone
 							std::cout << msgString; //outputs this string
+
+							CURL* curl = curl_easy_init(); //we can set options for this to make it control how a transfer/transfers will be made
+							std::string readBuffer = ""; //string for the returning data
+
+							curl_easy_setopt(curl, CURLOPT_URL, std::string("https://erewhon.xyz/game/logout.php?token="+token+"&id="+id).c_str());
+							curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+							curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback); //the callback
+							curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer); //will write data to the string, so the fourth param of the last callback is stored here
+							curl_easy_perform(curl);
 						}
 
 						if(receiveString.find("USER::CHANGEROOMGUILD::") == 0){
@@ -236,26 +251,27 @@ size_t WriteCallback(char *contents, size_t size, size_t nmemb, void *userp) //f
 
 bool login(std::string input, user* userPtr) {
 	std::string usernameToken = "SERVER::LOGON::USERNAME::";
-	std::string passwordToken = "SERVER::LOGON::PASSWORD::";
+	std::string accessTokenToken = "SERVER::LOGON::TOKEN::";
 	std::string username = input;
-	std::string password = input;
+	std::string accessToken = input;
 
-	if (input.find(usernameToken) == 0 && input.find(passwordToken) != std::string::npos) {
+
+	if (input.find(usernameToken) == 0 && input.find(accessTokenToken) != std::string::npos) {
 		username.erase(username.begin(), (username.begin() + usernameToken.size()));
-		username.erase(username.find(passwordToken), username.size());
+		username.erase(username.find(accessTokenToken), username.size());
 		
-		password.erase(password.begin(), password.begin() + password.find(passwordToken) + passwordToken.size());
-		//the above basically extracts the username and password
-
-		//std::cout << "Username: " << username << " - Password: " << password << std::endl;
+		accessToken.erase(accessToken.begin(), accessToken.begin() + accessToken.find(accessTokenToken) + accessTokenToken.size());
+		//the above basically extracts the username and access token
 		
 		CURL* curl = curl_easy_init(); //we can set options for this to make it control how a transfer/transfers will be made
 		std::string readBuffer; //string for the returning data
 		
+		userPtr->accessToken = accessToken;
+
 		username = curl_easy_escape(curl, username.c_str(), username.length());
-		password = curl_easy_escape(curl, password.c_str(), password.length());
+		accessToken = curl_easy_escape(curl, accessToken.c_str(), accessToken.length());
 		
-		curl_easy_setopt(curl, CURLOPT_URL, ("http://erewhon.xyz/game/serverLogin.php?username="+username+"&password="+password).c_str());
+		curl_easy_setopt(curl, CURLOPT_URL, ("http://erewhon.xyz/game/serverLogin.php?username="+username+"&token="+accessToken).c_str());
 		curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
 		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback); //the callback
 		curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer); //will write data to the string, so the fourth param of the last callback is stored here
@@ -304,14 +320,14 @@ void server(unsigned short PORT){ //the function for server initialisation
 			sf::Packet sendPacket;
 
 			if(!login(std::string(receiveString), userPtr)){
-				sendPacket << "SERVER::LOGON::RESPONSE::false";
+				sendPacket << "SERVER::LOGON::RESPONSE::falseUSER::ID::-1";
 				socket->send(sendPacket);
 
 				delete userPtr;
 				delete socket;
 				continue;
 			}else{
-				sendPacket << "SERVER::LOGON::RESPONSE::true";
+				sendPacket << std::string("SERVER::LOGON::RESPONSE::trueUSER::ID::" + std::to_string(userPtr->userID)).c_str();
 				socket->send(sendPacket);
 
 				outputString = "SERVER: NEW CONNECTION @ " + socket->getRemoteAddress().toString() + "\n"; //make a string which includes their IP address...
