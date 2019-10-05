@@ -42,14 +42,18 @@ if($statement->rowCount() != 0){
     }
 
 	if(password_verify($password, $realPassword)){
-        $token = generateRandomString();
+		if(isset($_GET['online'])){
+			echo "true";
+		}else{
+	            $token = generateRandomString();
 
-	    $statement = $pdo->prepare("UPDATE usersVerified SET sessionToken=:token, loggedIn=1 WHERE UserID=:id");
-	    $statement->bindParam(':id', $id, PDO::PARAM_STR);
-        $statement->bindParam(':token', $token, PDO::PARAM_STR);
-	    $statement->execute();
+	    	    $statement = $pdo->prepare("UPDATE usersVerified SET sessionToken=:token, loggedIn=1 WHERE UserID=:id");
+		    $statement->bindParam(':id', $id, PDO::PARAM_STR);
+		    $statement->bindParam(':token', $token, PDO::PARAM_STR);
+		    $statement->execute();
 
-		echo $token;
+			echo $token;
+		}
 	}else{
 	    echo "false4";
     	exit();
