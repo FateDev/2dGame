@@ -8,6 +8,13 @@
 #include <SFML/Graphics.hpp>
 #include "headerFuncs.h"
 
+#ifdef _DEBUG
+#	pragma comment(lib, "tgui-d.lib")
+#else
+#	pragma comment(lib, "tgui.lib")
+#	pragma comment(lib, "libcurl_a.lib")
+#endif
+
 int main() {
 	curl_global_init(CURL_GLOBAL_ALL); //initialise libcurl functionality globally, as it'll be used now that login was successful
 

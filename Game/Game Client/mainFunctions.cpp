@@ -58,7 +58,20 @@ void gameBit(sf::Clock* globalClock, networking* networkObject){
 
 	tgui::Gui gui(*gameWindow); //the main gui for the entire game bit
 
-	sf::Time loadingScreenRemove = sf::milliseconds(globalClock->getElapsedTime().asMilliseconds() + 1000); //so it sets the duration of the loading screen as 1 second
+
+	/********************************/
+	/********************************/
+	/********************************/
+
+	sf::Time loadingScreenRemove = sf::milliseconds(globalClock->getElapsedTime().asMilliseconds() + 1); //so it sets the duration of the loading screen as 1 second
+	//the below																									 
+	///temp set the above to 1ms
+	//the above
+	/********************************/
+	/********************************/
+	/********************************/
+
+
 
 	//below makes the loading screen, main screen, and tool bar (buttons in the top left) objects
 	loadingScreen *loadingBit = new loadingScreen(gameWindow, globalClock);  

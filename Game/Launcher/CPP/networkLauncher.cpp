@@ -115,6 +115,14 @@ void networking::compareTokenList(std::vector<std::pair<std::string, std::string
 	}
 }
 
+void networking::parseDeleteTokens(std::vector<std::pair<std::string, std::string>> &deleteTokens) { //this simply checks if the file which has been flagged for deletion exists, and deletes it
+	for (int i = 0; i < deleteTokens.size(); i++) {
+		if (doesFileExist(deleteTokens[i].first)) {
+			DeleteFile(deleteTokens[i].first.c_str());
+		}
+	}
+}
+
 void networking::parseReturnTokens(std::vector<std::pair<std::string, std::string>> &returnTokens) { 
 	//if the returnTokens vector is greater than zero, then all the files in it are downloaded from the server
 	if (returnTokens.size() > 0) {
@@ -165,6 +173,7 @@ bool networking::updateFiles() { //updates files
 		compareTokenList(localTokens, serverTokens, returnTokens, deleteTokens);
 
 		parseReturnTokens(returnTokens);
+		parseDeleteTokens(deleteTokens);
 	}
 	else {
 		GETftpFile("Game\\checksumFile.a", "https://erewhon.xyz/game/latestFiles/checksumFile.a"); //if the checksum file doesn't exist, download it

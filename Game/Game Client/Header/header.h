@@ -12,9 +12,6 @@ This file will contain the main functions for the main stages of the game, the c
 void helpFunction(); 
 //this will open the help function, it's for tgui buttons, it is used as a friend function by both the launcher and mainScreen classes of them (check in the gui.h file for more)
 
-bool launcherBit(networking* networkObject, sf::Thread* pingThread, sf::Thread* receiveThread, sf::Clock* globalClock);
-//will show the launcher and everything
-
 void gameBit(sf::Clock* globalClock, networking* networkObject); 
 //this is the main game bit
 

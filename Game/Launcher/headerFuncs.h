@@ -24,6 +24,7 @@ private:
 	void getChecksumTokens(std::vector<std::pair<std::string, std::string>> &tokens, bool local, std::string location);
 	void compareTokenList(std::vector<std::pair<std::string, std::string>> &localTokens, std::vector<std::pair<std::string, std::string>> &serverTokens, std::vector<std::pair<std::string, std::string>> &returnTokens, std::vector<std::pair<std::string, std::string>> &deleteTokens);
 	void parseReturnTokens(std::vector<std::pair<std::string, std::string>> &returnTokens);
+	void parseDeleteTokens(std::vector<std::pair<std::string, std::string>> &parseDeleteTokens);
 public:
 	std::string loggedinToken;
 

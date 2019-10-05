@@ -1,7 +1,10 @@
 #include <gui.h>
 #include <header.h>
+#include "key.h"
 
 socialTabClass::socialTabClass(tgui::Gui &gui, networking* networkObject) : window(window), networkObject(networkObject) {
+	mainTheme = tgui::Theme("socialTab.txt");
+
 	float percentWidth = (float(sf::VideoMode::getDesktopMode().width - 400) / sf::VideoMode::getDesktopMode().width) * 100;
 	float percentX = (float)(400.0f / (float)sf::VideoMode::getDesktopMode().width) * 100;
 
@@ -12,11 +15,18 @@ socialTabClass::socialTabClass(tgui::Gui &gui, networking* networkObject) : wind
 	chatBoxContainerHeight = sf::VideoMode::getDesktopMode().height * 0.7 + 50;
 	chatBoxContainerYCoord = sf::VideoMode::getDesktopMode().height - chatBox->chatBoxContainer->getFullSize().y - 30;
 
-	roomGuildSelectBox = tgui::ScrollablePanel::create({ std::to_string(100 - percentWidth) + "%", chatBox->chatBoxContainer->getFullSize().y+1 });
-	roomGuildSelectBox->setPosition(0, chatBox->chatBoxContainer->getPosition().y-1);
+	roomGuildSelectBox = tgui::ScrollablePanel::create({ std::to_string(100 - percentWidth) + "%", chatBox->chatBoxContainer->getFullSize().y + 1 });
+	roomGuildSelectBox->setPosition(0, chatBox->chatBoxContainer->getPosition().y - 1);
 	roomGuildSelectBox->setVerticalScrollbarPolicy(tgui::Scrollbar::Policy::Always);
 	roomGuildSelectBox->setHorizontalScrollbarPolicy(tgui::Scrollbar::Policy::Never);
 	//this will make the above occupy the left of the screen and have the same height as the chat box
+
+	//below sets the stuff for the guild select box
+	guildSelectBox = tgui::ScrollablePanel::create({ "80%", "80%" });
+	guildSelectBox->setPosition("10%", chatBox->chatBoxContainer->getPosition().y);
+	guildSelectBox->setVerticalScrollbarPolicy(tgui::Scrollbar::Policy::Always);
+	guildSelectBox->setHorizontalScrollbarPolicy(tgui::Scrollbar::Policy::Never);
+	guildSelectBox->setVisible(false);
 
 	roomsBtn = tgui::Button::create("Rooms");
 	roomsBtn->setPosition(0, chatBox->chatBoxContainer->getPosition().y - 40);
@@ -34,6 +44,7 @@ socialTabClass::socialTabClass(tgui::Gui &gui, networking* networkObject) : wind
 	privateMessagingBtn->setPosition("75%", chatBox->chatBoxContainer->getPosition().y - 40);
 	privateMessagingBtn->setSize("25%", 40);
 	privateMessagingBtn->connect("Clicked", &socialTabClass::switchTabs, this, privateMessagingBtn->getText());
+	privateMessagingBtn->setEnabled(false); //temporarily disables it as this is a pretty complex feature so it'll be shipped later on
 
 	socialTabGroup->add(roomsBtn);
 	socialTabGroup->add(areaChatBtn);
@@ -41,6 +52,7 @@ socialTabClass::socialTabClass(tgui::Gui &gui, networking* networkObject) : wind
 	socialTabGroup->add(privateMessagingBtn);
 	socialTabGroup->add(chatBox->chatBoxContainer);
 	socialTabGroup->add(roomGuildSelectBox);
+	socialTabGroup->add(guildSelectBox);
 	this->setActive(false);
 
 	gui.add(socialTabGroup);
@@ -78,21 +90,35 @@ void socialTabClass::setActive(bool active) { //by setting the visibility throug
 	}
 }
 
-void socialTabClass::addButtonToPanel(tgui::ScrollablePanel::Ptr panel, std::string text, float percentWidth) {
+void socialTabClass::addButtonToPanel(tgui::ScrollablePanel::Ptr panel, std::string text, float percentWidth, float &maxHeightVar, std::string joined, bool roomGuild) {
 	auto button = tgui::Button::create(text);
 	button->setSize({ "100%", button->getFullSize().y + 30 });
 
 	//sets it's y position to be at the maximum current y position, so at the bottom of the chat box scrollable panel
-	button->setPosition(0, currentMaxHeightRoomGuildSelect);
+	button->setPosition(0, maxHeightVar);
 
-	currentMaxHeightRoomGuildSelect += button->getFullSize().y; //updates the maximum y pos for the next message (assuming there is one)
+	button->setUserData(joined);
 
-	button->connect("Clicked", &socialTabClass::changeRoomGuild, this, button->getText());
+	if (!roomGuild) {
+		if (joined == "true") {
+			button->setRenderer(mainTheme.getRenderer("button.joined"));
+		}
+		else {
+			button->setRenderer(mainTheme.getRenderer("button.notjoined"));
+		}
+		button->connect("Clicked", &socialTabClass::changeGuild, this, button);
+	} else {
+		button->connect("Clicked", &socialTabClass::changeRoomGuild, this, button->getText());
+	}
 
+	maxHeightVar += button->getFullSize().y; //updates the maximum y pos for the next message (assuming there is one)
 	panel->add(button);
 }
 
 void socialTabClass::populateRoomGuildSelectBox() {
+	roomGuildSelectBox->removeAllWidgets(); //removes all widgets from the roomGuildSelectBox
+	currentMaxHeightRoomGuildSelect = 0;
+
 	CURL* curl = curl_easy_init(); //we can set options for this to make it control how a transfer/transfers will be made
 	std::string readBuffer; //string for the returning data
 
@@ -109,24 +135,81 @@ void socialTabClass::populateRoomGuildSelectBox() {
 	float percentWidthRoomGuildSelectBox = (roomGuildSelectBox->getFullSize().y / sf::VideoMode::getDesktopMode().width) * 100;
 
 	for (int i = 0; i < roomGuildList.size(); i++) {
-		addButtonToPanel(roomGuildSelectBox, roomGuildList[i]["name"].get<std::string>(), percentWidthRoomGuildSelectBox);
+		addButtonToPanel(roomGuildSelectBox, roomGuildList[i]["name"].get<std::string>(), percentWidthRoomGuildSelectBox, currentMaxHeightRoomGuildSelect, "", true);
 	}
 }
 
+void socialTabClass::changeGuild(tgui::Button::Ptr button) {
+	std::string joined = button->getUserData<std::string>();
+	bool joinedBool = false;
+
+	if (joined == "true" && button->getText() != "main") {
+		button->setUserData(std::string("false"));
+		button->setRenderer(mainTheme.getRenderer("button.notjoined"));
+	}
+	else if (joined == "false") {
+		button->setUserData(std::string("true"));
+		button->setRenderer(mainTheme.getRenderer("button.joined"));
+		joinedBool = true;
+	}
+	
+	CURL* curl = curl_easy_init(); //we can set options for this to make it control how a transfer/transfers will be made
+
+	std::string urlKey = curl_easy_escape(curl, key.c_str(), key.length());
+
+	curl_easy_setopt(curl, CURLOPT_URL, std::string("http://erewhon.xyz/game/joinLeaveGuild.php?guilds&userID=" + std::to_string(networkObject->userID) + "&key=" + urlKey + "&guildName=" + button->getText() + "&joined=" + std::to_string(joinedBool)).c_str());
+	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+
+	curl_easy_perform(curl);
+	delete curl;
+
+	populateRoomGuildSelectBox();
+}
+
 void socialTabClass::changeRoomGuild(std::string buttonText) {
-	chatBox->flushMessages();
+	if (activeTab == "Rooms" || activeTab == "Area Chat") {
+		chatBox->flushMessages();
 
-	networkObject->roomGuild = buttonText; //the button text is the room guild name in this case, which we can use to request whatever data we need
+		networkObject->roomGuild = buttonText; //the button text is the room guild name in this case, which we can use to request whatever data we need
 
-	sf::Packet sendPacket; //the packet which will contain the data to send
-	sendPacket << std::string("USER::CHANGEROOMGUILD::" + buttonText).c_str(); //converts the string into a C style array, and puts it into the packet which will be sent
-	networkObject->socket->send(sendPacket);
+		sf::Packet sendPacket; //the packet which will contain the data to send
+		sendPacket << std::string("USER::CHANGEROOMGUILD::" + buttonText).c_str(); //converts the string into a C style array, and puts it into the packet which will be sent
+		networkObject->socket->send(sendPacket);
 
-	networkObject->getMessagesFromDB();
-	chatBoxBulkAdd(this->networkObject, chatBox);
+		networkObject->getMessagesFromDB();
+		chatBoxBulkAdd(this->networkObject, chatBox);
+	}
+}
+
+void socialTabClass::populateGuildSelectBox() {
+	guildSelectBox->removeAllWidgets();
+	currentMaxHeightGuildSelect = 0;
+
+	CURL* curl = curl_easy_init(); //we can set options for this to make it control how a transfer/transfers will be made
+	std::string readBuffer; //string for the returning data
+
+	curl_easy_setopt(curl, CURLOPT_URL, std::string("http://erewhon.xyz/game/roomGuild.php?guilds&id=" + std::to_string(networkObject->userID)).c_str());
+	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback); //the callback
+	curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer); //will write data to the string, so the fourth param of the last callback is stored here
+
+	curl_easy_perform(curl);
+	delete curl;
+
+	guildList = json::parse(readBuffer);
+
+	float percentWidthGuildSelectBox = (guildSelectBox->getFullSize().y / sf::VideoMode::getDesktopMode().width) * 100;
+
+	for (int i = 0; i < guildList.size(); i++) {
+		addButtonToPanel(guildSelectBox, guildList[i]["name"].get<std::string>(), percentWidthGuildSelectBox, currentMaxHeightGuildSelect, guildList[i]["joined"].get<std::string>(), false);
+	}
 }
 
 void socialTabClass::switchTabs(std::string buttonText) { //this will enable switching tabs and stuff
+	roomGuildSelectBox->setVisible(false); //makes the select box invisible
+	guildSelectBox->setVisible(false); //makes the guild select box invisible
+	chatBox->chatBoxContainer->setVisible(false); //makes the chat box invisible
+
 	if (buttonText == "Area Chat") {
 		if (activeTab == "Rooms") {
 			//code to disable the area chat stuff
@@ -137,20 +220,16 @@ void socialTabClass::switchTabs(std::string buttonText) { //this will enable swi
 		if (activeTab == "Private Messaging") {
 			//code to disable the private messaging stuff
 		}
-		if (activeTab != "Area Chat") { //this sets the UI to look like how it should for this specific tab
-			roomGuildSelectBox->setVisible(false);
-			roomGuildSelectBox->removeAllWidgets();
-			currentMaxHeightRoomGuildSelect = 0;
-			chatBox->chatBoxContainer->setVisible(true);
-			chatBox->chatBoxContainer->setPosition("10%", sf::VideoMode::getDesktopMode().height - chatBox->chatBoxContainer->getFullSize().y - 30);
-			chatBox->chatBoxContainer->setSize("80%", chatBoxContainerHeight);
-
-			changeRoomGuild("LOCALCHAT");
-			
-			networkObject->roomGuild = "LOCALCHAT";
-
-			activeTab = "Area Chat";
+		if (activeTab != "Area Chat") { //this sets the UI to look like how it should for this specific tab, but only once
+			chatBox->chatBoxContainer->setPosition("10%", sf::VideoMode::getDesktopMode().height - chatBox->chatBoxContainer->getFullSize().y - 30);  //sets correct positioning as it's also used for the Rooms tab
+			chatBox->chatBoxContainer->setSize("80%", chatBoxContainerHeight); //sets correct sizing as it's also used for the Rooms tab
+			activeTab = "Area Chat"; //sets active tab
+			changeRoomGuild("LOCALCHAT"); //sets chat to LOCALCHAT
+			networkObject->roomGuild = "LOCALCHAT"; //sets chat to LOCALCHAT
 		}
+
+		//stuff below is done on every click on this button, just to make sure, maybe will work through them later to decrease overhead or whatever
+		chatBox->chatBoxContainer->setVisible(true); //makes the chat box visible
 	}
 	else if (buttonText == "Rooms") {
 		if (activeTab == "Area Chat") {
@@ -163,18 +242,34 @@ void socialTabClass::switchTabs(std::string buttonText) { //this will enable swi
 			//code to disable the private messaging stuff
 		}
 		if (activeTab != "Rooms") { //the below basically just sets the chatBoxContainer and roomGuildBox container things to contain the stuff they need to, and to be the right sizes
-			float percentX = (float)(400.0f / (float)sf::VideoMode::getDesktopMode().width) * 100;
-
-			chatBox->chatBoxContainer->setSize(std::to_string(100 - percentX) + "%", chatBoxContainerHeight);
-			chatBox->chatBoxContainer->setPosition(std::to_string(percentX) + "%", chatBoxContainerYCoord);
-
-			roomGuildSelectBox->setVisible(true);
-			populateRoomGuildSelectBox();
-
-			changeRoomGuild("main.alpha");
-			networkObject->roomGuild = "main.alpha";
-
-			activeTab = "Rooms";
+			float percentX = (float)(400.0f / (float)sf::VideoMode::getDesktopMode().width) * 100; //gets the X percentage covering the screen
+			chatBox->chatBoxContainer->setSize(std::to_string(100 - percentX) + "%", chatBoxContainerHeight); //sets the correct sizing of the chat box, as we change it for the local chat
+			chatBox->chatBoxContainer->setPosition(std::to_string(percentX) + "%", chatBoxContainerYCoord); //sets the correct positioning of the chat box, as we change it for the local chat
+			activeTab = "Rooms"; //sets the active tab
+			populateRoomGuildSelectBox(); //populates the room guild selection box
 		}
+
+		//stuff below is done on every click on this button, just to make sure, maybe will work through them later to decrease overhead or whatever
+		roomGuildSelectBox->setVisible(true); //makes the select box visible
+		chatBox->chatBoxContainer->setVisible(true); //makes the chat box visible
+		changeRoomGuild("main.alpha"); //changes the current chat room guild
+		networkObject->roomGuild = "main.alpha"; //sets the current chat room guild variable
+	}
+	else if (buttonText == "Guilds") {
+		if (activeTab == "Area Chat") {
+			//code to disable the area chat stuff
+		}
+		if (activeTab == "Rooms") {
+			//code to disable the guilds stuff
+		}
+		if (activeTab == "Private Messaging") {
+			//code to disable the private messaging stuff
+		}
+		if (activeTab != "Guilds") { //the below basically just sets the chatBoxContainer and roomGuildBox container things to contain the stuff they need to, and to be the right sizes
+			populateGuildSelectBox();
+		}
+
+		//stuff below is done on every click on this button, just to make sure, maybe will work through them later to decrease overhead or whatever
+		guildSelectBox->setVisible(true);
 	}
 }

@@ -77,19 +77,25 @@ private:
 	tgui::Group::Ptr socialTabGroup = tgui::Group::create({ sf::VideoMode::getDesktopMode().width , sf::VideoMode::getDesktopMode().height });
 	//the above would be an invisible container from tgui which holds everything that gets drawn for this screen
 
+	tgui::Theme mainTheme; //main theme for the social tab
+
 	sf::RenderWindow *window = NULL; //would hold the window object
 	networking* networkObject = NULL; //this will hold the network object for use in the chat
 	chat* chatBox = NULL; //this will hold the chat box
 	friend void chatBoxBulkAdd(networking* networkObject, chat* chatBox); //this will parse messages in the network object's buffer and add them
 
 	tgui::ScrollablePanel::Ptr roomGuildSelectBox; //this will be the box on the left of the screen which will contain buttons for selecting room/guild
-	
-	float currentMaxHeightRoomGuildSelect = 0; //the max height of the room guild select box
+	tgui::ScrollablePanel::Ptr guildSelectBox; //will contain selection of guilds to join/leave
 
-	void addButtonToPanel(tgui::ScrollablePanel::Ptr panel, std::string text, float percentWidth);
+	float currentMaxHeightRoomGuildSelect = 0; //the max height of the room guild select box
+	float currentMaxHeightGuildSelect = 0; //the max height of the guild select box
+
+	void addButtonToPanel(tgui::ScrollablePanel::Ptr panel, std::string text, float percentWidth, float &maxHeightVar, std::string joined, bool roomGuild);
 	void populateRoomGuildSelectBox(); //will fill up the room guild select box
+	void populateGuildSelectBox(); //will fill up the room guild select box
 
 	void changeRoomGuild(std::string buttonText); //function which changes the room/guild in the rooms bit
+	void changeGuild(tgui::Button::Ptr button);
 
 	//the buttons for the various tabs
 	tgui::Button::Ptr roomsBtn;
@@ -101,8 +107,9 @@ private:
 	float chatBoxContainerYCoord = 0;
 
 	json roomGuildList; //this will contain the room guild stuff so a user can select and switch and stuff
+	json guildList; //this will contain a list of guilds for the guild select tab
 
-	std::string activeTab = "rooms";
+	std::string activeTab = "Rooms";
 
 	void switchTabs(std::string buttonText);
 

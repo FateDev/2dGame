@@ -8,8 +8,8 @@
 #include <iostream>
 #include <gui.h>
 #include <SFML/Network.hpp>
-#include "../xorFunction.h"
 #include <header.h>
+#include "../xorFunction.h"
 
 void networking::getMessagesFromDB() {
 	//the code below gets a json object from my website of the last 50 messages and parses them into a c++ json object from the json library

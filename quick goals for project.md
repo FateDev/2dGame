@@ -19,13 +19,21 @@
 
     - using these we can easily use the checker method on some thread to delete all the old messages
 
-
-
-- fix the button scaling, so like 0.7 for everything
 - get rid of loading animation, too slow, just have "Loading..." instead
 - make the buttons redirect to empty pages wherever necessary (like in the designs), and make the tabs in those too
-- connect to database
-- make it load 50 messages at first
+- find out why accessToken is sending
+   the wrong items
+- then find out if there are any other
+   problems
+- and then remove print_r stuff from logout.php
+- and remove cout and stuff from lines 190, 191, 282 and 283 of server.cpp
+- restart the computer to get rid of random issues
+- restart the laptop for the same reason
+- get the ftp file transfer working
+- get the code to download all the files when none are present working, then the below
+- once that's done get the directory making system working
+- then make the system to actually remove unused files working too
+- then youre done with the auto updater
 
 # Achieved Goals
 
@@ -40,6 +48,12 @@
 - added social tab panel
 - newest build of TGUI was needed for right click behaviour, and i forgot to put the DLLs in the x64 folder too, which is necessary
 - you can left click on the listed room/guild things and you will be switched to that one accordingly, and the chat box on the main screen will switch to the currently selected one too
+- auto updater
+- automatically looks at old checksum, compares with remote checksum to download new files
+- removes files which are supposedly outdated/don't exist in the remote checksum, and checks they exist before doing so to prevent errors
+- connect to database
+- make it load 50 messages at first
+- fix the button scaling, so like 0.7 for everything
 
 # Abandoned Goals
 
