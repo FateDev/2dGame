@@ -9,23 +9,25 @@
 
 namespace ecs{
     namespace component{
-        struct user{ //struct to hold user's sockets, usernames, and the time left until their socket expires
-            int userID;
-            bool loggedIn;
-            std::string username;
-            std::string roomGuild = "main.alpha";
-            std::string tempNewestMsgID = "";
-            std::string accessToken = "";
-            sf::TcpSocket* socket;
-            sf::Time timeOfExpiry;
+        //the structs below are the components so far
+        struct user{ 
+            int userID; //the user ID from the database
+            bool loggedIn; //whether or not they're logged in
+            std::string username; //the username
+            std::string roomGuild = "main.alpha"; //the current roomGuild for the social tab
+            std::string tempNewestMsgID = ""; //the ID of the newest message
+            std::string accessToken = ""; //for making sure there is only one client session active at a time
+            sf::TcpSocket* socket; //the actual socket connection
+            sf::Time timeOfExpiry; //the time till the socket should be removed, this is updated every time the client pings the server
         };
 
         struct location{
-            sf::Vector2f coordinates = { 0, 0 };
+            sf::Vector2f coordinates = { 0, 0 }; //the in game location of the player
         };
 
         enum components {USER, LOCATION}; //enum for all of the components
 
+        //it's using a template because it could be used for any of the components above
         template <class T>
         class ecsComponentStructure{
             private:
@@ -37,21 +39,23 @@ namespace ecs{
                 unsigned int vectorToEntityMap(unsigned int componentIndex);
                 std::vector<T> compVec; //will contain components of some type (component vector)
         };
-
-        extern ecsComponentStructure<user> users;
-        extern ecsComponentStructure<location> locationStructs;
+        
+        //each new component added to the game should be made exactly as they have been below, and obviously should have the components enum updated, and the explicit instantiation
+        //stuff at the bottom of components.h should be updated, and the code for removing entities should be updated, and the code for adding new ones should also be updated
+        extern ecsComponentStructure<user> users; //this basically tells the compiler that the variable declared is defined somewhere else in the program (main.cpp in this case)
+        extern ecsComponentStructure<location> locationStructs; //this basically tells the compiler that the variable declared is defined somewhere else in the program (main.cpp in this case)
     }
     
     namespace entity{
         struct entity{
             unsigned int id; //basic struct to say that this is actually an entity
 
-            bool operator==(const entity& t) const { 
+            bool operator==(const entity& t) const { //this is needed to put entities in the unordered_set structure, this basically allows for direct comparison of different entity structs
                 return (this->id == t.id); 
             }
         };
 
-        struct Hash {
+        struct Hash { //this is also needed to put the entity struct into an unordered_set, this makes the hashing function literally just be the entity ID, which isn't a problem as each entity has a unique ID
             size_t operator() (const ecs::entity::entity &entity) const {
                 return entity.id;
             }
@@ -67,7 +71,7 @@ namespace ecs{
                 void destroy(unsigned int entityID); //will destroy an entity, removing it from the above set, and removing all of its entries from the components struct
         };
         
-        extern entityManager superEntityManager;
+        extern entityManager superEntityManager; //this basically tells the compiler that the variable declared is defined somewhere else in the program (main.cpp in this case)
     }
 
     namespace system{

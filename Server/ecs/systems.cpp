@@ -30,9 +30,9 @@ void systemsManager::systemEnd(){
 	}
 }
 
-float distanceMagnitude(unsigned int index_1, unsigned int index_2){
-    unsigned int entityID_1 = ecs::component::users.vectorToEntityMap(index_1);
-    unsigned int entityID_2 = ecs::component::users.vectorToEntityMap(index_2);
+float distanceMagnitude(unsigned int index_1, unsigned int index_2){ //this simple function takes in the component vector indexes of two users, retrieves their in game positions and returns the distance between them
+    unsigned int entityID_1 = users.vectorToEntityMap(index_1);
+    unsigned int entityID_2 = users.vectorToEntityMap(index_2);
 
     sf::Vector2f location1 = locationStructs.compVec[entityID_1].coordinates;
     sf::Vector2f location2 = locationStructs.compVec[entityID_2].coordinates;
@@ -43,12 +43,12 @@ float distanceMagnitude(unsigned int index_1, unsigned int index_2){
     return sqrt(pow(xDist, 2) + pow(yDist, 2)); //this is the magnitude of the x and y distances combined (the hypotenuse)
 }
 
-void network::removeUser(unsigned int i){
+void network::removeUser(unsigned int i){ //function to basically properly log out a user
     //have to get the values below before removing the user from the array, so we can send a request to the HTTP server and have their online/offline status updated
     std::string token = users.compVec[i].accessToken;
     std::string id = std::to_string(users.compVec[i].userID);
 
-    selector.remove(*users.compVec[i].socket);
+    selector.remove(*users.compVec[i].socket); //removes this socket from the selector
     
     unsigned int entityID = users.vectorToEntityMap(i);
     ecs::entity::superEntityManager.destroy(entityID); //removes them from the array if it is
@@ -282,8 +282,8 @@ void network::server(unsigned short PORT){ //the function for server initialisat
 
 				outputString = "SERVER: NEW CONNECTION @ " + socket->getRemoteAddress().toString() + "\n"; //make a string which includes their IP address...
 
-                unsigned int entityID = ecs::entity::superEntityManager.create({components::USER, components::LOCATION});
-                unsigned int componentVectorIndex = users.entityToVectorMap(entityID);
+                unsigned int entityID = ecs::entity::superEntityManager.create({components::USER, components::LOCATION}); //a new object with those attributes is made
+                unsigned int componentVectorIndex = users.entityToVectorMap(entityID); //gets the component vector index of this entity
 
 				userPtr->socket = socket; //make the new user object contain their socket
 				userPtr->timeOfExpiry = sf::seconds(expiryTimer.getElapsedTime().asSeconds() + 5); //set the expiry time for their socket
