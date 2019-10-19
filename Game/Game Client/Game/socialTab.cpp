@@ -139,29 +139,36 @@ void socialTabClass::populateRoomGuildSelectBox() {
 	}
 }
 
-void socialTabClass::changeGuild(tgui::Button::Ptr button) {
+void socialTabClass::changeGuild(tgui::Button::Ptr button) { //this will change the colour of the buttons, and send a signal to the server, to indicate that you've joined/left the guild
 	std::string joined = button->getUserData<std::string>();
 	bool joinedBool = false;
+	bool changedJoined = false; //this is to check if the changed thing actually occurred, as we disable this for the main guild
 
 	if (joined == "true" && button->getText() != "main") {
 		button->setUserData(std::string("false"));
 		button->setRenderer(mainTheme.getRenderer("button.notjoined"));
+		changedJoined = true;
 	}
 	else if (joined == "false") {
 		button->setUserData(std::string("true"));
 		button->setRenderer(mainTheme.getRenderer("button.joined"));
 		joinedBool = true;
+		changedJoined = true;
 	}
 	
-	CURL* curl = curl_easy_init(); //we can set options for this to make it control how a transfer/transfers will be made
+	if (changedJoined) {
+		CURL* curl = curl_easy_init(); //we can set options for this to make it control how a transfer/transfers will be made
 
-	std::string urlKey = curl_easy_escape(curl, key.c_str(), key.length());
+		//basically a simple key which is unknown to the user is passed to the server to leave/join channels so only the client programs can communicate with the server
+		std::string urlKey = curl_easy_escape(curl, key.c_str(), key.length());
 
-	curl_easy_setopt(curl, CURLOPT_URL, std::string("http://erewhon.xyz/game/joinLeaveGuild.php?guilds&userID=" + std::to_string(networkObject->userID) + "&key=" + urlKey + "&guildName=" + button->getText() + "&joined=" + std::to_string(joinedBool)).c_str());
-	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+		//then this request basically says to change to whatever
+		curl_easy_setopt(curl, CURLOPT_URL, std::string("https://erewhon.xyz/game/joinLeaveGuild.php?guilds&userID=" + std::to_string(networkObject->userID) + "&key=" + urlKey + "&guildName=" + button->getText() + "&joined=" + std::to_string(joinedBool)).c_str());
+		curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
 
-	curl_easy_perform(curl);
-	delete curl;
+		curl_easy_perform(curl);
+		delete curl;
+	}
 
 	populateRoomGuildSelectBox();
 }
