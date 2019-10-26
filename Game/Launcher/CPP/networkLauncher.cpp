@@ -13,7 +13,6 @@ bool networking::login(std::string username, std::string password) {
 	GETresponse(readBuffer, std::string("https://erewhon.xyz/game/loginToken.php?username=" + username + "&password=" + password));
 
 	if (readBuffer.find("false") != 0 && readBuffer.size() != 0) { //if the flag is at the beginning of the string
-		loggedinToken = readBuffer;
 		loggedIn = true;
 		confirmedUsername = username;
 

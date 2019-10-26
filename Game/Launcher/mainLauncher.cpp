@@ -56,7 +56,6 @@ int main() {
 
 		//the below are passed as arguments for the game program to use
 		arguments += "Hg+Lb9B6Q/zrMduYEvPmuQ==";
-		arguments += " " + networkObject->loggedinToken;
 		arguments += " " + networkObject->confirmedUsername;
 
 		ShellExecute(0, 0, "Game\\Game.exe", arguments.c_str(), NULL, SW_SHOW);

@@ -36,10 +36,11 @@ public:
 	//we make the above public so that we can see in the GUI bit whether or not there is a connection
 
 	sf::TcpSocket *socket = new sf::TcpSocket; //makes a new socket
+
 	std::string ip; //the IP address to connect to
 	unsigned short port; //the port to connect to
 
-	bool login(std::string username, std::string accessToken);
+	bool login(std::string username);
 	//this will loop repeatedly until either the user crosses it off or gets the correct login details
 
 	void sendMessage(std::string msg);

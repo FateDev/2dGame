@@ -103,8 +103,7 @@ void gameBit(sf::Clock* globalClock, networking* networkObject){
 			loadingBit = NULL;
 			mainGameScreen.setActive(true);
 			mainToolbar.toolbarGroup->setVisible(true); //sets the toolbar as visible too
-		}
-		else if (loadingBit != NULL) {
+		} else if (loadingBit != NULL) {
 			loadingBit->liveUpdate();
 		}
 
@@ -126,6 +125,8 @@ void gameBit(sf::Clock* globalClock, networking* networkObject){
 
 void clearResources(networking* networkObject, sf::Thread* pingThread, sf::Thread* receiveThread, sf::Clock* globalClock){
 	//From here on, the TCP connection is severed, the threads are waited on and then destroyed, and then the network and launcher objects are deleted, and 0 is returned
+	networkObject->active = false; //ensures that the receiveThread and the pingThread return, as they use while(active) { ...code... } in their functions
+
 	std::string msg; //the string used in getInput(...)
 	sf::Packet sendPacket; //the packet which will contain the data to send
 	msg = "USER::LEAVE";

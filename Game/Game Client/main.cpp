@@ -23,11 +23,10 @@ int main(int argc, char **argv) { //will accept parameters from command line, th
 	//extracts the variables from the parameters passed from the launcher
 	/*
 	std::string launcherKey(argv[1]);
-	std::string accessToken(argv[2]);
-	std::string username(argv[3]);
-	>>>below are set temporarily for debugging and development*/
+	std::string username(argv[2]);
+	*/
+	///>>>below are set temporarily for debugging and development
 	std::string launcherKey = "Hg+Lb9B6Q/zrMduYEvPmuQ==";
-	std::string accessToken = "";
 	std::string username = "test";
 
 	if (launcherKey == "Hg+Lb9B6Q/zrMduYEvPmuQ==") { //really weak check to verify that the launcher opened the program
@@ -38,7 +37,7 @@ int main(int argc, char **argv) { //will accept parameters from command line, th
 		sf::Thread* pingThread = new sf::Thread(&networking::stayAlive, networkObject); //makes the stayAlive() function run on this thread
 
 		//launcher window bit, everything for the launcher is draw and the login is done and stuff
-		if (networkObject->login(username, accessToken) /*commenting this out for now so i can skip the logintrue*/) {
+		if (networkObject->login(username)) {
 			pingThread->launch(); //will maintain the connection by pinging every so often
 			receiveThread->launch(); //will receive any server orders
 			gameBit(globalClock, networkObject);

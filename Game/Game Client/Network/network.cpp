@@ -35,7 +35,7 @@ void networking::getMessagesFromDB() {
 	}
 }
 
-bool networking::login(std::string username, std::string accessToken) {
+bool networking::login(std::string username) {
 	if (active == true) { //if the user is already logged in, ignore any input and just return true
 		return true;
 	}
@@ -46,13 +46,13 @@ bool networking::login(std::string username, std::string accessToken) {
 		if (socket->connect(ip.c_str(), port) == sf::Socket::Done) { //if the socket successfully connects to the specified IP address at the specified port...
 			//the IP address has to be a C style array as well
 
-			//it sends the token that the launcher gave to the server for verification
+			//it sends the username that the launcher gave to the server for verification
 			sf::Packet logonPacket;
-			msg = "SERVER::LOGON::USERNAME::" + username + "SERVER::LOGON::TOKEN::" + accessToken;
+			msg = "SERVER::LOGON::USERNAME::" + username;
 
 			logonPacket << msg.c_str(); //packets expect to deal with const char* arrays rather than strings
 
-			socket->send(logonPacket); //sends the username and token to the server for authentication
+			socket->send(logonPacket); //sends the username to the server for authentication
 
 			break; //and break the loop
 		}
@@ -74,7 +74,7 @@ bool networking::login(std::string username, std::string accessToken) {
 	if (receiveString.find(removeFlag) == 0) { //if the flag is at the beginning of the string
 		receiveString.erase(receiveString.begin(), receiveString.begin() + removeFlag.length());
 
-		//the below will check if the user ID has been sent from the server, as a response to the logon token and username we sent for the verification bit
+		//the below will check if the user ID has been sent from the server, as a response to the logon username we sent for the verification bit
 		std::string temp = receiveString;
 		temp.erase(temp.begin(), temp.begin() + temp.find("USER::ID::") + std::string("USER::ID::").length());
 
@@ -111,10 +111,8 @@ void networking::getResponses() { //retrieves incoming message
 
 		std::string receiveString(receiveCharArray);
 
-		if (receiveString == "SERVER::DIE") { //when the server sends a message for it to shut down, it shuts down
-			active = false;
-			std::cout << "Press the enter key to exit.";
-			continue;
+		if (receiveString == "die") {
+			break;
 		}
 		
 		//below basically gets the received string and splits it into username, message and time of message

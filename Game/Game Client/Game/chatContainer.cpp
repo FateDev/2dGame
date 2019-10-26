@@ -185,6 +185,7 @@ void chat::liveUpdate(networking* networkObject, sf::Clock* globalClock){ //call
 			std::string msgContents = enterMessage->getText().toAnsiString(); //gets the contents of the enter message input box
 
 			if (msgContents.length() < 3000 && msgContents.length() > 0) { //if the contents of the input box weren't empty
+
 				networkObject->sendMessage(msgContents); //then use the network object's sendMessage method to send the contents as a message
 
 				enterMessage->setText(""); //and sets the input boxes contents to be empty

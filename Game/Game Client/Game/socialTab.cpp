@@ -1,3 +1,4 @@
+#include <future>
 #include <gui.h>
 #include <header.h>
 #include "key.h"
@@ -213,15 +214,13 @@ void socialTabClass::populateGuildSelectBox() {
 }
 
 void socialTabClass::switchTabs(std::string buttonText) { //this will enable switching tabs and stuff
-	roomGuildSelectBox->setVisible(false); //makes the select box invisible
-	guildSelectBox->setVisible(false); //makes the guild select box invisible
-	chatBox->chatBoxContainer->setVisible(false); //makes the chat box invisible
-
 	if (buttonText == "Area Chat") {
 		if (activeTab == "Rooms") {
+			roomGuildSelectBox->setVisible(false); //makes the select box invisible
 			//code to disable the area chat stuff
 		}
 		if (activeTab == "Guilds") {
+			guildSelectBox->setVisible(false); //makes the guild select box invisible
 			//code to disable the guilds stuff
 		}
 		if (activeTab == "Private Messaging") {
@@ -231,18 +230,22 @@ void socialTabClass::switchTabs(std::string buttonText) { //this will enable swi
 			chatBox->chatBoxContainer->setPosition("10%", sf::VideoMode::getDesktopMode().height - chatBox->chatBoxContainer->getFullSize().y - 30);  //sets correct positioning as it's also used for the Rooms tab
 			chatBox->chatBoxContainer->setSize("80%", chatBoxContainerHeight); //sets correct sizing as it's also used for the Rooms tab
 			activeTab = "Area Chat"; //sets active tab
-			changeRoomGuild("LOCALCHAT"); //sets chat to LOCALCHAT
-			networkObject->roomGuild = "LOCALCHAT"; //sets chat to LOCALCHAT
+			
+			changeRoomGuild("LOCALCHAT"); //changes the current chat rooom to localchat
+			//auto func = std::bind(&socialTabClass::changeRoomGuild, this, "LOCALCHAT");
+			//std::async(std::launch::async, func, 0); //sets chat to LOCALCHAT
+
+			//stuff below is done on every click on this button, just to make sure, maybe will work through them later to decrease overhead or whatever
+			chatBox->chatBoxContainer->setVisible(true); //makes the chat box visible
 		}
 
-		//stuff below is done on every click on this button, just to make sure, maybe will work through them later to decrease overhead or whatever
-		chatBox->chatBoxContainer->setVisible(true); //makes the chat box visible
 	}
 	else if (buttonText == "Rooms") {
 		if (activeTab == "Area Chat") {
 			//code to disable the area chat stuff
 		}
 		if (activeTab == "Guilds") {
+			guildSelectBox->setVisible(false); //makes the guild select box invisible
 			//code to disable the guilds stuff
 		}
 		if (activeTab == "Private Messaging") {
@@ -254,19 +257,25 @@ void socialTabClass::switchTabs(std::string buttonText) { //this will enable swi
 			chatBox->chatBoxContainer->setPosition(std::to_string(percentX) + "%", chatBoxContainerYCoord); //sets the correct positioning of the chat box, as we change it for the local chat
 			activeTab = "Rooms"; //sets the active tab
 			populateRoomGuildSelectBox(); //populates the room guild selection box
+
+			//stuff below is done on every click on this button, just to make sure, maybe will work through them later to decrease overhead or whatever
+			roomGuildSelectBox->setVisible(true); //makes the select box visible
+			chatBox->chatBoxContainer->setVisible(true); //makes the chat box visible
+
+			changeRoomGuild("main.alpha"); //changes the current chat room guild
+			//auto func = std::bind(&socialTabClass::changeRoomGuild, this, "main.alpha");
+			//std::async(std::launch::async, func, 0); //changes the current chat room guild
 		}
 
-		//stuff below is done on every click on this button, just to make sure, maybe will work through them later to decrease overhead or whatever
-		roomGuildSelectBox->setVisible(true); //makes the select box visible
-		chatBox->chatBoxContainer->setVisible(true); //makes the chat box visible
-		changeRoomGuild("main.alpha"); //changes the current chat room guild
-		networkObject->roomGuild = "main.alpha"; //sets the current chat room guild variable
 	}
 	else if (buttonText == "Guilds") {
 		if (activeTab == "Area Chat") {
 			//code to disable the area chat stuff
+			chatBox->chatBoxContainer->setVisible(false); //makes the chat box invisible
 		}
 		if (activeTab == "Rooms") {
+			chatBox->chatBoxContainer->setVisible(false); //makes the chat box invisible
+			roomGuildSelectBox->setVisible(false); //makes the select box invisible
 			//code to disable the guilds stuff
 		}
 		if (activeTab == "Private Messaging") {
@@ -274,9 +283,13 @@ void socialTabClass::switchTabs(std::string buttonText) { //this will enable swi
 		}
 		if (activeTab != "Guilds") { //the below basically just sets the chatBoxContainer and roomGuildBox container things to contain the stuff they need to, and to be the right sizes
 			populateGuildSelectBox();
+			//std::async(&socialTabClass::populateGuildSelectBox, this);
+
+			activeTab = "Guilds"; //sets active tab
+
+			//stuff below is done on every click on this button, just to make sure, maybe will work through them later to decrease overhead or whatever
+			guildSelectBox->setVisible(true);
 		}
 
-		//stuff below is done on every click on this button, just to make sure, maybe will work through them later to decrease overhead or whatever
-		guildSelectBox->setVisible(true);
 	}
 }
