@@ -187,7 +187,7 @@ void socialTabClass::changeGuild(tgui::Button::Ptr button) { //this will change 
 }
 
 void socialTabClass::changeRoomGuild(std::string buttonText) {
-	if (activeTab == "Rooms" || activeTab == "Area Chat") {
+	if ((activeTab == "Rooms" || activeTab == "Area Chat") && networkObject->roomGuild != buttonText) { //checks for correct tab, and that the current room guild isn't the one clicked on
 		chatBox->flushMessages();
 
 		networkObject->roomGuild = buttonText; //the button text is the room guild name in this case, which we can use to request whatever data we need
