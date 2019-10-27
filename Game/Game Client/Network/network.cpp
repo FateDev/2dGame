@@ -15,7 +15,6 @@ void networking::getMessagesFromDB() {
 	//the code below gets a json object from my website of the last 50 messages and parses them into a c++ json object from the json library
 	//and also decrypts the message contents with the simple xor function
 
-	messages.clear(); //clears the contents of the buffer for a new request
 
 	CURL* curl = curl_easy_init(); //we can set options for this to make it control how a transfer/transfers will be made
 	std::string readBuffer; //string for the returning data
@@ -28,6 +27,7 @@ void networking::getMessagesFromDB() {
 	curl_easy_perform(curl);
 	delete curl;
 
+	messages.clear(); //clears the contents of the buffer for a new request
 	messages = json::parse(readBuffer);
 
 	for (int i = 0; i < messages.size(); i++) {

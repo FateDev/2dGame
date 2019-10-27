@@ -64,19 +64,27 @@ void socialTabClass::liveUpdate(sf::Clock* globalClock) {
 }
 
 void socialTabClass::setActive(bool active) { //by setting the visibility through this, groups are really easy to manage so multiple screens are easy to manage
+	//the function is called every frame for some reason, figure it out, so I take advantage of this and call the code to get data using threads here
 	if (active == true) {
 		//for the above, when the input parameter is true, it makes the group visible and sets the active boolean in the object as
 		//true (used to decide whether or not to have the live update function be active or not in the main game loop)
 		this->active = true;
 		socialTabGroup->setVisible(true);
 
-		//these three functions below will remove the contents of the chatbox, then get the new messages from the database, and then add those to the chatbox
-		networkObject->getMessagesFromDB();
-		chatBoxBulkAdd(this->networkObject, chatBox);
+		//the chunk of code below will retrieve messages from another thread and then raise a flag (updateMsgGUI) which will add the retrieved messages to the chat box, it uses a lambda function
+		if (guildRoomMsgUpdateThread) { //checks if it's not a nullptr
+			guildRoomMsgUpdateThread->join(); //waits for it to finish execution
+			delete guildRoomMsgUpdateThread; //deletes it
+		}
+		guildRoomMsgUpdateThread = new std::thread([this]() {
+			networkObject->getMessagesFromDB();
+			updateMsgGUI = true;
+		});
 
-		populateRoomGuildSelectBox(); //this will add all the room guild select buttons and stuff
+		roomGuildBoxUpdateThread = new std::thread(&socialTabClass::populateRoomGuildSelectBox, this); //this will retrieve the room guild list, and add it to the GUI
 
-		//the below 2 lines will make it so that the current chat box is the one to send messages to
+		//the below 2 lines will make it so that the current chat box is the one to send messages to, and will add the currently store of messages to the chat box
+		chatBoxBulkAdd(networkObject, chatBox);
 		networkObject->chatBoxObject = chatBox;
 	}
 	else {
@@ -116,7 +124,7 @@ void socialTabClass::addButtonToPanel(tgui::ScrollablePanel::Ptr panel, std::str
 	panel->add(button);
 }
 
-void socialTabClass::populateRoomGuildSelectBox() {
+void socialTabClass::populateRoomGuildSelectBox() { //adds widgets to select what room guild to talk in
 	roomGuildSelectBox->removeAllWidgets(); //removes all widgets from the roomGuildSelectBox
 	currentMaxHeightRoomGuildSelect = 0;
 
@@ -135,7 +143,7 @@ void socialTabClass::populateRoomGuildSelectBox() {
 
 	float percentWidthRoomGuildSelectBox = (roomGuildSelectBox->getFullSize().y / sf::VideoMode::getDesktopMode().width) * 100;
 
-	for (int i = 0; i < roomGuildList.size(); i++) {
+	for (int i = 0; i < roomGuildList.size(); i++) { //adds the clickable widgets for each room guild
 		addButtonToPanel(roomGuildSelectBox, roomGuildList[i]["name"].get<std::string>(), percentWidthRoomGuildSelectBox, currentMaxHeightRoomGuildSelect, "", true);
 	}
 }
@@ -171,7 +179,11 @@ void socialTabClass::changeGuild(tgui::Button::Ptr button) { //this will change 
 		delete curl;
 	}
 
-	populateRoomGuildSelectBox();
+	if (roomGuildBoxUpdateThread) { //checks if this thread is not a nullptr, and then waits for it to finish current execution
+		roomGuildBoxUpdateThread->join();
+		delete roomGuildBoxUpdateThread; //deletes it after it has done its job
+	}
+	roomGuildBoxUpdateThread = new std::thread(&socialTabClass::populateRoomGuildSelectBox, this); //runs the function on a separate thread
 }
 
 void socialTabClass::changeRoomGuild(std::string buttonText) {
@@ -184,8 +196,15 @@ void socialTabClass::changeRoomGuild(std::string buttonText) {
 		sendPacket << std::string("USER::CHANGEROOMGUILD::" + buttonText).c_str(); //converts the string into a C style array, and puts it into the packet which will be sent
 		networkObject->socket->send(sendPacket);
 
-		networkObject->getMessagesFromDB();
-		chatBoxBulkAdd(this->networkObject, chatBox);
+		if (guildRoomMsgUpdateThread) { //checks if it's not a nullptr
+			guildRoomMsgUpdateThread->join(); //waits for it to finish execution
+			delete guildRoomMsgUpdateThread; //deletes it
+		}
+		//the chunk of code below will retrieve messages from another thread and then raise a flag (updateMsgGUI) which will add the retrieved messages to the chat box, it uses a lambda function
+		guildRoomMsgUpdateThread = new std::thread([this]() {
+			networkObject->getMessagesFromDB();
+			updateMsgGUI = true;
+		});
 	}
 }
 
@@ -214,6 +233,7 @@ void socialTabClass::populateGuildSelectBox() {
 }
 
 void socialTabClass::switchTabs(std::string buttonText) { //this will enable switching tabs and stuff
+	sf::Clock x;
 	if (buttonText == "Area Chat") {
 		if (activeTab == "Rooms") {
 			roomGuildSelectBox->setVisible(false); //makes the select box invisible
@@ -232,8 +252,6 @@ void socialTabClass::switchTabs(std::string buttonText) { //this will enable swi
 			activeTab = "Area Chat"; //sets active tab
 			
 			changeRoomGuild("LOCALCHAT"); //changes the current chat rooom to localchat
-			//auto func = std::bind(&socialTabClass::changeRoomGuild, this, "LOCALCHAT");
-			//std::async(std::launch::async, func, 0); //sets chat to LOCALCHAT
 
 			//stuff below is done on every click on this button, just to make sure, maybe will work through them later to decrease overhead or whatever
 			chatBox->chatBoxContainer->setVisible(true); //makes the chat box visible
@@ -252,19 +270,17 @@ void socialTabClass::switchTabs(std::string buttonText) { //this will enable swi
 			//code to disable the private messaging stuff
 		}
 		if (activeTab != "Rooms") { //the below basically just sets the chatBoxContainer and roomGuildBox container things to contain the stuff they need to, and to be the right sizes
+
 			float percentX = (float)(400.0f / (float)sf::VideoMode::getDesktopMode().width) * 100; //gets the X percentage covering the screen
 			chatBox->chatBoxContainer->setSize(std::to_string(100 - percentX) + "%", chatBoxContainerHeight); //sets the correct sizing of the chat box, as we change it for the local chat
 			chatBox->chatBoxContainer->setPosition(std::to_string(percentX) + "%", chatBoxContainerYCoord); //sets the correct positioning of the chat box, as we change it for the local chat
 			activeTab = "Rooms"; //sets the active tab
-			populateRoomGuildSelectBox(); //populates the room guild selection box
 
 			//stuff below is done on every click on this button, just to make sure, maybe will work through them later to decrease overhead or whatever
 			roomGuildSelectBox->setVisible(true); //makes the select box visible
 			chatBox->chatBoxContainer->setVisible(true); //makes the chat box visible
 
 			changeRoomGuild("main.alpha"); //changes the current chat room guild
-			//auto func = std::bind(&socialTabClass::changeRoomGuild, this, "main.alpha");
-			//std::async(std::launch::async, func, 0); //changes the current chat room guild
 		}
 
 	}
@@ -282,14 +298,25 @@ void socialTabClass::switchTabs(std::string buttonText) { //this will enable swi
 			//code to disable the private messaging stuff
 		}
 		if (activeTab != "Guilds") { //the below basically just sets the chatBoxContainer and roomGuildBox container things to contain the stuff they need to, and to be the right sizes
-			populateGuildSelectBox();
-			//std::async(&socialTabClass::populateGuildSelectBox, this);
+			if (guildSelectBoxUpdateThread) { //if it isn't nullptr
+				guildSelectBoxUpdateThread->join(); //waits for it to finish execution
+				delete guildSelectBoxUpdateThread; //deletes it
+			}
+			guildSelectBoxUpdateThread = new std::thread(&socialTabClass::populateGuildSelectBox, this); //runs the new threaded function
 
 			activeTab = "Guilds"; //sets active tab
 
 			//stuff below is done on every click on this button, just to make sure, maybe will work through them later to decrease overhead or whatever
 			guildSelectBox->setVisible(true);
 		}
+	}
+}
 
+void socialTabClass::completeThreadWork() { //this is called in the main loop
+	//it checks if the flag signalling that data has been received, has been raised, in which case add the data (messages to the chatbox), and reset the flag
+	//this is to prevent messages being added to the chatbox while it is being drawn which crashes the program (Access violation reading location [some location in memory])
+	if (updateMsgGUI) {
+		chatBoxBulkAdd(networkObject, chatBox);
+		updateMsgGUI = false;
 	}
 }

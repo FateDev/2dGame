@@ -116,6 +116,8 @@ void gameBit(sf::Clock* globalClock, networking* networkObject){
 
 		gui.draw(); //draws everything that's been added to it (hopefully just groups of tgui objects for the different screens)
 
+		socialTabBit.completeThreadWork();
+
 		gameWindow->display(); //the contents of the screen are shown
 		sf::sleep(sf::milliseconds(15)); //so the program doesnt just fry your CPU
 	}

@@ -5,6 +5,7 @@
 #include <SFML/Window.hpp>
 #include <TGUI/TGUI.hpp>
 #include <json.hpp>
+#include <thread>
 
 using json = nlohmann::json;
 
@@ -74,6 +75,11 @@ public:
 
 class socialTabClass {
 private:
+	std::thread *guildRoomMsgUpdateThread; //thread to be used for async type stuff
+	std::thread *roomGuildBoxUpdateThread; //async stuff again
+	std::thread *guildSelectBoxUpdateThread; //async stuff again
+	bool updateMsgGUI = false; //will be used as a flag, to signal that data for the messages of the new tab has been received
+
 	tgui::Group::Ptr socialTabGroup = tgui::Group::create({ sf::VideoMode::getDesktopMode().width , sf::VideoMode::getDesktopMode().height });
 	//the above would be an invisible container from tgui which holds everything that gets drawn for this screen
 
@@ -115,6 +121,7 @@ private:
 
 	friend size_t WriteCallback(char *contents, size_t size, size_t nmemb, void *userp); //friend function to get data from curl, this is forward declaring the function as we can't include the header file here, as this file is included in it
 public:
+	void completeThreadWork(); //will wait for threads to stop execution before proceeding
 	bool active = false; //we can use this to decide whether or not we should have the liveUpdate() function execute
 	void setActive(bool active); //this would make the above boolean active, and also would make the main screen group visible
 	socialTabClass(tgui::Gui &gui, networking* networkObject); //the constructor, has networking object because needs to pass it to the chat
