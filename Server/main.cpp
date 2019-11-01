@@ -14,6 +14,9 @@
 ecs::component::ecsComponentStructure<ecs::component::user> ecs::component::users;
 ecs::component::ecsComponentStructure<ecs::component::location> ecs::component::locationStructs;
 ecs::entity::entityManager ecs::entity::superEntityManager;
+std::unordered_map<ecs::system::coordinatesStruct, std::vector<ecs::entity::entity>, ecs::system::Hash> ecs::system::chunks;
+std::unordered_map<ecs::system::coordinatesStruct, json, ecs::system::Hash> gameData;
+std::unordered_map<std::string, unsigned int>  ecs::system::uniqueIDToUserVectorIndexMap;
 
 int main(){
 	curl_global_init(CURL_GLOBAL_ALL); //initialise libcurl functionality globally

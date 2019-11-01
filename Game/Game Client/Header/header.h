@@ -3,6 +3,7 @@
 
 #include <network.h>
 #include <gui.h>
+#include <game.h>
 #include <TGUI/TGUI.hpp>
 
 /*
@@ -12,7 +13,7 @@ This file will contain the main functions for the main stages of the game, the c
 void helpFunction(); 
 //this will open the help function, it's for tgui buttons, it is used as a friend function by both the launcher and mainScreen classes of them (check in the gui.h file for more)
 
-void gameBit(sf::Clock* globalClock, networking* networkObject); 
+void gameBit(sf::Clock* globalClock, networking* networkObject, gameNetwork* gameConnection);
 //this is the main game bit
 
 void clearResources(networking* networkObject, sf::Thread* pingThread, sf::Thread* receiveThread, sf::Clock* globalClock); 

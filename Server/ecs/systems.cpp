@@ -16,6 +16,12 @@ void systemsManager::systemStart(){
 
 	listenNetwork = new sf::Thread(std::bind(&network::server, &networkObj, port)); //launches the server to listen on that specific port
 	listenNetwork->launch(); //launches it
+	
+	listenUdp = new sf::Thread(&udpBroadcast::listenToUsers, &udpNetworkObj);
+	listenUdp->launch();
+
+	sendUdp = new sf::Thread(&udpBroadcast::broadcastGameState, &udpNetworkObj);
+	sendUdp->launch();
 }
 
 void systemsManager::systemEnd(){
@@ -45,25 +51,17 @@ float distanceMagnitude(unsigned int index_1, unsigned int index_2){ //this simp
 
 void network::removeUser(unsigned int i){ //function to basically properly log out a user
     //have to get the values below before removing the user from the array, so we can send a request to the HTTP server and have their online/offline status updated
-    std::string token = users.compVec[i].accessToken;
     std::string id = std::to_string(users.compVec[i].userID);
 
     selector.remove(*users.compVec[i].socket); //removes this socket from the selector
+
+	uniqueIDToUserVectorIndexMap.erase(users.compVec[i].sessionID); //will erase the mapping of the unique session ID to the index in the component vector for this user
     
     unsigned int entityID = users.vectorToEntityMap(i);
     ecs::entity::superEntityManager.destroy(entityID); //removes them from the array if it is
 
     std::string msgString = "SERVER: A USER HAS LEFT\nSERVER: CLIENTS ONLINE: " + std::to_string(users.compVec.size()) + "\n"; //outputs some server info to indicate that the user is gone
     std::cout << msgString; //outputs this string
-
-    CURL* curl = curl_easy_init(); //we can set options for this to make it control how a transfer/transfers will be made
-    std::string readBuffer = ""; //string for the returning data
-
-    curl_easy_setopt(curl, CURLOPT_URL, std::string("https://erewhon.xyz/game/logout.php?token="+token+"&id="+id).c_str());
-    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback); //the callback
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer); //will write data to the string, so the fourth param of the last callback is stored here
-    curl_easy_perform(curl);
 }
 
 void network::forwardToAllUsers(std::string msg, int userNum){ //forwards to every user
@@ -143,9 +141,8 @@ void network::process(){
 
 						if(checkLeave(receiveString)){
 							sf::Packet packet; //a packet to hold a string
-							packet << std::string("SERVER::DIE").c_str(); //putting the c style string into the packet
+							packet << std::string("die").c_str(); //putting the c style string into the packet
 							users.compVec[i].socket->send(packet); //sending the packet
-
                             removeUser(i);
 						}
 
@@ -201,27 +198,24 @@ void network::process(){
 
 bool network::login(std::string input, user* userPtr) {
 	std::string usernameToken = "SERVER::LOGON::USERNAME::";
-	std::string accessTokenToken = "SERVER::LOGON::TOKEN::";
 	std::string username = input;
-	std::string accessToken = input;
 
 
-	if (input.find(usernameToken) == 0 && input.find(accessTokenToken) != std::string::npos) {
+	if (input.find(usernameToken) == 0 != std::string::npos) {
 		username.erase(username.begin(), (username.begin() + usernameToken.size()));
-		username.erase(username.find(accessTokenToken), username.size());
-		
-		accessToken.erase(accessToken.begin(), accessToken.begin() + accessToken.find(accessTokenToken) + accessTokenToken.size());
-		//the above basically extracts the username and access token
 		
 		CURL* curl = curl_easy_init(); //we can set options for this to make it control how a transfer/transfers will be made
 		std::string readBuffer; //string for the returning data
-		
-		userPtr->accessToken = accessToken;
+
+		for(int i = 0; i < users.compVec.size(); i++){ //makes sure the same user can't join twice
+			if(users.compVec[i].username == username){
+				return false;
+			}
+		}
 
 		username = curl_easy_escape(curl, username.c_str(), username.length());
-		accessToken = curl_easy_escape(curl, accessToken.c_str(), accessToken.length());
 		
-		curl_easy_setopt(curl, CURLOPT_URL, ("http://erewhon.xyz/game/serverLogin.php?username="+username+"&token="+accessToken).c_str());
+		curl_easy_setopt(curl, CURLOPT_URL, ("http://erewhon.xyz/game/serverLogin.php?username="+username).c_str());
 		curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
 		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback); //the callback
 		curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer); //will write data to the string, so the fourth param of the last callback is stored here
@@ -253,6 +247,8 @@ void network::server(unsigned short PORT){ //the function for server initialisat
 
 	std::cout << "SERVER: SERVER STARTED" << std::endl; //outputs that the server has started
 
+	sf::Clock clock;
+
 	while(true){ //loop endlessly
 		std::string outputString; //the string to alert connected users that another user has joined
 		socket = new sf::TcpSocket; //a new socket in case a user joins
@@ -277,7 +273,9 @@ void network::server(unsigned short PORT){ //the function for server initialisat
 				delete socket;
 				continue;
 			}else{
-				sendPacket << std::string("SERVER::LOGON::RESPONSE::trueUSER::ID::" + std::to_string(userPtr->userID)).c_str();
+				userPtr->sessionID =  userPtr->username + std::to_string(clock.getElapsedTime().asMicroseconds());
+
+				sendPacket << std::string("SERVER::LOGON::RESPONSE::trueUSER::SESSION_ID::" + userPtr->sessionID +"USER::ID::" + std::to_string(userPtr->userID)).c_str();
 				socket->send(sendPacket);
 
 				outputString = "SERVER: NEW CONNECTION @ " + socket->getRemoteAddress().toString() + "\n"; //make a string which includes their IP address...
@@ -290,6 +288,9 @@ void network::server(unsigned short PORT){ //the function for server initialisat
 				userPtr->loggedIn = true;
 
 				users.compVec[componentVectorIndex] = *userPtr; //add this user to the users vector
+				uniqueIDToUserVectorIndexMap.insert({userPtr->sessionID, componentVectorIndex}); //will add a map entry, mapping their unique session ID to some index in the component vector
+
+				socket->getRemoteAddress();
 
 				selector.add(*socket); //add this vector to the selector
 
@@ -301,5 +302,36 @@ void network::server(unsigned short PORT){ //the function for server initialisat
 		}
 
 		sf::sleep(sf::milliseconds(50)); //slows down the listener loop so less intensive on my poor laptop
+	}
+}
+
+void udpBroadcast::broadcastGameState(){
+	sf::UdpSocket socket;
+	socket.bind(5002);
+	while(true){
+		sf::Packet packet;
+		packet << "Hello world!";
+		socket.send(packet, sf::IpAddress::Broadcast, 5002);
+
+		sf::sleep(sf::milliseconds(200));
+	}
+}
+
+void udpBroadcast::listenToUsers(){
+	sf::UdpSocket socket;
+	socket.bind(5001);
+	while(true){
+		char buffer[1024];
+		std::size_t received = 0;
+		sf::IpAddress sender;
+		unsigned short port;
+		socket.receive(buffer, sizeof(buffer), received, sender, port);
+		json jsonObj = json::parse(buffer);
+		
+		if(!jsonObj["sessionID"].is_null()){
+			if(uniqueIDToUserVectorIndexMap.count(jsonObj["sessionID"])){
+				std::cout << jsonObj["pi"] << jsonObj["iteration"] << std::endl;
+			}
+		}
 	}
 }

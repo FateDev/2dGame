@@ -4,6 +4,7 @@
 
 #include <Windows.h>
 #include <header.h>
+#include <game.h>
 #include <TGUI/TGUI.hpp>
 
 void helpFunction() { //the function to make the help button open the help setting in browser
@@ -48,7 +49,7 @@ void chatBoxBulkAdd(networking* networkObject, chat* chatBox) {
 	}
 }
 
-void gameBit(sf::Clock* globalClock, networking* networkObject){
+void gameBit(sf::Clock* globalClock, networking* networkObject, gameNetwork* gameConnection){
 	//the below is just the settings stuff for it
 	sf::ContextSettings settings;
 	settings.antialiasingLevel = 0; //so drawn objects don't look too sharp (especially for circles and stuff)
@@ -80,6 +81,8 @@ void gameBit(sf::Clock* globalClock, networking* networkObject){
 
 	socialTabClass socialTabBit(gui, networkObject);
 
+	game actualGame(networkObject, gameConnection);
+
 	toolbar mainToolbar(gameWindow, &mainGameScreen, &socialTabBit, gui);
 
 	while (gameWindow->isOpen()) //so long as the window is open
@@ -91,7 +94,10 @@ void gameBit(sf::Clock* globalClock, networking* networkObject){
 				gameWindow->close(); //close the window when you find the close event basically
 
 			gui.handleEvent(event); // Pass the event to the widgets
+			actualGame.listenForKeys(event); //pass the event on to the game to listen for keys
 		}
+
+		actualGame.live(); //processes stuff like keys and sends it
 
 		gameWindow->clear(sf::Color(26, 25, 30)); //clears the previous contents of the screen off, and replaces it with a nice colour
 

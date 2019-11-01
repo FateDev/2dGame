@@ -1,11 +1,18 @@
 #ifndef ECS_HEAD
 #define ECS_HEAD
 
+//the size of one chunk
+const int chunkPixelSize_x = 1920;
+const int chunkPixelSize_y = 1080;
+
 #include <unordered_set>
 #include <unordered_map>
 #include <vector>
 #include <initializer_list>
 #include <SFML/Network.hpp>
+
+#include "../deps/json.hpp"
+using json = nlohmann::json;
 
 namespace ecs{
     namespace component{
@@ -13,19 +20,30 @@ namespace ecs{
         struct user{ 
             int userID; //the user ID from the database
             bool loggedIn; //whether or not they're logged in
+            std::string sessionID; //unique ID for current session
             std::string username; //the username
             std::string roomGuild = "main.alpha"; //the current roomGuild for the social tab
             std::string tempNewestMsgID = ""; //the ID of the newest message
-            std::string accessToken = ""; //for making sure there is only one client session active at a time
             sf::TcpSocket* socket; //the actual socket connection
+            sf::UdpSocket* gameSocket; //the socket connection for sending game data
             sf::Time timeOfExpiry; //the time till the socket should be removed, this is updated every time the client pings the server
+        };
+
+        struct drawable{
+            std::string imgLocation;
+            std::string type;
+        };
+
+        struct physical{
+            sf::Vector2f hitBoxOffset = { 0, 0}; //the offset from the location of the entity, of the hit box
+            float hitBoxRadius = 1; //the radius of the hit box
         };
 
         struct location{
             sf::Vector2f coordinates = { 0, 0 }; //the in game location of the player
         };
 
-        enum components {USER, LOCATION}; //enum for all of the components
+        enum components {USER, LOCATION, DRAWABLE, PHYSICAL}; //enum for all of the components
 
         //it's using a template because it could be used for any of the components above
         template <class T>
@@ -75,6 +93,35 @@ namespace ecs{
     }
 
     namespace system{
+        extern std::unordered_map<std::string, unsigned int>  uniqueIDToUserVectorIndexMap; //will map user's uniqueID's to their user vector map
+        
+        struct mapCleanup{
+            void chunksMapCleanup(); //should be run on a thread, should iterate through every single chunk, with something like 100ms sleep inbetween as it's not that important
+            //it should basically just remove entities that don't exist anymore
+        };
+
+        struct coordinatesStruct{
+            static int id;
+            int uniqueID;
+            std::pair<int, int> coordinates;
+            coordinatesStruct(){ uniqueID = ++id; }
+
+            bool operator==(const coordinatesStruct& t) const { //this is needed to put entities in the unordered_map structure, this basically allows for direct comparison of different entity structs
+                return (this->id == t.id); 
+            }
+        };
+
+        struct Hash { //this is also needed to put the entity struct into an unordered_set, this makes the hashing function literally just be the entity ID, which isn't a problem as each entity has a unique ID
+            size_t operator() (const coordinatesStruct &coords) const {
+                return coords.id;
+            }
+        };
+
+        struct udpBroadcast{
+            void broadcastGameState(); //this will read the gameData object and send the relavent chunk data to some connected client
+            void listenToUsers(); //recieves data from users
+        };
+
         class network{
             private:
                 //sockets are normally in blocking mode, i.e, waits until a process is complete, so for say socket->receive(packet), it will wait until at least some data
@@ -95,17 +142,54 @@ namespace ecs{
                 bool login(std::string input, ecs::component::user* userPtr);
         };
 
-        struct systemsManager{
-            unsigned int port;
-            network networkObj;
+        struct updateActiveChunkData{
+            std::unordered_map<coordinatesStruct, bool, Hash> activeChunks; 
+            //can be used for selecting data to be extracted from the ECS and put into the gameData object, and for physics engine related stuff
 
-            systemsManager(unsigned int PORT) : port(PORT) {};
-            void systemStart();
-            void systemEnd();
-
-            sf::Thread* processNetwork = 0; //the thread for running the main receiving and sending processes
-            sf::Thread* listenNetwork = 0;
+            //the map would contain the coordinates of chunks, and whether or not they are active, loops through the locations component vector to get the coordinates of users
+            //and using simple modulus math, it can find what chunk a user is in (using chunkPixelSize_x and chunkPixelSize_y), and insert or remove entries for active chunks
+            //as neccessary
+            void updateActiveChunks(); //this would update the activeChunks map, removing inactive ones, adding new ones which should be set to active
+            void updateChunkData(); //this would get the data associated with some chunk and store it in the gameData object
+            
+            std::vector<sf::Vector2f> retrievePlayerChunks(unsigned int entityID); 
+            //using the entityID of the user, this should return the coordinates of 9 chunks who's data the player should receive, again, using simple 
+            //mod math and chunkPixelSize_x/chunkPixelSize_y
+            //it should access the location component, run the mod math on it, then it can literally use the numbers to directly access gameData and retrieve all of the
+            //chunk data that a user needs
         };
+        
+        /*
+            Note that as updateChunkData() will run on its own thread, and so will broadcastGameState(), but they will both require access to gameData, you'll
+            need to use sf::Mutex to make sure that they don't simultaneously try to access resources
+
+            Also you need to implement broadcastGameState() using UDP, so loop through the users component vector, then get the user IP address from the socket
+            then get access to the associated location struct, then use simple modulus math on the coordinates to retrieve the 
+
+            All chunk data is stored in gameData, but for internal processing for physics and the such it should be in the chunks map
+        */
+
+        class systemsManager{
+            private:
+                unsigned int port;
+            public:
+                udpBroadcast udpNetworkObj;
+                network networkObj;
+
+                systemsManager(unsigned int PORT) : port(PORT) {};
+                void systemStart();
+                void systemEnd();
+
+                sf::Thread* processNetwork = 0; //the thread for running the main receiving and sending processes
+                sf::Thread* listenNetwork = 0; //listening for incoming connections
+
+                sf::Thread* listenUdp = 0;
+                sf::Thread* sendUdp = 0;
+        };
+
+
+        extern std::unordered_map<coordinatesStruct, std::vector<ecs::entity::entity>, Hash> chunks; //will contain a list of all the entities in each chunk, useful for physics + read below
+        extern std::unordered_map<coordinatesStruct, json, Hash> gameData; //this basically tells the compiler that the variable declared is defined somewhere else in the program (main.cpp in this case)
     }
 }
 
