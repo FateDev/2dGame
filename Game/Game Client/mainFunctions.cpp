@@ -32,7 +32,7 @@ void chatBoxBulkAdd(networking* networkObject, chat* chatBox) {
 		std::string imgLocation = networkObject->messages[i]["imgURL"].get<std::string>();
 
 		std::string from = "";
-		if (networkObject->messages[i]["from"].is_null()) {
+		if (networkObject->messages[i]["from"].is_null()) { //checks if it's not got a username, then the user no longer exists
 			from = "DELETED USER";
 		}
 		else {
@@ -54,11 +54,10 @@ void gameBit(sf::Clock* globalClock, networking* networkObject, gameNetwork* gam
 	sf::ContextSettings settings;
 	settings.antialiasingLevel = 0; //so drawn objects don't look too sharp (especially for circles and stuff)
 
-	sf::RenderWindow *gameWindow = new sf::RenderWindow(sf::VideoMode(sf::VideoMode::getDesktopMode().width, sf::VideoMode::getDesktopMode().height), "One More Time", sf::Style::Fullscreen, settings); 
+	sf::RenderWindow gameWindow(sf::VideoMode(sf::VideoMode::getDesktopMode().width, sf::VideoMode::getDesktopMode().height), "One More Time", sf::Style::Fullscreen, settings); 
 	//fullscreen window for the game
 
-	tgui::Gui gui(*gameWindow); //the main gui for the entire game bit
-
+	tgui::Gui gui(gameWindow); //the main gui for the entire game bit
 
 	/********************************/
 	/********************************/
@@ -72,10 +71,8 @@ void gameBit(sf::Clock* globalClock, networking* networkObject, gameNetwork* gam
 	/********************************/
 	/********************************/
 
-
-
 	//below makes the loading screen, main screen, and tool bar (buttons in the top left) objects
-	loadingScreen *loadingBit = new loadingScreen(gameWindow, globalClock);  
+	loadingScreen *loadingBit = new loadingScreen(&gameWindow, globalClock);  
 	//the above is dynamically allocated because we won't need it after and so we can know it's actually gone (as we can set it to NULL)
 	mainScreen mainGameScreen(gui, networkObject);
 
@@ -83,15 +80,15 @@ void gameBit(sf::Clock* globalClock, networking* networkObject, gameNetwork* gam
 
 	game actualGame(networkObject, gameConnection);
 
-	toolbar mainToolbar(gameWindow, &mainGameScreen, &socialTabBit, gui);
+	toolbar mainToolbar(&gameWindow, &mainGameScreen, &socialTabBit, gui);
 
-	while (gameWindow->isOpen()) //so long as the window is open
+	while (gameWindow.isOpen()) //so long as the window is open
 	{
 		sf::Event event; //will store the current event
-		while (gameWindow->pollEvent(event)) //check for events
+		while (gameWindow.pollEvent(event)) //check for events
 		{
 			if (event.type == sf::Event::Closed) 
-				gameWindow->close(); //close the window when you find the close event basically
+				gameWindow.close(); //close the window when you find the close event basically
 
 			gui.handleEvent(event); // Pass the event to the widgets
 			actualGame.listenForKeys(event); //pass the event on to the game to listen for keys
@@ -99,7 +96,7 @@ void gameBit(sf::Clock* globalClock, networking* networkObject, gameNetwork* gam
 
 		actualGame.live(); //processes stuff like keys and sends it
 
-		gameWindow->clear(sf::Color(26, 25, 30)); //clears the previous contents of the screen off, and replaces it with a nice colour
+		gameWindow.clear(sf::Color(26, 25, 30)); //clears the previous contents of the screen off, and replaces it with a nice colour
 
 		//below is the stuff for the loading screen, basically it says that if the expiry time has passed and the loading screen isn't null, delete it, set it to null
 		//and then make the main screen active, otherwise draw the loading screen stuff and that little animation too
@@ -124,11 +121,9 @@ void gameBit(sf::Clock* globalClock, networking* networkObject, gameNetwork* gam
 
 		socialTabBit.completeThreadWork();
 
-		gameWindow->display(); //the contents of the screen are shown
+		gameWindow.display(); //the contents of the screen are shown
 		sf::sleep(sf::milliseconds(15)); //so the program doesnt just fry your CPU
 	}
-
-	delete gameWindow;
 }
 
 void clearResources(networking* networkObject, sf::Thread* pingThread, sf::Thread* receiveThread, sf::Clock* globalClock){

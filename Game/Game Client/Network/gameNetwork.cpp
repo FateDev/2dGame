@@ -1,7 +1,7 @@
 #include <game.h>
 
 void gameNetwork::listenData() {
-	sf::UdpSocket socket;
+	/*sf::UdpSocket socket;
 	socket.bind(localListenPort);
 
 	while (true) {
@@ -14,9 +14,11 @@ void gameNetwork::listenData() {
 		packet >> output;
 
 		//std::cout << sender.toString() << " said: " << output << std::endl;
+		//json jsonObj = json::parse(output);
+		//std::cout << jsonObj["happy"] << std::endl;
 	}
 
-	socket.unbind();
+	socket.unbind();*/
 }
 
 void gameNetwork::sendData(json payload) {

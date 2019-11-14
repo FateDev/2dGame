@@ -1,0 +1,2 @@
+# Errors and Stuff
+Ok so basically you might get some errors about hashtable stuff or whatever when using unordered stl containers, so basically to resolve this you need to make your custom type have some equality testing functionality, for example, making an overload of the == operator, and then also need to make a custom hashing function, which should be easily achievable by using a unique id or something on your struct, and just returning that for the hash function.

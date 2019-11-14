@@ -24,6 +24,19 @@ int main(){
 	ecs::system::systemsManager systems = ecs::system::systemsManager(5000); //will make a system manager object with the port set to be 5000
 	systems.systemStart(); //this will launch the threads for system processes
 
+	ecs::system::coordinatesStruct coord(0, 50);
+	ecs::system::coordinatesStruct coord1(50, 0);
+	ecs::system::coordinatesStruct coord2(50, 50);
+
+	//std::cout << ecs::entity::superEntityManager.create({ecs::component::components::USER, ecs::component::components::LOCATION}) << std::endl;
+	ecs::entity::entity entitything;
+	entitything.id = 23;
+	//std::vector<ecs::entity::entity> v;
+	//v.push_back(entitything);
+	ecs::system::chunks[coord].push_back(entitything);
+	//ecs::system::chunks.insert({coord,v});
+	//ecs::system::chunks[coord].push_back(entitything);
+
 	while(true){ //this is basically a convenience, will always await user input and run forever, it should be changed
 		std::cin.get();
 	}

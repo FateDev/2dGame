@@ -180,6 +180,7 @@ void chat::addMessages(int time, std::string usernameText, std::string messageTe
 
 void chat::liveUpdate(networking* networkObject, sf::Clock* globalClock){ //called during the main game loop every frame
 	if (enterMessage->isFocused() == true) { //checks if the enter message input box is focused
+		networkObject->msgBoxFocused = true; //indicates that the message box is in focus
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Enter) && globalClock->getElapsedTime().asMilliseconds()-lastMsgTime > 1000) { //checks if the enter key has been pressed
 			lastMsgTime = globalClock->getElapsedTime().asMilliseconds();
 			std::string msgContents = enterMessage->getText().toAnsiString(); //gets the contents of the enter message input box
@@ -193,6 +194,9 @@ void chat::liveUpdate(networking* networkObject, sf::Clock* globalClock){ //call
 				//and adds the message to the chat box scrollable panel with the current time as the time bit
 			}
 		}
+	}
+	else {
+		networkObject->msgBoxFocused = false; //indicates that the message box is not in focus
 	}
 }
 

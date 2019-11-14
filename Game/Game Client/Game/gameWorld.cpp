@@ -1,6 +1,7 @@
 #include <game.h>
 
-game::game(networking* networkObject, gameNetwork* gameConnection) : networkObj(networkObject), gameNetworkObj(gameConnection) { //I added in a map the opposite way round just in case
+game::game(networking* networkObject, gameNetwork* gameConnection) : networkObj(networkObject), gameNetworkObj(gameConnection) { 
+	//I added in a map the opposite way round just in case
 	sfKeyToAbstractKeyMap[sf::Keyboard::A] = "a"; abstractKeyTosfKeyMap["a"] = sf::Keyboard::A;
 	sfKeyToAbstractKeyMap[sf::Keyboard::B] = "b"; abstractKeyTosfKeyMap["b"] = sf::Keyboard::B;
 	sfKeyToAbstractKeyMap[sf::Keyboard::C] = "c"; abstractKeyTosfKeyMap["c"] = sf::Keyboard::C;
@@ -45,52 +46,95 @@ game::game(networking* networkObject, gameNetwork* gameConnection) : networkObj(
 	sfKeyToAbstractKeyMap[sf::Keyboard::Tab] = "tab"; abstractKeyTosfKeyMap["tab"] = sf::Keyboard::Tab;
 
 	//below initialises the JSON object
-	std::string switchTargetKey = networkObj->settings["switchTarget"];
-	std::string interactNPCKey = networkObj->settings["interactNPC"];
-	std::string jumpKey = networkObj->settings["jump"];
-	std::string leftKey = networkObj->settings["left"];
-	std::string rightKey = networkObj->settings["right"];
-	std::string custom1Key = networkObj->settings["custom_binding1"]["key"];
-	std::string custom2Key = networkObj->settings["custom_binding2"]["key"];
-	std::string custom3Key = networkObj->settings["custom_binding3"]["key"];
-	keysObject[switchTargetKey] = false;
-	keysObject[interactNPCKey] = false;
-	keysObject[jumpKey] = false;
-	keysObject[leftKey] = false;
-	keysObject[rightKey] = false;
-	keysObject[custom1Key] = false;
-	keysObject[custom2Key] = false;
-	keysObject[custom3Key] = false;
+	keysObject["left"] = false;
+	keysObject["right"] = false;
+	keysObject["jump"] = false;
+	keysObject["interactNPC"] = false;
+	keysObject["switchTarget"] = false;
+	keysObject["custom_binding1"] = false;
+	keysObject["custom_binding2"] = false;
+	keysObject["custom_binding3"] = false;
+
+	keysObject["sessionID"] = networkObj->sessionID; //adds the session ID for the basic auth
 }
 
 void game::listenForKeys(sf::Event event) {
-	std::string key = sfKeyToAbstractKeyMap[event.key.code];
-
 	if (event.type == sf::Event::KeyPressed) { //keysObject[key] = true/false; true = key is pressed, false = key is not pressed/released
+		std::string key = sfKeyToAbstractKeyMap[event.key.code];
 		if (key==networkObj->settings["left"] || key == networkObj->settings["right"] || key == networkObj->settings["jump"] || key == networkObj->settings["interactNPC"] || key == networkObj->settings["switchTarget"] || key == networkObj->settings["custom_binding1"]["key"] || key == networkObj->settings["custom_binding2"]["key"] || key == networkObj->settings["custom_binding3"]["key"]) {
-			keysObject[key] = true;
+			if (key == networkObj->settings["left"] && keysObject["left"] != true) {
+				keysObject["left"] = true;
+				changeInButtonState = true; //used to indicate that some buttons have been pressed
+			}else if (key == networkObj->settings["right"] && keysObject["right"] != true) {
+				keysObject["right"] = true;
+				changeInButtonState = true; //used to indicate that some buttons have been pressed
+			}else if (key == networkObj->settings["jump"] && keysObject["jump"] != true) {
+				keysObject["jump"] = true;
+				changeInButtonState = true; //used to indicate that some buttons have been pressed
+			}else if (key == networkObj->settings["interactNPC"] && keysObject["interactNPC"] != true) {
+				keysObject["interactNPC"] = true;
+				changeInButtonState = true; //used to indicate that some buttons have been pressed
+			}else if (key == networkObj->settings["switchTarget"] && keysObject["switchTarget"] != true) {
+				keysObject["switchTarget"] = true;
+				changeInButtonState = true; //used to indicate that some buttons have been pressed
+			}else if (key == networkObj->settings["custom_binding1"] && keysObject["custom_binding1"] != true) {
+				keysObject["custom_binding1"] = true;
+				changeInButtonState = true; //used to indicate that some buttons have been pressed
+			}else if (key == networkObj->settings["custom_binding2"] && keysObject["custom_binding2"] != true) {
+				keysObject["custom_binding2"] = true;
+				changeInButtonState = true; //used to indicate that some buttons have been pressed
+			}else if (key == networkObj->settings["custom_binding3"] && keysObject["custom_binding3"] != true) {
+				keysObject["custom_binding3"] = true;
+				changeInButtonState = true; //used to indicate that some buttons have been pressed
+			}
 		}
 		else { //the ones above are the keys to tell the server about, the ones below should deal with stuff like opening inventory and other stuff like that
-
+			//so stuff like pressing open inventory button or whatever
 		}
 	}
 
 	if (event.type == sf::Event::KeyReleased) { //this would be used to stop moving for example
+		std::string key = sfKeyToAbstractKeyMap[event.key.code];
 		if (key == networkObj->settings["left"] || key == networkObj->settings["right"] || key == networkObj->settings["jump"] || key == networkObj->settings["custom_binding1"]["key"] || key == networkObj->settings["custom_binding2"]["key"] || key == networkObj->settings["custom_binding3"]["key"]) {
-			keysObject[key] = false;
+			if (key == networkObj->settings["left"] && keysObject["left"] != false) {
+				keysObject["left"] = false;
+				changeInButtonState = true; //used to indicate that some buttons have been pressed
+			}else if (key == networkObj->settings["right"] && keysObject["right"] != false) {
+				keysObject["right"] = false;
+				changeInButtonState = true; //used to indicate that some buttons have been pressed
+			}else if (key == networkObj->settings["jump"] && keysObject["jump"] != false) {
+				keysObject["jump"] = false;
+				changeInButtonState = true; //used to indicate that some buttons have been pressed
+			}else if (key == networkObj->settings["interactNPC"] && keysObject["interactNPC"] != false) {
+				keysObject["interactNPC"] = false;
+				changeInButtonState = true; //used to indicate that some buttons have been pressed
+			}else if (key == networkObj->settings["switchTarget"] && keysObject["switchTarget"] != false) {
+				keysObject["switchTarget"] = false;
+				changeInButtonState = true; //used to indicate that some buttons have been pressed
+			}else if (key == networkObj->settings["custom_binding1"] && keysObject["custom_binding1"] != false) {
+				keysObject["custom_binding1"] = false;
+				changeInButtonState = true; //used to indicate that some buttons have been pressed
+			}else if (key == networkObj->settings["custom_binding2"] && keysObject["custom_binding2"] != false) {
+				keysObject["custom_binding2"] = false;
+				changeInButtonState = true; //used to indicate that some buttons have been pressed
+			}else if (key == networkObj->settings["custom_binding3"] && keysObject["custom_binding3"] != false) {
+				keysObject["custom_binding3"] = false;
+				changeInButtonState = true; //used to indicate that some buttons have been pressed
+			}
 		}
 	}
 }
 
 void game::live() {
-	keysObject["sessionID"] = networkObj->sessionID; //adds the session ID for the basic auth
-	gameNetworkObj->sendData(keysObject); //sends the object to the server
+	if (changeInButtonState && !networkObj->msgBoxFocused) {
+		gameNetworkObj->sendData(keysObject); //sends the object to the server
 
-	//we're resetting some of them here, as they just do a single action, rather than move or whatever
-	std::string switchTargetKey = networkObj->settings["switchTarget"];
-	std::string interactNPCKey = networkObj->settings["interactNPC"];
-	keysObject[switchTargetKey] = false;
-	keysObject[interactNPCKey] = false;
+		//we're resetting some of them here, as they just do a single action, rather than move or whatever
+		keysObject["interactNPC"] = false;
+		keysObject["switchTarget"] = false;
+
+		changeInButtonState = false; //reset this so that we don't repeatedly send the same data to the server
+	}
 }
 
 /*

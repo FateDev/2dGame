@@ -57,7 +57,17 @@ void network::removeUser(unsigned int i){ //function to basically properly log o
 
 	uniqueIDToUserVectorIndexMap.erase(users.compVec[i].sessionID); //will erase the mapping of the unique session ID to the index in the component vector for this user
     
-    unsigned int entityID = users.vectorToEntityMap(i);
+    unsigned int entityID = users.vectorToEntityMap(i); //get the user entityID
+	sf::Vector2f coordinates = locationStructs.compVec[locationStructs.entityToVectorMap(entityID)].coordinates; //get the user's coordinates
+	ecs::system::coordinatesStruct removeUserCoordinates((int(coordinates.x) % chunkPixelSize_x), (int(coordinates.y) % chunkPixelSize_y)); //get what their coordinates would be in the world using simple mod math
+
+	for(int i = 0; i < chunks[removeUserCoordinates].size(); i++){ //get the coordinate retrieved above, and get the chunk at that coordinate, and loop through the vector storing all the entities at that coordinate
+		if(chunks[removeUserCoordinates][i].id == entityID){ //if the entityID is equal to the one we retrieved, it's the user we're looking for
+			chunks[removeUserCoordinates].erase(chunks[removeUserCoordinates].begin()+i); //remove the user from the vector
+			break;
+		}
+	}
+
     ecs::entity::superEntityManager.destroy(entityID); //removes them from the array if it is
 
     std::string msgString = "SERVER: A USER HAS LEFT\nSERVER: CLIENTS ONLINE: " + std::to_string(users.compVec.size()) + "\n"; //outputs some server info to indicate that the user is gone
@@ -246,8 +256,13 @@ void network::server(unsigned short PORT){ //the function for server initialisat
 	user* userPtr; //makes a user pointer
 
 	std::cout << "SERVER: SERVER STARTED" << std::endl; //outputs that the server has started
+	//unsigned int entityID2 = ecs::entity::superEntityManager.create({components::USER, components::LOCATION});
+	//std::cout << entityID2 << std::endl;
 
 	sf::Clock clock;
+
+	ecs::system::coordinatesStruct startCoord(0, 0); //the starting coordinates
+	ecs::entity::entity tempEntity; //used to put the users entity inside some chunk
 
 	while(true){ //loop endlessly
 		std::string outputString; //the string to alert connected users that another user has joined
@@ -281,6 +296,11 @@ void network::server(unsigned short PORT){ //the function for server initialisat
 				outputString = "SERVER: NEW CONNECTION @ " + socket->getRemoteAddress().toString() + "\n"; //make a string which includes their IP address...
 
                 unsigned int entityID = ecs::entity::superEntityManager.create({components::USER, components::LOCATION}); //a new object with those attributes is made
+				
+				//std::cout << entityID << std::endl;
+				tempEntity.id = entityID; //sets the temp entity to have the correct ID
+				ecs::system::chunks[startCoord].push_back(tempEntity); //pushes users to the (0, 0) chunk
+
                 unsigned int componentVectorIndex = users.entityToVectorMap(entityID); //gets the component vector index of this entity
 
 				userPtr->socket = socket; //make the new user object contain their socket
@@ -305,33 +325,140 @@ void network::server(unsigned short PORT){ //the function for server initialisat
 	}
 }
 
-void udpBroadcast::broadcastGameState(){
+physics* physics::instance = 0; //to make it singleton
+physics::physics() {} //basically default constructor
+
+physics* physics::getInstance(){
+	if(instance == 0){
+		instance = new physics();
+	}
+	return instance;
+}
+
+
+void physics::userInput(json keysAndID){
+	unsigned short userVectorIndex = uniqueIDToUserVectorIndexMap[keysAndID["sessionID"]];
+	sf::Vector2f* userVelocity = &ecs::component::locationStructs.compVec[userVectorIndex].velocity;
+	bool* onFloor = &ecs::component::locationStructs.compVec[userVectorIndex].onFloor;
+
+	if((keysAndID["left"] && keysAndID["right"]) || (!keysAndID["left"] && !keysAndID["right"])){ //if both or neither of them are pressed, the velocity is zero
+		userVelocity->x = 0;
+	}else{
+		if(keysAndID["left"])
+			userVelocity->x = -velocity.x;
+		if(keysAndID["right"])
+			userVelocity->x = velocity.x;
+	}
+
+	if(keysAndID["jump"] && *onFloor){ //will jump up and indicate that it's not on the floor anymore
+		userVelocity->y = -acceleration.y; //negative y is upwards
+		*onFloor = false;
+	}
+	//std::cout << ecs::component::locationStructs.compVec[userVectorIndex].velocity.x << " -- " << ecs::component::locationStructs.compVec[userVectorIndex].velocity.y << " -- " << ecs::component::locationStructs.compVec[userVectorIndex].onFloor << std::endl;
+
+}
+
+void physics::userIndependentPhysics(){
+	//make gravity effects here
+}
+
+physics::collisionType physics::checkCollision(sf::Vector2f coordinates, sf::Vector2f velocity){
+	//checks collision detection, uses mod math to find current chunk, then does collision detection
+	sf::Vector2f currentChunkCoords(int(coordinates.x) % chunkPixelSize_x, int(coordinates.y) % chunkPixelSize_y);
+
+	for(auto &locationStruct : ecs::component::locationStructs.compVec){ //loops through location structs, by reference
+
+	}
+
+	return NONE; //temporarily return this
+}
+
+void physics::moveEntities(){
+	for(auto &locationStruct : ecs::component::locationStructs.compVec){ //loops through location structs, by reference
+		std::lock_guard<std::mutex> lock(mutexs::userLocationsMutex); //will block attempts to lock this mutex again, thereby allowing us to prevent accidentally accessing shared data at the wrong time, released at the end of scope
+		
+		if(!locationStruct.onFloor){
+			locationStruct.velocity.y += deceleration.y; //if it's not on ground it should accelerate downwards
+
+			collisionType collision = checkCollision(locationStruct.coordinates, locationStruct.velocity);
+			if(collision != NONE){
+				switch (collision)
+				{
+				case FLOOR:
+					locationStruct.onFloor = true;
+					/*bounce off floor, and change velocity obviously*/
+					break;
+				case ENTITY:
+					/*bounce off entity, and change velocity obviously*/
+					break;
+				case WALL:
+					/*bounce off wall, and change velocity obviously*/
+					break;
+				case CEILING:
+					/*bounce off ceiling, and change velocity obviously*/
+					break;
+				default:
+					break;
+				}
+			}
+		}
+
+		locationStruct.coordinates.x += locationStruct.velocity.x;
+		locationStruct.coordinates.y += locationStruct.velocity.y;
+
+		sf::sleep(sf::milliseconds(1000/fps)); //will only run the *fps* number of times per second at most, maybe slightly longer due to mutex locking
+	}
+}
+
+mutexs* mutexs::instance = 0;
+mutexs::mutexs() {}
+mutexs* mutexs::getInstance(){
+	if(instance == 0){
+		instance = new mutexs();
+	}
+	return instance;
+}
+
+std::mutex mutexs::userLocationsMutex; //defines the mutex
+
+void udpBroadcast::broadcastGameState(){ //this broadcasts stuff on port 5002
 	sf::UdpSocket socket;
 	socket.bind(5002);
 	while(true){
+		json jsonObj;
+		jsonObj["happy"] = "sure";
 		sf::Packet packet;
-		packet << "Hello world!";
-		socket.send(packet, sf::IpAddress::Broadcast, 5002);
+		//packet << jsonObj.dump();
+		//socket.send(packet, sf::IpAddress::Broadcast, 5002);
 
 		sf::sleep(sf::milliseconds(200));
 	}
 }
 
-void udpBroadcast::listenToUsers(){
+void udpBroadcast::listenToUsers(){ //this listens to stuff on port 5001
 	sf::UdpSocket socket;
 	socket.bind(5001);
 	while(true){
 		char buffer[1024];
 		std::size_t received = 0;
-		sf::IpAddress sender;
-		unsigned short port;
-		socket.receive(buffer, sizeof(buffer), received, sender, port);
-		json jsonObj = json::parse(buffer);
+		sf::IpAddress senderIP;
+		unsigned short senderPort;
+
+		socket.receive(buffer, sizeof(buffer), received, senderIP, senderPort); //receive the data
+
+		json jsonObj = json::parse(buffer); //make into json object
 		
-		if(!jsonObj["sessionID"].is_null()){
-			if(uniqueIDToUserVectorIndexMap.count(jsonObj["sessionID"])){
-				std::cout << jsonObj["pi"] << jsonObj["iteration"] << std::endl;
+		if(!jsonObj["sessionID"].is_null()){ //does the sessionID field exist in this json object?
+			if(uniqueIDToUserVectorIndexMap.count(jsonObj["sessionID"])){ //does the sessionID belong to any active nusers?
+				//std::cout << jsonObj.dump() << std::endl; //print the json data for now
+				physics::getInstance()->userInput(jsonObj);
 			}
 		}
+	}
+}
+
+void updateActiveChunkData::updateActiveChunks(){
+	for(ecs::component::location const& location : ecs::component::locationStructs.compVec){
+
 	}
 }

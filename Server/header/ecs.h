@@ -1,15 +1,23 @@
 #ifndef ECS_HEAD
 #define ECS_HEAD
 
-//the size of one chunk
-const int chunkPixelSize_x = 1920;
-const int chunkPixelSize_y = 1080;
-
 #include <unordered_set>
 #include <unordered_map>
 #include <vector>
 #include <initializer_list>
 #include <SFML/Network.hpp>
+#include <thread>
+#include <mutex>
+
+#include "../header/helper.h"
+
+//the size of one chunk
+const int chunkPixelSize_x = 1920;
+const int chunkPixelSize_y = 1080;
+const int fps = 60;
+const sf::Vector2f deceleration = { 0, 0.1 }; //x = friction on surface deceleration, y = gravity
+const sf::Vector2f acceleration = { 0, 1 }; //x = acceleration by arrow keys (don't want to accelerate), y = acceleration when jumping up
+const sf::Vector2f velocity = { 1, 0 }; //x = initial velocity with arrow keys, y = initial velocity with arrow keys (don't want any so zero)
 
 #include "../deps/json.hpp"
 using json = nlohmann::json;
@@ -41,6 +49,8 @@ namespace ecs{
 
         struct location{
             sf::Vector2f coordinates = { 0, 0 }; //the in game location of the player
+            sf::Vector2f velocity = { 0, 0 }; //this is the velocity of the player
+            bool onFloor = true;
         };
 
         enum components {USER, LOCATION, DRAWABLE, PHYSICAL}; //enum for all of the components
@@ -49,7 +59,7 @@ namespace ecs{
         template <class T>
         class ecsComponentStructure{
             private:
-                std::unordered_map<unsigned int, unsigned int> entityVectorMap; //will map entities to vector indexes so we can move about vector elements without breaking indexes
+                bimap<unsigned int, unsigned int> entityVectorMap; //will map entities to vector indexes so we can move about vector elements without breaking indexes (maps both ways)
             public:
                 void addComponent(T component, unsigned int entityID); //will add this component
                 void removeComponent(unsigned int entityID); //will remove the component at this index
@@ -101,21 +111,47 @@ namespace ecs{
         };
 
         struct coordinatesStruct{
-            static int id;
-            int uniqueID;
+            int uniqueID = 0;    
             std::pair<int, int> coordinates;
-            coordinatesStruct(){ uniqueID = ++id; }
+
+            coordinatesStruct(int xCoord, int yCoord) { 
+                std::string hashString = std::to_string(xCoord) + std::to_string(yCoord);
+                hashString += std::to_string(hashString.size());
+                uniqueID = std::stoi(hashString);
+            };
 
             bool operator==(const coordinatesStruct& t) const { //this is needed to put entities in the unordered_map structure, this basically allows for direct comparison of different entity structs
-                return (this->id == t.id); 
+                return (this->uniqueID == t.uniqueID); 
             }
         };
 
-        struct Hash { //this is also needed to put the entity struct into an unordered_set, this makes the hashing function literally just be the entity ID, which isn't a problem as each entity has a unique ID
+        struct Hash { //this is also needed to put the coordinates struct into an unordered_set, this makes the hashing function literally just be the coordinate ID, which isn't a problem as each entity has a unique ID
             size_t operator() (const coordinatesStruct &coords) const {
-                return coords.id;
+                return coords.uniqueID;
             }
         };
+
+        class mutexs{
+            private:
+                static mutexs* instance;
+                mutexs();
+            public:
+                static std::mutex userLocationsMutex; //declares the mutex for reading to/from user location comp vec
+                static mutexs* getInstance();
+        };
+       
+       class physics{
+           private:
+                static physics* instance;
+                physics();
+           public:
+                enum collisionType { FLOOR, ENTITY, WALL, CEILING, NONE };
+                static physics* getInstance();
+                void userInput(json keysAndID);
+                void moveEntities();
+                collisionType checkCollision(sf::Vector2f coordinates, sf::Vector2f velocity);
+                void userIndependentPhysics();
+       };
 
         struct udpBroadcast{
             void broadcastGameState(); //this will read the gameData object and send the relavent chunk data to some connected client
@@ -168,7 +204,7 @@ namespace ecs{
 
             All chunk data is stored in gameData, but for internal processing for physics and the such it should be in the chunks map
         */
-
+       
         class systemsManager{
             private:
                 unsigned int port;

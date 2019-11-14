@@ -18,7 +18,8 @@ private:
 	friend size_t WriteCallback(char *contents, size_t size, size_t nmemb, void *userp); //friend function to get data from curl, this is forward declaring the function as we can't include the header file here, as this file is included in it
 public:
 	json settings; //will contain the user defined settings
-	std::string websiteUrl = "";
+	bool msgBoxFocused = false; //this is used to indicate whether or not the message box is focused (used to decide if to send server keypress information)
+	std::string websiteUrl = ""; //the website url will be stored here
 	std::string roomGuild = "main.alpha"; //public because we need to update this a lot, stores current room/guild (this is the one you start in)
 	int userID; //will hold the user ID
 	json messages; //messages from DB container

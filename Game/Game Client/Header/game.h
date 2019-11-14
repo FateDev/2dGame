@@ -21,6 +21,7 @@ private:
 	std::string remoteIP = "";
 	sf::UdpSocket socket;
 public:
+	json responseData;
 	void setData(std::string sessID, unsigned short lisPort, unsigned short senPort, std::string remIP) { sessionID = sessID; localListenPort = lisPort; sendPort = senPort; remoteIP = remIP; } //will just assign those values
 	void sendData(json payload); //this will send the payload to the server, the server accepts key presses and such
 	void listenData();
@@ -32,6 +33,7 @@ private:
 	gameNetwork* gameNetworkObj = NULL;
 	std::unordered_map<sf::Keyboard::Key, std::string> sfKeyToAbstractKeyMap;
 	std::unordered_map<std::string, sf::Keyboard::Key> abstractKeyTosfKeyMap;
+	bool changeInButtonState = false; //used to indicate whether or not any buttons have been pressed or released
 public:
 	json keysObject;
 	game(networking* networkObject, gameNetwork* gameConnection);
