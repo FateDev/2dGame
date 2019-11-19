@@ -19,6 +19,11 @@ unsigned int entityManager::create(std::initializer_list<ecs::component::compone
             ecs::component::location location;
             ecs::component::locationStructs.addComponent(location, nextEntity.id); //appropriate component added to the appropriate structure
         }
+        
+        if(*(initialiseWithStructs.begin()+i) == ecs::component::components::DRAWABLE){
+            ecs::component::drawable drawableStruct;
+            ecs::component::drawables.addComponent(drawableStruct, nextEntity.id); //appropriate component added to the appropriate structure
+        }
     }
     
     return nextEntity.id; //returns the entity ID

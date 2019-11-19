@@ -6,9 +6,18 @@
 #include <iostream>
 #include <SFML/Network.hpp>
 #include <curl/curl.h>
+#include <chrono>
 
 using namespace ecs::system;
 using namespace ecs::component;
+
+int chunkCoordHelper(int coord, int screenSize){
+	if(coord >= 0){
+		return div(coord, screenSize).quot;
+	}else{
+		return div(coord, screenSize).quot-1;
+	}
+}
 
 void systemsManager::systemStart(){
 	processNetwork = new sf::Thread(&network::process, &networkObj); //makes the thread
@@ -17,11 +26,11 @@ void systemsManager::systemStart(){
 	listenNetwork = new sf::Thread(std::bind(&network::server, &networkObj, port)); //launches the server to listen on that specific port
 	listenNetwork->launch(); //launches it
 	
-	listenUdp = new sf::Thread(&udpBroadcast::listenToUsers, &udpNetworkObj);
+	listenUdp = new sf::Thread(&gameBroadcast::listenToUsers, gameBroadcast::getInstance());
 	listenUdp->launch();
 
-	sendUdp = new sf::Thread(&udpBroadcast::broadcastGameState, &udpNetworkObj);
-	sendUdp->launch();
+	mainGame = new sf::Thread(&game::runGame, game::getInstance());
+	mainGame->launch();
 }
 
 void systemsManager::systemEnd(){
@@ -59,7 +68,7 @@ void network::removeUser(unsigned int i){ //function to basically properly log o
     
     unsigned int entityID = users.vectorToEntityMap(i); //get the user entityID
 	sf::Vector2f coordinates = locationStructs.compVec[locationStructs.entityToVectorMap(entityID)].coordinates; //get the user's coordinates
-	ecs::system::coordinatesStruct removeUserCoordinates((int(coordinates.x) % chunkPixelSize_x), (int(coordinates.y) % chunkPixelSize_y)); //get what their coordinates would be in the world using simple mod math
+	ecs::system::coordinatesStruct removeUserCoordinates(chunkCoordHelper(int(coordinates.x), chunkPixelSize_x), chunkCoordHelper(int(coordinates.y), chunkPixelSize_y)); //get what their coordinates would be in the world using simple mod math
 
 	for(int i = 0; i < chunks[removeUserCoordinates].size(); i++){ //get the coordinate retrieved above, and get the chunk at that coordinate, and loop through the vector storing all the entities at that coordinate
 		if(chunks[removeUserCoordinates][i].id == entityID){ //if the entityID is equal to the one we retrieved, it's the user we're looking for
@@ -295,13 +304,16 @@ void network::server(unsigned short PORT){ //the function for server initialisat
 
 				outputString = "SERVER: NEW CONNECTION @ " + socket->getRemoteAddress().toString() + "\n"; //make a string which includes their IP address...
 
-                unsigned int entityID = ecs::entity::superEntityManager.create({components::USER, components::LOCATION}); //a new object with those attributes is made
+                unsigned int entityID = ecs::entity::superEntityManager.create({components::USER, components::LOCATION, components::DRAWABLE}); //a new object with those attributes is made
 				
 				//std::cout << entityID << std::endl;
 				tempEntity.id = entityID; //sets the temp entity to have the correct ID
 				ecs::system::chunks[startCoord].push_back(tempEntity); //pushes users to the (0, 0) chunk
 
                 unsigned int componentVectorIndex = users.entityToVectorMap(entityID); //gets the component vector index of this entity
+                unsigned int drawableVectorIndex = drawables.entityToVectorMap(entityID); //gets the component vector index of this entity
+
+				drawables.compVec[drawableVectorIndex].type = ecs::entity::USER;
 
 				userPtr->socket = socket; //make the new user object contain their socket
 				userPtr->timeOfExpiry = sf::seconds(expiryTimer.getElapsedTime().asSeconds() + 5); //set the expiry time for their socket
@@ -364,7 +376,7 @@ void physics::userIndependentPhysics(){
 
 physics::collisionType physics::checkCollision(sf::Vector2f coordinates, sf::Vector2f velocity){
 	//checks collision detection, uses mod math to find current chunk, then does collision detection
-	sf::Vector2f currentChunkCoords(int(coordinates.x) % chunkPixelSize_x, int(coordinates.y) % chunkPixelSize_y);
+	sf::Vector2f currentChunkCoords(chunkCoordHelper(int(coordinates.x), chunkPixelSize_x), chunkCoordHelper(int(coordinates.y), chunkPixelSize_y));
 
 	for(auto &locationStruct : ecs::component::locationStructs.compVec){ //loops through location structs, by reference
 
@@ -374,18 +386,23 @@ physics::collisionType physics::checkCollision(sf::Vector2f coordinates, sf::Vec
 }
 
 void physics::moveEntities(){
-	for(auto &locationStruct : ecs::component::locationStructs.compVec){ //loops through location structs, by reference
+	int componentIndex = 0;
+	ecs::entity::entity tempEntity; //used to put the users entity inside some chunk
+	for(int j = 0; j < ecs::component::locationStructs.compVec.size(); j++){ //loops through location structs, by reference
+		tempEntity.id = 0;
+		auto locationStruct = &ecs::component::locationStructs.compVec[j];
+		componentIndex = j;
 		std::lock_guard<std::mutex> lock(mutexs::userLocationsMutex); //will block attempts to lock this mutex again, thereby allowing us to prevent accidentally accessing shared data at the wrong time, released at the end of scope
 		
-		if(!locationStruct.onFloor){
-			locationStruct.velocity.y += deceleration.y; //if it's not on ground it should accelerate downwards
+		if(!locationStruct->onFloor){
+			locationStruct->velocity.y += deceleration.y; //if it's not on ground it should accelerate downwards
 
-			collisionType collision = checkCollision(locationStruct.coordinates, locationStruct.velocity);
+			collisionType collision = checkCollision(locationStruct->coordinates, locationStruct->velocity);
 			if(collision != NONE){
 				switch (collision)
 				{
 				case FLOOR:
-					locationStruct.onFloor = true;
+					locationStruct->onFloor = true;
 					/*bounce off floor, and change velocity obviously*/
 					break;
 				case ENTITY:
@@ -403,10 +420,38 @@ void physics::moveEntities(){
 			}
 		}
 
-		locationStruct.coordinates.x += locationStruct.velocity.x;
-		locationStruct.coordinates.y += locationStruct.velocity.y;
+		if(locationStruct->coordinates.y + locationStruct->velocity.y > 0){ //this means below ground level, so manually set to ground
+			locationStruct->velocity.y = 0;
+			locationStruct->coordinates.y = 0;
+			locationStruct->onFloor = true;
+		}
 
-		sf::sleep(sf::milliseconds(1000/fps)); //will only run the *fps* number of times per second at most, maybe slightly longer due to mutex locking
+		sf::Vector2f newCoordinates(locationStruct->coordinates.x + locationStruct->velocity.x, locationStruct->coordinates.y + locationStruct->velocity.y);
+		
+		coordinatesStruct newChunkCoords(chunkCoordHelper(int(newCoordinates.x), chunkPixelSize_x), chunkCoordHelper(int(newCoordinates.y), chunkPixelSize_y));
+		coordinatesStruct currentChunkCoords(chunkCoordHelper(int(locationStruct->coordinates.x), chunkPixelSize_x), chunkCoordHelper(int(locationStruct->coordinates.y), chunkPixelSize_y)); //get what their coordinates would be in the world using simple mod math
+		
+		//the below moves an entity out of its old chunk and into the one it is now in
+		if(newChunkCoords.coordinates.first != currentChunkCoords.coordinates.first || newChunkCoords.coordinates.second != currentChunkCoords.coordinates.second){
+			unsigned int entityID = locationStructs.vectorToEntityMap(componentIndex);
+			
+			for(int i = 0; i < chunks[currentChunkCoords].size(); i++){ //get the coordinate retrieved above, and get the chunk at that coordinate, and loop through the vector storing all the entities at that coordinate
+				if(chunks[currentChunkCoords][i].id == entityID){ //if the entityID is equal to the one we retrieved, it's the user we're looking for
+					chunks[currentChunkCoords].erase(chunks[currentChunkCoords].begin()+i); //remove the user from the vector
+					tempEntity.id = entityID; //sets the correct entityID
+					chunks[newChunkCoords].push_back(tempEntity); //and pushes to the vector in the new chunk
+					break;
+				}
+			}
+			//std::cout << chunks[newChunkCoords].size() << " -- " << chunks[currentChunkCoords].size() << std::endl;
+			
+			//std::cout << "moved to chunk: " << newChunkCoords.coordinates.first << ", " << newChunkCoords.coordinates.second << users.compVec[users.entityToVectorMap(entityID)].username << std::endl;
+		}
+
+		locationStruct->coordinates.x += locationStruct->velocity.x;
+		locationStruct->coordinates.y += locationStruct->velocity.y;
+
+		//std::cout << locationStruct.coordinates.x << " -- " << locationStruct.coordinates.y << std::endl;
 	}
 }
 
@@ -421,30 +466,51 @@ mutexs* mutexs::getInstance(){
 
 std::mutex mutexs::userLocationsMutex; //defines the mutex
 
-void udpBroadcast::broadcastGameState(){ //this broadcasts stuff on port 5002
-	sf::UdpSocket socket;
-	socket.bind(5002);
-	while(true){
-		json jsonObj;
-		jsonObj["happy"] = "sure";
-		sf::Packet packet;
-		//packet << jsonObj.dump();
-		//socket.send(packet, sf::IpAddress::Broadcast, 5002);
+gameBroadcast* gameBroadcast::instance = 0;
+gameBroadcast* gameBroadcast::getInstance(){
+	if(instance == 0){
+		instance = new gameBroadcast();
+	}
+	return instance;
+}
 
-		sf::sleep(sf::milliseconds(200));
+void gameBroadcast::broadcastGameState(){ //this broadcasts stuff on port 5002
+	for(auto &chunkEntityVector : chunks){
+		for(auto &user : chunkEntityVector.second){
+			json jsonObj;
+			int userCompVecIndex = users.entityToVectorMap(user.id); //user ID in this case is the entity ID
+			int locationCompVecIndex = locationStructs.entityToVectorMap(user.id); //user ID in this case is the entity ID
+			
+			sf::Vector2f currentChunk = { chunkCoordHelper(int(locationStructs.compVec[locationCompVecIndex].coordinates.x), chunkPixelSize_x), chunkCoordHelper(int(locationStructs.compVec[locationCompVecIndex].coordinates.y), chunkPixelSize_y) };
+			sf::IpAddress userIP = users.compVec[userCompVecIndex].socket->getRemoteAddress();
+			double size = gameData.size();
+			
+			jsonObj["chunks"][0] = gameData[coordinatesStruct(currentChunk.x-1, currentChunk.y-1)].dump();
+			jsonObj["chunks"][1] = gameData[coordinatesStruct(currentChunk.x-1, currentChunk.y)].dump();
+			jsonObj["chunks"][2] = gameData[coordinatesStruct(currentChunk.x-1, currentChunk.y+1)].dump();
+			jsonObj["chunks"][3] = gameData[coordinatesStruct(currentChunk.x, currentChunk.y-1)].dump();
+			jsonObj["chunks"][4] = gameData[coordinatesStruct(currentChunk.x, currentChunk.y)].dump();
+			jsonObj["chunks"][5] = gameData[coordinatesStruct(currentChunk.x, currentChunk.y+1)].dump();
+			jsonObj["chunks"][6] = gameData[coordinatesStruct(currentChunk.x+1, currentChunk.y-1)].dump();
+			jsonObj["chunks"][7] = gameData[coordinatesStruct(currentChunk.x+1, currentChunk.y)].dump();
+			jsonObj["chunks"][8] = gameData[coordinatesStruct(currentChunk.x+1, currentChunk.y+1)].dump();
+			jsonObj["time"] = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count(); //attatches microsecond time
+
+			sf::Packet packet;
+			packet << jsonObj.dump();
+			sendSocket.send(packet, userIP, 5002);
+		}
 	}
 }
 
-void udpBroadcast::listenToUsers(){ //this listens to stuff on port 5001
-	sf::UdpSocket socket;
-	socket.bind(5001);
+void gameBroadcast::listenToUsers(){ //this listens to stuff on port 5001
 	while(true){
 		char buffer[1024];
 		std::size_t received = 0;
 		sf::IpAddress senderIP;
 		unsigned short senderPort;
 
-		socket.receive(buffer, sizeof(buffer), received, senderIP, senderPort); //receive the data
+		listenSocket.receive(buffer, sizeof(buffer), received, senderIP, senderPort); //receive the data
 
 		json jsonObj = json::parse(buffer); //make into json object
 		
@@ -457,8 +523,58 @@ void udpBroadcast::listenToUsers(){ //this listens to stuff on port 5001
 	}
 }
 
-void updateActiveChunkData::updateActiveChunks(){
+updateActiveChunkData* updateActiveChunkData::instance = 0;
+updateActiveChunkData::updateActiveChunkData() {};
+updateActiveChunkData* updateActiveChunkData::getInstance(){
+	if(instance == 0){
+		instance = new updateActiveChunkData();
+	}
+	return instance;
+}
+
+
+void updateActiveChunkData::updateActiveChunks(){ //this is for updating which chunks are actually active
 	for(ecs::component::location const& location : ecs::component::locationStructs.compVec){
 
+	}
+}
+
+void updateActiveChunkData::updateChunkData(){ //this is for updating the gameData object
+	gameData.clear(); //empties the gameData object
+	for(auto &chunkEntityVector : chunks){
+		for(int i = 0; i < chunkEntityVector.second.size(); i++){
+			int entityID = users.vectorToEntityMap(i);
+
+			gameData[chunkEntityVector.first]["entities"][entityID]["type"] = drawables.compVec[drawables.entityToVectorMap(entityID)].type;
+			
+			if(gameData[chunkEntityVector.first]["entities"][entityID]["type"] == ecs::entity::USER){
+				gameData[chunkEntityVector.first]["entities"][entityID]["username"] = users.compVec[users.entityToVectorMap(entityID)].username;
+				gameData[chunkEntityVector.first]["entities"][entityID]["id"] = users.compVec[users.entityToVectorMap(entityID)].userID;
+			}
+
+			gameData[chunkEntityVector.first]["entities"][entityID]["imgLocation"] = drawables.compVec[drawables.entityToVectorMap(entityID)].imgLocation;
+			gameData[chunkEntityVector.first]["entities"][entityID]["location"]["x"] = locationStructs.compVec[locationStructs.entityToVectorMap(entityID)].coordinates.x;
+			gameData[chunkEntityVector.first]["entities"][entityID]["location"]["y"] = locationStructs.compVec[locationStructs.entityToVectorMap(entityID)].coordinates.y;
+		}
+		gameData[chunkEntityVector.first]["entityCount"] = chunkEntityVector.second.size();
+	}
+}
+
+game* game::instance = 0;
+game::game() {}
+game* game::getInstance(){
+	if(instance == 0){
+		instance = new game();
+	}
+	return instance;
+}
+
+void game::runGame(){
+	while(true){
+		physics::getInstance()->moveEntities();
+		updateActiveChunkData::getInstance()->updateChunkData();
+		gameBroadcast::getInstance()->broadcastGameState();
+
+		sf::sleep(sf::milliseconds(1000/fps)); //will only run the *fps* number of times per second at most, maybe slightly longer due to mutex locking
 	}
 }

@@ -52,9 +52,10 @@ void chatBoxBulkAdd(networking* networkObject, chat* chatBox) {
 void gameBit(sf::Clock* globalClock, networking* networkObject, gameNetwork* gameConnection){
 	//the below is just the settings stuff for it
 	sf::ContextSettings settings;
-	settings.antialiasingLevel = 0; //so drawn objects don't look too sharp (especially for circles and stuff)
+	settings.antialiasingLevel = 8; //so drawn objects don't look too sharp (especially for circles and stuff)
 
-	sf::RenderWindow gameWindow(sf::VideoMode(sf::VideoMode::getDesktopMode().width, sf::VideoMode::getDesktopMode().height), "One More Time", sf::Style::Fullscreen, settings); 
+	sf::RenderWindow gameWindow(sf::VideoMode(sf::VideoMode::getDesktopMode().width, sf::VideoMode::getDesktopMode().height), "One More Time", sf::Style::Fullscreen, settings);
+	gameWindow.setVerticalSyncEnabled(true);
 	//fullscreen window for the game
 
 	tgui::Gui gui(gameWindow); //the main gui for the entire game bit
@@ -63,7 +64,7 @@ void gameBit(sf::Clock* globalClock, networking* networkObject, gameNetwork* gam
 	/********************************/
 	/********************************/
 
-	sf::Time loadingScreenRemove = sf::milliseconds(globalClock->getElapsedTime().asMilliseconds() + 1); //so it sets the duration of the loading screen as 1 second
+	sf::Time loadingScreenRemove = sf::milliseconds(globalClock->getElapsedTime().asMilliseconds() + 1000); //so it sets the duration of the loading screen as 1 second
 	//the below																									 
 	///temp set the above to 1ms
 	//the above
@@ -78,7 +79,11 @@ void gameBit(sf::Clock* globalClock, networking* networkObject, gameNetwork* gam
 
 	socialTabClass socialTabBit(gui, networkObject);
 
-	game actualGame(networkObject, gameConnection);
+	sf::View gameView(sf::FloatRect(0, 0, gameWindow.getSize().x, gameWindow.getSize().y));
+	gameView.setCenter(0, 0); //sets 0,0 as the center
+
+	game actualGame(networkObject, gameConnection, &gameWindow, &gameView);
+	gameConnection->gameReference = &actualGame;
 
 	toolbar mainToolbar(&gameWindow, &mainGameScreen, &socialTabBit, gui);
 
@@ -94,10 +99,8 @@ void gameBit(sf::Clock* globalClock, networking* networkObject, gameNetwork* gam
 			actualGame.listenForKeys(event); //pass the event on to the game to listen for keys
 		}
 
-		actualGame.live(); //processes stuff like keys and sends it
 
 		gameWindow.clear(sf::Color(26, 25, 30)); //clears the previous contents of the screen off, and replaces it with a nice colour
-
 		//below is the stuff for the loading screen, basically it says that if the expiry time has passed and the loading screen isn't null, delete it, set it to null
 		//and then make the main screen active, otherwise draw the loading screen stuff and that little animation too
 
@@ -112,8 +115,15 @@ void gameBit(sf::Clock* globalClock, networking* networkObject, gameNetwork* gam
 
 		//the below would check if the main game screen has been made active, and to then call the live update method, 
 		//which calls the chat's live update method (for sending messages and stuff)
-		if (mainGameScreen.active == true)
+		if (mainGameScreen.active == true) {
+			gameWindow.setView(gameView);
+			actualGame.live(); //processes stuff like keys and sends it
+
+			gameWindow.setView(gameWindow.getDefaultView());
+
 			mainGameScreen.liveUpdate(globalClock);
+
+		}
 		if (socialTabBit.active == true)
 			socialTabBit.liveUpdate(globalClock);
 
@@ -122,8 +132,9 @@ void gameBit(sf::Clock* globalClock, networking* networkObject, gameNetwork* gam
 		socialTabBit.completeThreadWork();
 
 		gameWindow.display(); //the contents of the screen are shown
-		sf::sleep(sf::milliseconds(15)); //so the program doesnt just fry your CPU
+		//sf::sleep(sf::milliseconds(1000/60)); //so the program doesnt just fry your CPU
 	}
+	exit(0); //really bad solution, but it kinda works
 }
 
 void clearResources(networking* networkObject, sf::Thread* pingThread, sf::Thread* receiveThread, sf::Clock* globalClock){

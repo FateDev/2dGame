@@ -1,6 +1,6 @@
 #include <game.h>
 
-game::game(networking* networkObject, gameNetwork* gameConnection) : networkObj(networkObject), gameNetworkObj(gameConnection) { 
+game::game(networking* networkObject, gameNetwork* gameConnection, sf::RenderWindow* gameWindow, sf::View* gameView) : networkObj(networkObject), gameNetworkObj(gameConnection), gameWindow(gameWindow), gameView(gameView) { 
 	//I added in a map the opposite way round just in case
 	sfKeyToAbstractKeyMap[sf::Keyboard::A] = "a"; abstractKeyTosfKeyMap["a"] = sf::Keyboard::A;
 	sfKeyToAbstractKeyMap[sf::Keyboard::B] = "b"; abstractKeyTosfKeyMap["b"] = sf::Keyboard::B;
@@ -125,6 +125,48 @@ void game::listenForKeys(sf::Event event) {
 	}
 }
 
+void game::draw() {
+	gameNetworkObj->jsonMutex.lock(); //will lock the gameData resource
+	std::cout << "locked resource" << std::endl;
+
+	if (!gameData.is_null()) {	//it now moves it
+		sf::CircleShape circleThing(60, 60);
+		circleThing.setOrigin(-60, 60);
+		sf::RectangleShape rectangle(sf::Vector2f(gameWindow->getSize().x, gameWindow->getSize().y / 2));
+		rectangle.setPosition(sf::Vector2f(-int(gameWindow->getSize().x) / 2, 0));
+		gameWindow->draw(circleThing);
+		gameWindow->draw(rectangle);
+		for (int j = 0; j < 8; j++) {
+			json chunkToDraw = json::parse(gameData["chunks"][j].get<std::string>());
+			std::cout << chunkToDraw.dump() << std::endl;
+			for (int i = 0; i < chunkToDraw["entityCount"]; i++) {
+				
+				//std::cout << gameNetworkObj->unixMicrosecondsOfLastPacket << ": " << chunkToDraw["entities"][0]["location"]["x"].get<float>() << " -- " << chunkToDraw["entities"][0]["location"]["y"].get<float>() << std::endl;
+
+				if (networkObj->userID == chunkToDraw["entities"][i]["id"].get<int>()) {
+					gameView->setCenter(chunkToDraw["entities"][i]["location"]["x"].get<float>() * 10, chunkToDraw["entities"][i]["location"]["y"].get<float>() * 10);
+					sf::RectangleShape player(sf::Vector2f(40, 40));
+					player.setOrigin(-20, 40);
+					player.setFillColor(sf::Color::Blue);
+					player.setPosition(chunkToDraw["entities"][i]["location"]["x"].get<float>() * 10, chunkToDraw["entities"][i]["location"]["y"].get<float>() * 10);
+
+					gameWindow->draw(player);
+				}
+				else {
+					sf::RectangleShape opponent(sf::Vector2f(40, 40));
+					opponent.setOrigin(-20, 40);
+					opponent.setFillColor(sf::Color::Red);
+					opponent.setPosition(chunkToDraw["entities"][i]["location"]["x"].get<float>() * 10, chunkToDraw["entities"][i]["location"]["y"].get<float>() * 10);
+
+					gameWindow->draw(opponent);
+				}
+			}
+		}
+	}
+
+	gameNetworkObj->jsonMutex.unlock(); //will free the resource
+}
+
 void game::live() {
 	if (changeInButtonState && !networkObj->msgBoxFocused) {
 		gameNetworkObj->sendData(keysObject); //sends the object to the server
@@ -135,6 +177,7 @@ void game::live() {
 
 		changeInButtonState = false; //reset this so that we don't repeatedly send the same data to the server
 	}
+	draw(); //will draw the actual game
 }
 
 /*

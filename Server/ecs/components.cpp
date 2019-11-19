@@ -38,4 +38,5 @@ unsigned int ecsComponentStructure<T>::vectorToEntityMap(unsigned int componentI
 
 //these are explicit instantiations for every type that this object will be used for, so it needs to be updated for any new components
 template class ecsComponentStructure<ecs::component::location>;
+template class ecsComponentStructure<ecs::component::drawable>;
 template class ecsComponentStructure<ecs::component::user>;

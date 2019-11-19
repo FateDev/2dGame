@@ -13,9 +13,10 @@
 //these are the definitions that the externs in ecs.h were referring to, this basically means that anywhere that ecs.h is included, the below variables are global
 ecs::component::ecsComponentStructure<ecs::component::user> ecs::component::users;
 ecs::component::ecsComponentStructure<ecs::component::location> ecs::component::locationStructs;
+ecs::component::ecsComponentStructure<ecs::component::drawable> ecs::component::drawables;
 ecs::entity::entityManager ecs::entity::superEntityManager;
 std::unordered_map<ecs::system::coordinatesStruct, std::vector<ecs::entity::entity>, ecs::system::Hash> ecs::system::chunks;
-std::unordered_map<ecs::system::coordinatesStruct, json, ecs::system::Hash> gameData;
+std::unordered_map<ecs::system::coordinatesStruct, json, ecs::system::Hash> ecs::system::gameData;
 std::unordered_map<std::string, unsigned int>  ecs::system::uniqueIDToUserVectorIndexMap;
 
 int main(){
@@ -23,19 +24,6 @@ int main(){
 
 	ecs::system::systemsManager systems = ecs::system::systemsManager(5000); //will make a system manager object with the port set to be 5000
 	systems.systemStart(); //this will launch the threads for system processes
-
-	ecs::system::coordinatesStruct coord(0, 50);
-	ecs::system::coordinatesStruct coord1(50, 0);
-	ecs::system::coordinatesStruct coord2(50, 50);
-
-	//std::cout << ecs::entity::superEntityManager.create({ecs::component::components::USER, ecs::component::components::LOCATION}) << std::endl;
-	ecs::entity::entity entitything;
-	entitything.id = 23;
-	//std::vector<ecs::entity::entity> v;
-	//v.push_back(entitything);
-	ecs::system::chunks[coord].push_back(entitything);
-	//ecs::system::chunks.insert({coord,v});
-	//ecs::system::chunks[coord].push_back(entitything);
 
 	while(true){ //this is basically a convenience, will always await user input and run forever, it should be changed
 		std::cin.get();

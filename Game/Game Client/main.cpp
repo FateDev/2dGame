@@ -60,7 +60,7 @@ int main(int argc, char **argv) { //will accept parameters from command line, th
 			gameBit(globalClock, networkObject, gameNetworkObj);
 		}
 
-		clearResources(networkObject, pingThread, receiveThread, globalClock); //deletes objects and stuff
+		//clearResources(networkObject, pingThread, receiveThread, globalClock); //deletes objects and stuff
 	}
 
 	return 0;

@@ -1,24 +1,42 @@
 #include <game.h>
 
 void gameNetwork::listenData() {
-	/*sf::UdpSocket socket;
-	socket.bind(localListenPort);
-
+	sf::Packet packet;
+	sf::IpAddress sender;
+	unsigned short port;
+	
 	while (true) {
-		sf::Packet packet;
-		sf::IpAddress sender;
-		unsigned short port;
-
 		socket.receive(packet, sender, port);
 		std::string output = "";
 		packet >> output;
 
-		//std::cout << sender.toString() << " said: " << output << std::endl;
-		//json jsonObj = json::parse(output);
-		//std::cout << jsonObj["happy"] << std::endl;
+		json jsonObj = json::parse(output);
+
+		if(unixMicrosecondsOfLastPacket == 0){
+			unixMicrosecondsOfLastPacket = jsonObj["time"].get<long long>();
+		}
+
+		if (gameReference != 0) {
+			jsonMutex.lock(); //will lock the gameData resource
+			unixMicrosecondsOfLastPacket = jsonObj["time"].get<long long>();
+			gameReference->gameData = json::parse(output);
+			jsonMutex.unlock(); //deconstructs the lock gaurd, thereby unlocking the resource
+		}
 	}
 
-	socket.unbind();*/
+	/*
+	//std::cout << sender.toString() << " said: " << output << std::endl;
+
+	json jsonObj = json::parse(output);
+
+	if (jsonObj.is_null()) {
+		std::cout << "null" << std::endl;
+	}
+
+	json chunkCenter = json::parse(jsonObj["center-center"].get<std::string>());
+	std::cout << chunkCenter["entities"][0]["name"].get<std::string>() << ": " << chunkCenter["entities"][0]["location"]["x"].get<float>() << " -- " << chunkCenter["entities"][0]["location"]["y"].get<float>() << std::endl;
+	//std::cout << jsonObj["center-center"].dump() << std::endl;
+	*/
 }
 
 void gameNetwork::sendData(json payload) {

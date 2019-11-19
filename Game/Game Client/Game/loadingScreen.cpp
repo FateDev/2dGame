@@ -25,7 +25,7 @@ loadingScreen::loadingScreen(sf::RenderWindow *window, sf::Clock *clock) : gameW
 
 void loadingScreen::liveUpdate() {
 	//below uses time and a sin function to make a loading icon
-	shape->setScale((sin(float(loadingScreenClock->getElapsedTime().asMilliseconds()) / 1000) + 1.5) / 2, (sin(float(loadingScreenClock->getElapsedTime().asMilliseconds()) / 1000) + 1.5) / 2);
+	shape->setScale((sin(float(loadingScreenClock->getElapsedTime().asMilliseconds()) / 200) + 1.5) / 2, (sin(float(loadingScreenClock->getElapsedTime().asMilliseconds()) / 200) + 1.5) / 2);
 	
 	gui->draw(); //draws the loading label
 	gameWindow->draw(*shape); //draws the loading icon

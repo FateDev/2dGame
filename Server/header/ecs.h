@@ -23,6 +23,12 @@ const sf::Vector2f velocity = { 1, 0 }; //x = initial velocity with arrow keys, 
 using json = nlohmann::json;
 
 namespace ecs{
+    namespace entity{
+        enum entityType {USER, MOB}; //enum for the types of entities
+    }
+}
+
+namespace ecs{
     namespace component{
         //the structs below are the components so far
         struct user{ 
@@ -39,7 +45,7 @@ namespace ecs{
 
         struct drawable{
             std::string imgLocation;
-            std::string type;
+            ecs::entity::entityType type;
         };
 
         struct physical{
@@ -71,6 +77,7 @@ namespace ecs{
         //each new component added to the game should be made exactly as they have been below, and obviously should have the components enum updated, and the explicit instantiation
         //stuff at the bottom of components.h should be updated, and the code for removing entities should be updated, and the code for adding new ones should also be updated
         extern ecsComponentStructure<user> users; //this basically tells the compiler that the variable declared is defined somewhere else in the program (main.cpp in this case)
+        extern ecsComponentStructure<drawable> drawables; //this basically tells the compiler that the variable declared is defined somewhere else in the program (main.cpp in this case)
         extern ecsComponentStructure<location> locationStructs; //this basically tells the compiler that the variable declared is defined somewhere else in the program (main.cpp in this case)
     }
     
@@ -118,6 +125,9 @@ namespace ecs{
                 std::string hashString = std::to_string(xCoord) + std::to_string(yCoord);
                 hashString += std::to_string(hashString.size());
                 uniqueID = std::stoi(hashString);
+
+                coordinates.first = xCoord; //sets the coordinates
+                coordinates.second = yCoord; //sets the coordinates
             };
 
             bool operator==(const coordinatesStruct& t) const { //this is needed to put entities in the unordered_map structure, this basically allows for direct comparison of different entity structs
@@ -153,9 +163,17 @@ namespace ecs{
                 void userIndependentPhysics();
        };
 
-        struct udpBroadcast{
-            void broadcastGameState(); //this will read the gameData object and send the relavent chunk data to some connected client
-            void listenToUsers(); //recieves data from users
+        class gameBroadcast{
+            private:
+                static gameBroadcast* instance;
+                gameBroadcast() { listenSocket.bind(5001); sendSocket.bind(5002); };
+            public:
+                sf::UdpSocket listenSocket;
+                sf::UdpSocket sendSocket;
+                static gameBroadcast* getInstance();
+                void broadcastGameState(); //this will read the gameData object and send the relavent chunk data to some connected client
+                void listenToUsers(); //recieves data from users
+
         };
 
         class network{
@@ -179,20 +197,25 @@ namespace ecs{
         };
 
         struct updateActiveChunkData{
-            std::unordered_map<coordinatesStruct, bool, Hash> activeChunks; 
-            //can be used for selecting data to be extracted from the ECS and put into the gameData object, and for physics engine related stuff
+            private:
+                static updateActiveChunkData* instance;
+                updateActiveChunkData();
+            public:
+                static updateActiveChunkData* getInstance();
+                std::unordered_map<coordinatesStruct, bool, Hash> activeChunks; 
+                //can be used for selecting data to be extracted from the ECS and put into the gameData object, and for physics engine related stuff
 
-            //the map would contain the coordinates of chunks, and whether or not they are active, loops through the locations component vector to get the coordinates of users
-            //and using simple modulus math, it can find what chunk a user is in (using chunkPixelSize_x and chunkPixelSize_y), and insert or remove entries for active chunks
-            //as neccessary
-            void updateActiveChunks(); //this would update the activeChunks map, removing inactive ones, adding new ones which should be set to active
-            void updateChunkData(); //this would get the data associated with some chunk and store it in the gameData object
-            
-            std::vector<sf::Vector2f> retrievePlayerChunks(unsigned int entityID); 
-            //using the entityID of the user, this should return the coordinates of 9 chunks who's data the player should receive, again, using simple 
-            //mod math and chunkPixelSize_x/chunkPixelSize_y
-            //it should access the location component, run the mod math on it, then it can literally use the numbers to directly access gameData and retrieve all of the
-            //chunk data that a user needs
+                //the map would contain the coordinates of chunks, and whether or not they are active, loops through the locations component vector to get the coordinates of users
+                //and using simple modulus math, it can find what chunk a user is in (using chunkPixelSize_x and chunkPixelSize_y), and insert or remove entries for active chunks
+                //as neccessary
+                void updateActiveChunks(); //this would update the activeChunks map, removing inactive ones, adding new ones which should be set to active
+                void updateChunkData(); //this would get the data associated with some chunk and store it in the gameData object
+                
+                std::vector<sf::Vector2f> retrievePlayerChunks(unsigned int entityID); 
+                //using the entityID of the user, this should return the coordinates of 9 chunks who's data the player should receive, again, using simple 
+                //mod math and chunkPixelSize_x/chunkPixelSize_y
+                //it should access the location component, run the mod math on it, then it can literally use the numbers to directly access gameData and retrieve all of the
+                //chunk data that a user needs
         };
         
         /*
@@ -205,11 +228,19 @@ namespace ecs{
             All chunk data is stored in gameData, but for internal processing for physics and the such it should be in the chunks map
         */
        
+       class game{
+           private:
+                static game* instance;
+                game();
+            public:
+                static game* getInstance();
+                void runGame();
+       };
+       
         class systemsManager{
             private:
                 unsigned int port;
             public:
-                udpBroadcast udpNetworkObj;
                 network networkObj;
 
                 systemsManager(unsigned int PORT) : port(PORT) {};
@@ -220,7 +251,8 @@ namespace ecs{
                 sf::Thread* listenNetwork = 0; //listening for incoming connections
 
                 sf::Thread* listenUdp = 0;
-                sf::Thread* sendUdp = 0;
+
+                sf::Thread* mainGame = 0;
         };
 
 
