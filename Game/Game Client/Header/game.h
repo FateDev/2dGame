@@ -23,7 +23,7 @@ private:
 public:
 	bool success = false;
 	gameNetwork(std::string ip, unsigned short port, std::string sessionID);
-	std::mutex jsonMutex;
+	std::mutex drawMutex;
 	game* gameReference = 0; //reference to the game itself
 	json responseData;
 	void sendData(json payload); //this will send the payload to the server, the server accepts key presses and such
@@ -39,6 +39,7 @@ private:
 	std::unordered_map<std::string, sf::Keyboard::Key> abstractKeyTosfKeyMap;
 	bool changeInButtonState = false; //used to indicate whether or not any buttons have been pressed or released
 public:
+	std::vector<sf::RectangleShape> rectanglesToDraw;
 	gameNetwork* gameNetworkObj = NULL;
 	json keysObject;
 	json gameData;

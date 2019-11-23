@@ -26,8 +26,11 @@ void systemsManager::systemStart(){
 	listenNetwork = new sf::Thread(std::bind(&network::server, &networkObj, port)); //launches the server to listen on that specific port
 	listenNetwork->launch(); //launches it
 	
-	listenUdp = new sf::Thread(&gameBroadcast::listenToUsers, gameBroadcast::getInstance());
-	listenUdp->launch();
+	gameListen = new sf::Thread(&gameBroadcast::listenToUsers, gameBroadcast::getInstance());
+	gameListen->launch();
+	
+	gameConnectServer = new sf::Thread(&gameBroadcast::server, gameBroadcast::getInstance());
+	gameConnectServer->launch();
 
 	mainGame = new sf::Thread(&game::runGame, game::getInstance());
 	mainGame->launch();
@@ -62,7 +65,14 @@ void network::removeUser(unsigned int i){ //function to basically properly log o
     //have to get the values below before removing the user from the array, so we can send a request to the HTTP server and have their online/offline status updated
     std::string id = std::to_string(users.compVec[i].userID);
 
+	users.compVec[i].socket->disconnect(); //disconnect socket
     selector.remove(*users.compVec[i].socket); //removes this socket from the selector
+
+	users.compVec[i].gameSocket->disconnect(); //disconnect gameSocket
+	gameBroadcast::getInstance()->selector.remove(*users.compVec[i].gameSocket); //remove from game selector
+
+	//delete users.compVec[i].gameSocket; //cleanup and delete
+	//delete users.compVec[i].socket; //cleanup and delete
 
 	uniqueIDToUserVectorIndexMap.erase(users.compVec[i].sessionID); //will erase the mapping of the unique session ID to the index in the component vector for this user
     
@@ -268,7 +278,7 @@ void network::server(unsigned short PORT){ //the function for server initialisat
 	//unsigned int entityID2 = ecs::entity::superEntityManager.create({components::USER, components::LOCATION});
 	//std::cout << entityID2 << std::endl;
 
-	sf::Clock clock;
+	sf::Clock clock; //used to generate some 'unique' session ID
 
 	ecs::system::coordinatesStruct startCoord(0, 0); //the starting coordinates
 	ecs::entity::entity tempEntity; //used to put the users entity inside some chunk
@@ -349,6 +359,8 @@ physics* physics::getInstance(){
 
 
 void physics::userInput(json keysAndID){
+	std::lock_guard<std::mutex> lock(mutexs::userLocationsMutex); //will block attempts to lock this mutex again, thereby allowing us to prevent accidentally accessing shared data at the wrong time, released at the end of scope
+		
 	unsigned short userVectorIndex = uniqueIDToUserVectorIndexMap[keysAndID["sessionID"]];
 	sf::Vector2f* userVelocity = &ecs::component::locationStructs.compVec[userVectorIndex].velocity;
 	bool* onFloor = &ecs::component::locationStructs.compVec[userVectorIndex].onFloor;
@@ -481,44 +493,96 @@ void gameBroadcast::broadcastGameState(){ //this broadcasts stuff on port 5002
 			int userCompVecIndex = users.entityToVectorMap(user.id); //user ID in this case is the entity ID
 			int locationCompVecIndex = locationStructs.entityToVectorMap(user.id); //user ID in this case is the entity ID
 			
-			sf::Vector2f currentChunk = { chunkCoordHelper(int(locationStructs.compVec[locationCompVecIndex].coordinates.x), chunkPixelSize_x), chunkCoordHelper(int(locationStructs.compVec[locationCompVecIndex].coordinates.y), chunkPixelSize_y) };
-			sf::IpAddress userIP = users.compVec[userCompVecIndex].socket->getRemoteAddress();
-			double size = gameData.size();
-			
-			jsonObj["chunks"][0] = gameData[coordinatesStruct(currentChunk.x-1, currentChunk.y-1)].dump();
-			jsonObj["chunks"][1] = gameData[coordinatesStruct(currentChunk.x-1, currentChunk.y)].dump();
-			jsonObj["chunks"][2] = gameData[coordinatesStruct(currentChunk.x-1, currentChunk.y+1)].dump();
-			jsonObj["chunks"][3] = gameData[coordinatesStruct(currentChunk.x, currentChunk.y-1)].dump();
-			jsonObj["chunks"][4] = gameData[coordinatesStruct(currentChunk.x, currentChunk.y)].dump();
-			jsonObj["chunks"][5] = gameData[coordinatesStruct(currentChunk.x, currentChunk.y+1)].dump();
-			jsonObj["chunks"][6] = gameData[coordinatesStruct(currentChunk.x+1, currentChunk.y-1)].dump();
-			jsonObj["chunks"][7] = gameData[coordinatesStruct(currentChunk.x+1, currentChunk.y)].dump();
-			jsonObj["chunks"][8] = gameData[coordinatesStruct(currentChunk.x+1, currentChunk.y+1)].dump();
-			jsonObj["time"] = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count(); //attatches microsecond time
+			if(users.compVec[userCompVecIndex].gameConnected == true){
+				if(selector.isReady(*(users.compVec[userCompVecIndex].gameSocket))){
+					sf::Vector2f currentChunk = { chunkCoordHelper(int(locationStructs.compVec[locationCompVecIndex].coordinates.x), chunkPixelSize_x), chunkCoordHelper(int(locationStructs.compVec[locationCompVecIndex].coordinates.y), chunkPixelSize_y) };
+					sf::IpAddress userIP = users.compVec[userCompVecIndex].socket->getRemoteAddress();
+					double size = gameData.size();
+					jsonObj["chunks"][0] = gameData[coordinatesStruct(currentChunk.x-1, currentChunk.y-1)].dump();
+					jsonObj["chunks"][1] = gameData[coordinatesStruct(currentChunk.x-1, currentChunk.y)].dump();
+					jsonObj["chunks"][2] = gameData[coordinatesStruct(currentChunk.x-1, currentChunk.y+1)].dump();
+					jsonObj["chunks"][3] = gameData[coordinatesStruct(currentChunk.x, currentChunk.y-1)].dump();
+					jsonObj["chunks"][4] = gameData[coordinatesStruct(currentChunk.x, currentChunk.y)].dump();
+					jsonObj["chunks"][5] = gameData[coordinatesStruct(currentChunk.x, currentChunk.y+1)].dump();
+					jsonObj["chunks"][6] = gameData[coordinatesStruct(currentChunk.x+1, currentChunk.y-1)].dump();
+					jsonObj["chunks"][7] = gameData[coordinatesStruct(currentChunk.x+1, currentChunk.y)].dump();
+					jsonObj["chunks"][8] = gameData[coordinatesStruct(currentChunk.x+1, currentChunk.y+1)].dump();
+					jsonObj["time"] = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count(); //attatches microsecond time
 
-			sf::Packet packet;
-			packet << jsonObj.dump();
-			sendSocket.send(packet, userIP, 5002);
+					sf::Packet packet;
+					packet << jsonObj.dump();
+					
+					users.compVec[userCompVecIndex].gameSocket->send(packet);
+				}
+			}
 		}
 	}
 }
 
 void gameBroadcast::listenToUsers(){ //this listens to stuff on port 5001
 	while(true){
-		char buffer[1024];
-		std::size_t received = 0;
-		sf::IpAddress senderIP;
-		unsigned short senderPort;
+		if(selector.wait(sf::seconds(1))){
+			for(user &userStruct : users.compVec){
+				if(userStruct.gameConnected && selector.isReady(*(userStruct.gameSocket))){
+					sf::Packet packet;
+					std::string buffer;
 
-		listenSocket.receive(buffer, sizeof(buffer), received, senderIP, senderPort); //receive the data
+					userStruct.gameSocket->receive(packet); //receive the data
 
-		json jsonObj = json::parse(buffer); //make into json object
-		
-		if(!jsonObj["sessionID"].is_null()){ //does the sessionID field exist in this json object?
-			if(uniqueIDToUserVectorIndexMap.count(jsonObj["sessionID"])){ //does the sessionID belong to any active nusers?
-				//std::cout << jsonObj.dump() << std::endl; //print the json data for now
-				physics::getInstance()->userInput(jsonObj);
+					packet >> buffer;
+
+					if(buffer.size() > 1){
+						json jsonObj = json::parse(buffer); //make into json object
+						
+						if(!jsonObj["sessionID"].is_null()){ //does the sessionID field exist in this json object?
+							if(uniqueIDToUserVectorIndexMap.count(jsonObj["sessionID"])){ //does the sessionID belong to any active nusers?
+								physics::getInstance()->userInput(jsonObj);
+							}
+						}
+					}
+				}
 			}
+		}
+	}
+}
+
+void gameBroadcast::server(){ //the function for server initialisation
+    sf::TcpListener listenSocket;
+	listenSocket.listen(5001);
+	
+	sf::TcpSocket* socket; //makes a socket pointer
+
+	sf::Clock clock;
+
+	while(true){ //loop endlessly
+		std::string outputString; //the string to alert connected users that another user has joined
+		socket = new sf::TcpSocket; //a new socket in case a user joins
+
+		if(listenSocket.accept(*socket) == sf::Socket::Done){ //if a new user has joined...
+			sf::Packet packet;
+			socket->receive(packet);
+			
+			std::string receiveString;
+			packet >> receiveString;
+
+			sf::Packet sendPacket;
+			std::cout << "NEW USER: " << socket->getRemoteAddress() << " -- " << receiveString << std::endl;
+
+			if(receiveString != ""){
+				if(int(uniqueIDToUserVectorIndexMap[receiveString]) > -1){
+					users.compVec[uniqueIDToUserVectorIndexMap[receiveString]].gameSocket = socket;
+					selector.add(*socket); //add this vector to the selector
+
+					sendPacket << "true"; //successful login
+					socket->send(sendPacket);
+					users.compVec[uniqueIDToUserVectorIndexMap[receiveString]].gameConnected = true;
+				}else{
+					sendPacket << "false"; //unsuccessful login
+					socket->send(sendPacket);
+				}
+			}
+		}else{
+			delete socket;
 		}
 	}
 }

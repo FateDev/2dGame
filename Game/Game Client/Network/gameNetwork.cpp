@@ -13,11 +13,12 @@ void gameNetwork::listenData() {
 		json jsonObj = json::parse(output);
 
 		if (gameReference != 0) {
-			jsonMutex.lock(); //will lock the gameData resource
-			//std::cout << jsonObj["chunks"][4].get<std::string>() << std::endl;
+			//jsonMutex.lock(); //will lock the gameData resource
+			std::cout << jsonObj["chunks"][4].get<std::string>() << std::endl;
 			//std::cout << "x: " << chunkToDraw["entities"][0]["location"]["x"].get<float>() * 10 << " -- y: " << chunkToDraw["entities"][0]["location"]["y"].get<float>() * 10 << std::endl << std::endl;
 			gameReference->gameData = json::parse(output);
-			jsonMutex.unlock(); //deconstructs the lock gaurd, thereby unlocking the resource
+			gameReference->draw();
+			//jsonMutex.unlock(); //deconstructs the lock gaurd, thereby unlocking the resource
 		}
 	}
 }

@@ -32,14 +32,15 @@ namespace ecs{
     namespace component{
         //the structs below are the components so far
         struct user{ 
-            int userID; //the user ID from the database
-            bool loggedIn; //whether or not they're logged in
+            int userID = -1; //the user ID from the database
+            bool loggedIn = false; //whether or not they're logged in
+            bool gameConnected = false; //whether or not the gameSocket has been connected
             std::string sessionID; //unique ID for current session
             std::string username; //the username
             std::string roomGuild = "main.alpha"; //the current roomGuild for the social tab
             std::string tempNewestMsgID = ""; //the ID of the newest message
-            sf::TcpSocket* socket; //the actual socket connection
-            sf::UdpSocket* gameSocket; //the socket connection for sending game data
+            sf::TcpSocket* socket = NULL; //the actual socket connection
+            sf::TcpSocket* gameSocket = NULL; //the socket connection for sending game data
             sf::Time timeOfExpiry; //the time till the socket should be removed, this is updated every time the client pings the server
         };
 
@@ -110,7 +111,7 @@ namespace ecs{
     }
 
     namespace system{
-        extern std::unordered_map<std::string, unsigned int>  uniqueIDToUserVectorIndexMap; //will map user's uniqueID's to their user vector map
+        extern std::unordered_map<std::string, unsigned int>  uniqueIDToUserVectorIndexMap; //will map user's uniqueID's to their user vector index
         
         struct mapCleanup{
             void chunksMapCleanup(); //should be run on a thread, should iterate through every single chunk, with something like 100ms sleep inbetween as it's not that important
@@ -166,13 +167,13 @@ namespace ecs{
         class gameBroadcast{
             private:
                 static gameBroadcast* instance;
-                gameBroadcast() { listenSocket.bind(5001); sendSocket.bind(5002); };
+                gameBroadcast() {};
             public:
-                sf::UdpSocket listenSocket;
-                sf::UdpSocket sendSocket;
+                sf::SocketSelector selector;
                 static gameBroadcast* getInstance();
                 void broadcastGameState(); //this will read the gameData object and send the relavent chunk data to some connected client
                 void listenToUsers(); //recieves data from users
+                void server();
 
         };
 
@@ -250,7 +251,8 @@ namespace ecs{
                 sf::Thread* processNetwork = 0; //the thread for running the main receiving and sending processes
                 sf::Thread* listenNetwork = 0; //listening for incoming connections
 
-                sf::Thread* listenUdp = 0;
+                sf::Thread* gameConnectServer = 0;
+                sf::Thread* gameListen = 0;
 
                 sf::Thread* mainGame = 0;
         };

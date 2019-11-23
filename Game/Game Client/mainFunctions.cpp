@@ -99,7 +99,6 @@ void gameBit(sf::Clock* globalClock, networking* networkObject, gameNetwork* gam
 			actualGame.listenForKeys(event); //pass the event on to the game to listen for keys
 		}
 
-
 		gameWindow.clear(sf::Color(26, 25, 30)); //clears the previous contents of the screen off, and replaces it with a nice colour
 		//below is the stuff for the loading screen, basically it says that if the expiry time has passed and the loading screen isn't null, delete it, set it to null
 		//and then make the main screen active, otherwise draw the loading screen stuff and that little animation too
@@ -132,7 +131,8 @@ void gameBit(sf::Clock* globalClock, networking* networkObject, gameNetwork* gam
 		socialTabBit.completeThreadWork();
 
 		gameWindow.display(); //the contents of the screen are shown
-		sf::sleep(sf::milliseconds(1000/120)); //so the program doesnt just fry your CPU
+
+		sf::sleep(sf::milliseconds(1000/60)); //so the program doesnt just fry your CPU
 	}
 	exit(0);
 }
