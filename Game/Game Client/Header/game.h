@@ -21,7 +21,6 @@ private:
 	std::string remoteIP = ""; 
 	sf::TcpSocket socket;
 public:
-	json gameDataFromServer;
 	bool success = false;
 	gameNetwork(std::string ip, unsigned short port, std::string sessionID);
 	std::mutex jsonMutex;

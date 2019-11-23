@@ -132,9 +132,9 @@ void gameBit(sf::Clock* globalClock, networking* networkObject, gameNetwork* gam
 		socialTabBit.completeThreadWork();
 
 		gameWindow.display(); //the contents of the screen are shown
-		//sf::sleep(sf::milliseconds(1000/60)); //so the program doesnt just fry your CPU
+		sf::sleep(sf::milliseconds(1000/120)); //so the program doesnt just fry your CPU
 	}
-	exit(0); //really bad solution, but it kinda works
+	exit(0);
 }
 
 void clearResources(networking* networkObject, sf::Thread* pingThread, sf::Thread* receiveThread, sf::Clock* globalClock){
