@@ -72,48 +72,58 @@ bool networking::login(std::string username) {
 	std::string sessionIDFlag = "USER::SESSION_ID::";
 	std::string userIDFlag = "USER::ID::";
 
+	// std::cout << receiveString << std::endl;
+
 	if (receiveString.find(removeFlag) == 0) { //if the flag is at the beginning of the string
 		receiveString.erase(receiveString.begin(), receiveString.begin() + removeFlag.length());
 
-		std::string server_sessionID = receiveString;
-		server_sessionID.erase(0, server_sessionID.find(sessionIDFlag) + sessionIDFlag.length());
-		server_sessionID.erase(server_sessionID.find(userIDFlag), server_sessionID.length());
-
-		//the below will check if the user ID has been sent from the server, as a response to the logon username we sent for the verification bit
-		std::string server_userID = receiveString;
-		server_userID.erase(server_userID.begin(), server_userID.begin() + server_userID.find(userIDFlag) + std::string(userIDFlag).length());
-
-		receiveString.erase(receiveString.find(sessionIDFlag), receiveString.length());
-
-		if (receiveString == "true") { //if the verification was successful
-			userID = std::stoi(server_userID); //set user ID
-			active = true; //verification was successful, so the rest of the program can proceed
-			usernameReal = username; //sets the username to be the one that the launcher provided us with
-			sessionID = server_sessionID; //sets the unique session ID thing, to send with our data for basic authentication
-
-			curl_global_init(CURL_GLOBAL_ALL); //initialise libcurl functionality globally, as it'll be used now that login was successful
-
-			getMessagesFromDB(); //this will get messages from the database as soon as login was successful
+		if (receiveString.find("false") == 0) {
+			active = false;
 		}
 		else {
-			active = false;
+			std::string server_sessionID = receiveString;
+			server_sessionID.erase(0, server_sessionID.find(sessionIDFlag) + sessionIDFlag.length());
+			server_sessionID.erase(server_sessionID.find(userIDFlag), server_sessionID.length());
+
+			//the below will check if the user ID has been sent from the server, as a response to the logon username we sent for the verification bit
+			std::string server_userID = receiveString;
+			server_userID.erase(server_userID.begin(), server_userID.begin() + server_userID.find(userIDFlag) + std::string(userIDFlag).length());
+
+			receiveString.erase(receiveString.find(sessionIDFlag), receiveString.length());
+
+			if (receiveString == "true") { //if the verification was successful
+				userID = std::stoi(server_userID); //set user ID
+				active = true; //verification was successful, so the rest of the program can proceed
+				usernameReal = username; //sets the username to be the one that the launcher provided us with
+				sessionID = server_sessionID; //sets the unique session ID thing, to send with our data for basic authentication
+
+				curl_global_init(CURL_GLOBAL_ALL); //initialise libcurl functionality globally, as it'll be used now that login was successful
+
+				getMessagesFromDB(); //this will get messages from the database as soon as login was successful
+			}
+			else {
+				active = false;
+			}
 		}
 	}
 
-	CURL* curl = curl_easy_init(); //we can set options for this to make it control how a transfer/transfers will be made
-	std::string readBuffer; //string for the returning data
+	if (active) {
+		CURL* curl = curl_easy_init(); //we can set options for this to make it control how a transfer/transfers will be made
+		std::string readBuffer; //string for the returning data
 
-	curl_easy_setopt(curl, CURLOPT_URL, std::string(websiteUrl + "/game/getSettings.php?username=" + username).c_str());
-	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback); //the callback
-	curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer); //will write data to the string, so the fourth param of the last callback is stored here
+		curl_easy_setopt(curl, CURLOPT_URL, std::string(websiteUrl + "/game/getSettings.php?username=" + username).c_str());
+		curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback); //the callback
+		curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer); //will write data to the string, so the fourth param of the last callback is stored here
 
-	curl_easy_perform(curl);
-	delete curl;
+		curl_easy_perform(curl);
+		delete curl;
 
-	settings = json::parse(readBuffer);
+		settings = json::parse(readBuffer);
 
-	delete receiveCharArray; //then deletes the char array
+		delete receiveCharArray; //then deletes the char array
+	}
+
 	return active; //return whether or not it's active
 }
 

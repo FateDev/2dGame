@@ -4,42 +4,52 @@ void gameNetwork::listenData() {
 	sf::Packet packet;
 	sf::IpAddress sender;
 	unsigned short port;
-	
+
 	while (true) {
-		socket.receive(packet, sender, port);
+		socket.receive(packet);
 		std::string output = "";
 		packet >> output;
 
 		json jsonObj = json::parse(output);
 
-		if(unixMicrosecondsOfLastPacket == 0){
-			unixMicrosecondsOfLastPacket = jsonObj["time"].get<long long>();
-		}
-
 		if (gameReference != 0) {
 			jsonMutex.lock(); //will lock the gameData resource
-			unixMicrosecondsOfLastPacket = jsonObj["time"].get<long long>();
+			//std::cout << jsonObj["chunks"][4].get<std::string>() << std::endl;
+			//std::cout << "x: " << chunkToDraw["entities"][0]["location"]["x"].get<float>() * 10 << " -- y: " << chunkToDraw["entities"][0]["location"]["y"].get<float>() * 10 << std::endl << std::endl;
 			gameReference->gameData = json::parse(output);
 			jsonMutex.unlock(); //deconstructs the lock gaurd, thereby unlocking the resource
 		}
 	}
-
-	/*
-	//std::cout << sender.toString() << " said: " << output << std::endl;
-
-	json jsonObj = json::parse(output);
-
-	if (jsonObj.is_null()) {
-		std::cout << "null" << std::endl;
-	}
-
-	json chunkCenter = json::parse(jsonObj["center-center"].get<std::string>());
-	std::cout << chunkCenter["entities"][0]["name"].get<std::string>() << ": " << chunkCenter["entities"][0]["location"]["x"].get<float>() << " -- " << chunkCenter["entities"][0]["location"]["y"].get<float>() << std::endl;
-	//std::cout << jsonObj["center-center"].dump() << std::endl;
-	*/
 }
 
 void gameNetwork::sendData(json payload) {
 	std::string payloadDump = payload.dump();
-	socket.send(payloadDump.c_str(), payloadDump.size() + 1, remoteIP, sendPort); //makes the json into a string, then 
+	sf::Packet packet;
+	packet << payloadDump;
+	socket.send(packet); //makes the json into a string, then 
+}
+
+gameNetwork::gameNetwork(std::string ip, unsigned short port, std::string sessionID) {
+	if(socket.connect(ip.c_str(), port) == sf::Socket::Done){
+		sf::Packet packet;
+		packet << sessionID;
+		socket.send(packet);
+
+		std::string output;
+
+		sf::Packet receivePacket;
+
+
+		//std::cout << packet.getData() << " -- " << sessionID << std::endl;
+		socket.receive(receivePacket);
+
+		receivePacket >> output;
+
+		if (output != "true") {
+			success = false;
+		}
+		else {
+			success = true;
+		}
+	}
 }

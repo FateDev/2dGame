@@ -127,7 +127,7 @@ void game::listenForKeys(sf::Event event) {
 
 void game::draw() {
 	gameNetworkObj->jsonMutex.lock(); //will lock the gameData resource
-	std::cout << "locked resource" << std::endl;
+	//std::cout << "locked resource" << std::endl;
 
 	if (!gameData.is_null()) {	//it now moves it
 		sf::CircleShape circleThing(60, 60);
@@ -138,27 +138,31 @@ void game::draw() {
 		gameWindow->draw(rectangle);
 		for (int j = 0; j < 8; j++) {
 			json chunkToDraw = json::parse(gameData["chunks"][j].get<std::string>());
-			std::cout << chunkToDraw.dump() << std::endl;
-			for (int i = 0; i < chunkToDraw["entityCount"]; i++) {
+			//std::cout << chunkToDraw.dump() << std::endl;
+			if (chunkToDraw.dump() != "null") {
+				//std::cout << chunkToDraw.dump() << std::endl;
+				for (int i = 0; i < chunkToDraw["entityCount"]; i++) {
 				
-				//std::cout << gameNetworkObj->unixMicrosecondsOfLastPacket << ": " << chunkToDraw["entities"][0]["location"]["x"].get<float>() << " -- " << chunkToDraw["entities"][0]["location"]["y"].get<float>() << std::endl;
+					//std::cout << gameNetworkObj->unixMicrosecondsOfLastPacket << ": " << chunkToDraw["entities"][0]["location"]["x"].get<float>() << " -- " << chunkToDraw["entities"][0]["location"]["y"].get<float>() << std::endl;
 
-				if (networkObj->userID == chunkToDraw["entities"][i]["id"].get<int>()) {
-					gameView->setCenter(chunkToDraw["entities"][i]["location"]["x"].get<float>() * 10, chunkToDraw["entities"][i]["location"]["y"].get<float>() * 10);
-					sf::RectangleShape player(sf::Vector2f(40, 40));
-					player.setOrigin(-20, 40);
-					player.setFillColor(sf::Color::Blue);
-					player.setPosition(chunkToDraw["entities"][i]["location"]["x"].get<float>() * 10, chunkToDraw["entities"][i]["location"]["y"].get<float>() * 10);
+					if (networkObj->userID == chunkToDraw["entities"][i]["id"].get<int>()) {
+						//std::cout << "x: " << chunkToDraw["entities"][i]["location"]["x"].get<float>() * 10 << " -- y: " << chunkToDraw["entities"][i]["location"]["y"].get<float>() * 10 << std::endl;
+						gameView->setCenter(chunkToDraw["entities"][i]["location"]["x"].get<float>() * 10, chunkToDraw["entities"][i]["location"]["y"].get<float>() * 10);
+						sf::RectangleShape player(sf::Vector2f(40, 40));
+						player.setOrigin(-20, 40);
+						player.setFillColor(sf::Color::Blue);
+						player.setPosition(chunkToDraw["entities"][i]["location"]["x"].get<float>() * 10, chunkToDraw["entities"][i]["location"]["y"].get<float>() * 10);
 
-					gameWindow->draw(player);
-				}
-				else {
-					sf::RectangleShape opponent(sf::Vector2f(40, 40));
-					opponent.setOrigin(-20, 40);
-					opponent.setFillColor(sf::Color::Red);
-					opponent.setPosition(chunkToDraw["entities"][i]["location"]["x"].get<float>() * 10, chunkToDraw["entities"][i]["location"]["y"].get<float>() * 10);
+						gameWindow->draw(player);
+					}
+					else {
+						sf::RectangleShape opponent(sf::Vector2f(40, 40));
+						opponent.setOrigin(-20, 40);
+						opponent.setFillColor(sf::Color::Red);
+						opponent.setPosition(chunkToDraw["entities"][i]["location"]["x"].get<float>() * 10, chunkToDraw["entities"][i]["location"]["y"].get<float>() * 10);
 
-					gameWindow->draw(opponent);
+						gameWindow->draw(opponent);
+					}
 				}
 			}
 		}
