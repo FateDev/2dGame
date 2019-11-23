@@ -16,7 +16,7 @@ void helpFunction();
 void gameBit(sf::Clock* globalClock, networking* networkObject, gameNetwork* gameConnection);
 //this is the main game bit
 
-void clearResources(networking* networkObject, sf::Thread* pingThread, sf::Thread* receiveThread, sf::Clock* globalClock); 
+void clearResources(networking* networkObject, sf::Thread* pingThread, sf::Thread* receiveThread, sf::Thread* tcpGameThread, sf::Clock* globalClock);
 //this will delete stuff, like objects/threads so no memory leaks
 
 void chatBoxBulkAdd(networking* networkObject, chat* chatBox);

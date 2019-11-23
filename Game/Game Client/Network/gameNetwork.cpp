@@ -5,20 +5,17 @@ void gameNetwork::listenData() {
 	sf::IpAddress sender;
 	unsigned short port;
 
-	while (true) {
+	while (!exiting) {
 		socket.receive(packet);
 		std::string output = "";
 		packet >> output;
 
-		json jsonObj = json::parse(output);
-
 		if (gameReference != 0) {
-			//jsonMutex.lock(); //will lock the gameData resource
-			std::cout << jsonObj["chunks"][4].get<std::string>() << std::endl;
-			//std::cout << "x: " << chunkToDraw["entities"][0]["location"]["x"].get<float>() * 10 << " -- y: " << chunkToDraw["entities"][0]["location"]["y"].get<float>() * 10 << std::endl << std::endl;
+			exitMutex.lock();
+			//std::cout << jsonObj["chunks"][4].get<std::string>() << std::endl;
 			gameReference->gameData = json::parse(output);
 			gameReference->draw();
-			//jsonMutex.unlock(); //deconstructs the lock gaurd, thereby unlocking the resource
+			exitMutex.unlock();
 		}
 	}
 }

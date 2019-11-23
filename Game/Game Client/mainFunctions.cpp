@@ -64,7 +64,7 @@ void gameBit(sf::Clock* globalClock, networking* networkObject, gameNetwork* gam
 	/********************************/
 	/********************************/
 
-	sf::Time loadingScreenRemove = sf::milliseconds(globalClock->getElapsedTime().asMilliseconds() + 1000); //so it sets the duration of the loading screen as 1 second
+	sf::Time loadingScreenRemove = sf::milliseconds(globalClock->getElapsedTime().asMilliseconds() + 1); //so it sets the duration of the loading screen as 1 second
 	//the below																									 
 	///temp set the above to 1ms
 	//the above
@@ -134,10 +134,18 @@ void gameBit(sf::Clock* globalClock, networking* networkObject, gameNetwork* gam
 
 		sf::sleep(sf::milliseconds(1000/60)); //so the program doesnt just fry your CPU
 	}
-	exit(0);
+
+	gameConnection->exitMutex.lock();
+	gameConnection->gameReference = 0;
+	gameConnection->exitMutex.unlock();
+
+	gameConnection->exiting = true; //this will end the listen thread's while loop
+
+	socialTabBit.destroyThreads(); //this will end all of the threads
+	delete loadingBit; //deletes the loadingBit object
 }
 
-void clearResources(networking* networkObject, sf::Thread* pingThread, sf::Thread* receiveThread, sf::Clock* globalClock){
+void clearResources(networking* networkObject, sf::Thread* pingThread, sf::Thread* receiveThread, sf::Thread* tcpGameThread, sf::Clock* globalClock){
 	//From here on, the TCP connection is severed, the threads are waited on and then destroyed, and then the network and launcher objects are deleted, and 0 is returned
 	networkObject->active = false; //ensures that the receiveThread and the pingThread return, as they use while(active) { ...code... } in their functions
 
@@ -156,6 +164,11 @@ void clearResources(networking* networkObject, sf::Thread* pingThread, sf::Threa
 	if (receiveThread) { //if the receiveThread exists...
 		receiveThread->wait(); //wait for it's current bit of code to finish
 		delete receiveThread; //then delete it
+	}
+
+	if (tcpGameThread) { //if the udpGameThread exists...
+		tcpGameThread->wait(); //wait for it's current bit of code to finish
+		delete tcpGameThread; //then delete it
 	}
 
 	//when delete is called, the destructor is called before deallocating the memory

@@ -45,7 +45,7 @@ int main() {
 
 		launcherWindow->display(); //the contents of the screen are shown
 
-		sf::sleep(sf::milliseconds(50)); //so the program doesnt just fry your CPU
+		sf::sleep(sf::milliseconds(50)); //so the program doesnt just fry your CPU (it's 20fps but we don't need higher really, unless we want smooth animations)
 	}
 
 	delete launcherWindow;

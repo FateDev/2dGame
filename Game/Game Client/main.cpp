@@ -37,9 +37,6 @@ int main(int argc, char **argv) { //will accept parameters from command line, th
 	std::string launcherKey = "Hg+Lb9B6Q/zrMduYEvPmuQ==";
 	std::string username = "test";
 
-	//std::thread udpSendThread(testSocket);
-	//std::thread udpReceiveThread(testListen);
-
 	if (launcherKey == "Hg+Lb9B6Q/zrMduYEvPmuQ==") { //really weak check to verify that the launcher opened the program
 		sf::Clock* globalClock = new sf::Clock; //the clock which is used to check when to ping the server
 		networking* networkObject = new networking(REMOTE_IP, REMOTE_TCP_PORT, WEBSITE_URL, globalClock); //initialises the network object
@@ -50,19 +47,19 @@ int main(int argc, char **argv) { //will accept parameters from command line, th
 			if (gameNetworkObj->success) { //if it successfully connected to the game TCP server
 				sf::Thread* receiveThread = new sf::Thread(&networking::getResponses, networkObject); //make the getResponses() function run on this thread
 				sf::Thread* pingThread = new sf::Thread(&networking::stayAlive, networkObject); //makes the stayAlive() function run on this thread
-				sf::Thread* udpGameThread = new sf::Thread(&gameNetwork::listenData, gameNetworkObj); //this will listen for incoming data
+				sf::Thread* tcpGameThread = new sf::Thread(&gameNetwork::listenData, gameNetworkObj); //this will listen for incoming data
 
 				//launcher window bit, everything for the launcher is draw and the login is done and stuff
 				if (networkObject->login(username)) {
-					udpGameThread->launch();
+					tcpGameThread->launch();
 					pingThread->launch(); //will maintain the connection by pinging every so often
 					receiveThread->launch(); //will receive any server orders
 					gameBit(globalClock, networkObject, gameNetworkObj);
 				}
+
+				clearResources(networkObject, pingThread, receiveThread, tcpGameThread, globalClock); //deletes objects and stuff
 			}
 		}
-
-		//clearResources(networkObject, pingThread, receiveThread, globalClock); //deletes objects and stuff
 	}
 
 	return 0;

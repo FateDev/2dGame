@@ -121,6 +121,7 @@ private:
 
 	friend size_t WriteCallback(char *contents, size_t size, size_t nmemb, void *userp); //friend function to get data from curl, this is forward declaring the function as we can't include the header file here, as this file is included in it
 public:
+	void destroyThreads(); //this will be called at the end of the program, and will wait for threads to finish their operations before exiting
 	void completeThreadWork(); //will wait for threads to stop execution before proceeding
 	bool active = false; //we can use this to decide whether or not we should have the liveUpdate() function execute
 	void setActive(bool active); //this would make the above boolean active, and also would make the main screen group visible

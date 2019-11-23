@@ -320,3 +320,17 @@ void socialTabClass::completeThreadWork() { //this is called in the main loop
 		updateMsgGUI = false;
 	}
 }
+
+void socialTabClass::destroyThreads() {
+	if (guildRoomMsgUpdateThread) {
+		guildRoomMsgUpdateThread->join();
+	}
+
+	if (guildSelectBoxUpdateThread) {
+		guildSelectBoxUpdateThread->join();
+	}
+
+	if (roomGuildBoxUpdateThread) {
+		roomGuildBoxUpdateThread->join();
+	}
+}

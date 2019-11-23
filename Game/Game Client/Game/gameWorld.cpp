@@ -125,7 +125,7 @@ void game::listenForKeys(sf::Event event) {
 	}
 }
 
-void game::draw() {
+void game::draw() { //this is called from the tcpGameThread, so not on the main thread, so we used mutexs
 	gameNetworkObj->drawMutex.lock();
 
 	rectanglesToDraw.clear();
@@ -171,7 +171,7 @@ void game::draw() {
 	gameNetworkObj->drawMutex.unlock();
 }
 
-void game::live() {
+void game::live() { //this is called from the main thread
 	if (changeInButtonState && !networkObj->msgBoxFocused) {
 		gameNetworkObj->sendData(keysObject); //sends the object to the server
 
@@ -182,13 +182,12 @@ void game::live() {
 		changeInButtonState = false; //reset this so that we don't repeatedly send the same data to the server
 	}
 
-	gameNetworkObj->drawMutex.lock();
+	gameNetworkObj->drawMutex.lock(); //called from main thread, don't want access violations so use mutex
 	gameWindow->setView(*gameView);
 	for (auto& x : rectanglesToDraw) {
 		gameWindow->draw(x);
 	}
 	gameNetworkObj->drawMutex.unlock();
-	//draw(); //will draw the actual game
 }
 
 /*

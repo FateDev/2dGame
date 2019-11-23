@@ -21,9 +21,11 @@ private:
 	std::string remoteIP = ""; 
 	sf::TcpSocket socket;
 public:
+	bool exiting = false; //this will make it exit
+	std::mutex exitMutex; //this is for exiting the program properly
 	bool success = false;
 	gameNetwork(std::string ip, unsigned short port, std::string sessionID);
-	std::mutex drawMutex;
+	std::mutex drawMutex; //this is for drawing to the screen properly
 	game* gameReference = 0; //reference to the game itself
 	json responseData;
 	void sendData(json payload); //this will send the payload to the server, the server accepts key presses and such
