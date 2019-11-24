@@ -60,30 +60,30 @@ game::game(networking* networkObject, gameNetwork* gameConnection, sf::RenderWin
 
 void game::listenForKeys(sf::Event event) {
 	if (event.type == sf::Event::KeyPressed) { //keysObject[key] = true/false; true = key is pressed, false = key is not pressed/released
-		std::string key = sfKeyToAbstractKeyMap[event.key.code];
-		if (key==networkObj->settings["left"] || key == networkObj->settings["right"] || key == networkObj->settings["jump"] || key == networkObj->settings["interactNPC"] || key == networkObj->settings["switchTarget"] || key == networkObj->settings["custom_binding1"]["key"] || key == networkObj->settings["custom_binding2"]["key"] || key == networkObj->settings["custom_binding3"]["key"]) {
-			if (key == networkObj->settings["left"] && keysObject["left"] != true) {
+		std::string key = sfKeyToAbstractKeyMap[event.key .code];
+		if (key==networkObj->settings["left"].get<std::string>() || key == networkObj->settings["right"].get<std::string>() || key == networkObj->settings["jump"].get<std::string>() || key == networkObj->settings["interactNPC"].get<std::string>() || key == networkObj->settings["switchTarget"].get<std::string>() || key == networkObj->settings["custom_binding1"]["key"].get<std::string>() || key == networkObj->settings["custom_binding2"]["key"].get<std::string>() || key == networkObj->settings["custom_binding3"]["key"].get<std::string>()) {
+			if (key == networkObj->settings["left"].get<std::string>() && keysObject["left"] != true) {
 				keysObject["left"] = true;
-				changeInButtonState = true; //used to indicate that some buttons have been pressed
-			}else if (key == networkObj->settings["right"] && keysObject["right"] != true) {
+				changeInButtonState = true; //used to indicate that s  ome buttons have been pressed
+			}else if (key == networkObj->settings["right"].get<std::string>() && keysObject["right"] != true) {
 				keysObject["right"] = true;
 				changeInButtonState = true; //used to indicate that some buttons have been pressed
-			}else if (key == networkObj->settings["jump"] && keysObject["jump"] != true) {
+			}else if (key == networkObj->settings["jump"].get<std::string>() && keysObject["jump"] != true) {
 				keysObject["jump"] = true;
 				changeInButtonState = true; //used to indicate that some buttons have been pressed
-			}else if (key == networkObj->settings["interactNPC"] && keysObject["interactNPC"] != true) {
+			}else if (key == networkObj->settings["interactNPC"].get<std::string>() && keysObject["interactNPC"] != true) {
 				keysObject["interactNPC"] = true;
 				changeInButtonState = true; //used to indicate that some buttons have been pressed
-			}else if (key == networkObj->settings["switchTarget"] && keysObject["switchTarget"] != true) {
+			}else if (key == networkObj->settings["switchTarget"].get<std::string>() && keysObject["switchTarget"] != true) {
 				keysObject["switchTarget"] = true;
 				changeInButtonState = true; //used to indicate that some buttons have been pressed
-			}else if (key == networkObj->settings["custom_binding1"] && keysObject["custom_binding1"] != true) {
+			}else if (key == networkObj->settings["custom_binding1"]["key"].get<std::string>() && keysObject["custom_binding1"] != true) {
 				keysObject["custom_binding1"] = true;
 				changeInButtonState = true; //used to indicate that some buttons have been pressed
-			}else if (key == networkObj->settings["custom_binding2"] && keysObject["custom_binding2"] != true) {
+			}else if (key == networkObj->settings["custom_binding2"]["key"].get<std::string>() && keysObject["custom_binding2"] != true) {
 				keysObject["custom_binding2"] = true;
 				changeInButtonState = true; //used to indicate that some buttons have been pressed
-			}else if (key == networkObj->settings["custom_binding3"] && keysObject["custom_binding3"] != true) {
+			}else if (key == networkObj->settings["custom_binding3"]["key"].get<std::string>() && keysObject["custom_binding3"] != true) {
 				keysObject["custom_binding3"] = true;
 				changeInButtonState = true; //used to indicate that some buttons have been pressed
 			}
@@ -95,29 +95,29 @@ void game::listenForKeys(sf::Event event) {
 
 	if (event.type == sf::Event::KeyReleased) { //this would be used to stop moving for example
 		std::string key = sfKeyToAbstractKeyMap[event.key.code];
-		if (key == networkObj->settings["left"] || key == networkObj->settings["right"] || key == networkObj->settings["jump"] || key == networkObj->settings["custom_binding1"]["key"] || key == networkObj->settings["custom_binding2"]["key"] || key == networkObj->settings["custom_binding3"]["key"]) {
-			if (key == networkObj->settings["left"] && keysObject["left"] != false) {
+		if (key == networkObj->settings["left"].get<std::string>() || key == networkObj->settings["right"].get<std::string>() || key == networkObj->settings["jump"].get<std::string>() || key == networkObj->settings["custom_binding1"]["key"].get<std::string>() || key == networkObj->settings["custom_binding2"]["key"].get<std::string>() || key == networkObj->settings["custom_binding3"]["key"].get<std::string>()) {
+			if (key == networkObj->settings["left"].get<std::string>() && keysObject["left"] != false) {
 				keysObject["left"] = false;
 				changeInButtonState = true; //used to indicate that some buttons have been pressed
-			}else if (key == networkObj->settings["right"] && keysObject["right"] != false) {
+			}else if (key == networkObj->settings["right"].get<std::string>() && keysObject["right"] != false) {
 				keysObject["right"] = false;
 				changeInButtonState = true; //used to indicate that some buttons have been pressed
-			}else if (key == networkObj->settings["jump"] && keysObject["jump"] != false) {
+			}else if (key == networkObj->settings["jump"].get<std::string>() && keysObject["jump"] != false) {
 				keysObject["jump"] = false;
 				changeInButtonState = true; //used to indicate that some buttons have been pressed
-			}else if (key == networkObj->settings["interactNPC"] && keysObject["interactNPC"] != false) {
+			}else if (key == networkObj->settings["interactNPC"].get<std::string>() && keysObject["interactNPC"] != false) {
 				keysObject["interactNPC"] = false;
 				changeInButtonState = true; //used to indicate that some buttons have been pressed
-			}else if (key == networkObj->settings["switchTarget"] && keysObject["switchTarget"] != false) {
+			}else if (key == networkObj->settings["switchTarget"].get<std::string>() && keysObject["switchTarget"] != false) {
 				keysObject["switchTarget"] = false;
 				changeInButtonState = true; //used to indicate that some buttons have been pressed
-			}else if (key == networkObj->settings["custom_binding1"] && keysObject["custom_binding1"] != false) {
+			}else if (key == networkObj->settings["custom_binding1"]["key"].get<std::string>() && keysObject["custom_binding1"] != false) {
 				keysObject["custom_binding1"] = false;
 				changeInButtonState = true; //used to indicate that some buttons have been pressed
-			}else if (key == networkObj->settings["custom_binding2"] && keysObject["custom_binding2"] != false) {
+			}else if (key == networkObj->settings["custom_binding2"]["key"].get<std::string>() && keysObject["custom_binding2"] != false) {
 				keysObject["custom_binding2"] = false;
 				changeInButtonState = true; //used to indicate that some buttons have been pressed
-			}else if (key == networkObj->settings["custom_binding3"] && keysObject["custom_binding3"] != false) {
+			}else if (key == networkObj->settings["custom_binding3"]["key"].get<std::string>() && keysObject["custom_binding3"] != false) {
 				keysObject["custom_binding3"] = false;
 				changeInButtonState = true; //used to indicate that some buttons have been pressed
 			}
@@ -128,7 +128,7 @@ void game::listenForKeys(sf::Event event) {
 void game::draw() { //this is called from the tcpGameThread, so not on the main thread, so we used mutexs
 	gameNetworkObj->drawMutex.lock();
 
-	rectanglesToDraw.clear();
+	rectanglesToDraw.clear(); //this empties the container of rectangles, which are drawn to the screen
 
 	if (!gameData.is_null()) {	//it now moves it
 		sf::RectangleShape rect1(sf::Vector2f(60, 100));
@@ -137,8 +137,8 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 		sf::RectangleShape rectangle(sf::Vector2f(gameWindow->getSize().x, gameWindow->getSize().y / 2));
 		rectangle.setPosition(sf::Vector2f(-int(gameWindow->getSize().x) / 2, 0));
 
-		rectanglesToDraw.push_back(rect1);
-		rectanglesToDraw.push_back(rectangle);
+		rectanglesToDraw.push_back(rect1); //simply add a RectangleShape to the container for it to be drawn
+		rectanglesToDraw.push_back(rectangle);; //simply add a RectangleShape to the container for it to be drawn
 
 		for (int j = 0; j < 8; j++) {
 			json chunkToDraw = json::parse(gameData["chunks"][j].get<std::string>());
@@ -178,8 +178,14 @@ void game::live() { //this is called from the main thread
 		//we're resetting some of them here, as they just do a single action, rather than move or whatever
 		keysObject["interactNPC"] = false;
 		keysObject["switchTarget"] = false;
+		keysObject["jump"] = false; //we want to be able to jump repeatedly
 
 		changeInButtonState = false; //reset this so that we don't repeatedly send the same data to the server
+	}
+
+	if (sf::Keyboard::isKeyPressed(abstractKeyTosfKeyMap[networkObj->settings["jump"].get<std::string>()])) { //this is just so the user can continuously jump if they so wish
+		keysObject["jump"] = true;
+		changeInButtonState = true; //used to indicate that some buttons have been pressed
 	}
 
 	gameNetworkObj->drawMutex.lock(); //called from main thread, don't want access violations so use mutex
