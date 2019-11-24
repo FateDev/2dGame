@@ -3,7 +3,6 @@
 
 #include <cmath>
 #include <functional>
-#include <iostream>
 #include <SFML/Network.hpp>
 #include <curl/curl.h>
 #include <chrono>
@@ -489,7 +488,7 @@ gameBroadcast* gameBroadcast::getInstance(){
 void gameBroadcast::broadcastGameState(){ //this broadcasts stuff on port 5002
 	for(auto &chunkEntityVector : chunks){
 		for(auto &user : chunkEntityVector.second){
-			json jsonObj;
+			json jsonObj = json::object();
 			int userCompVecIndex = users.entityToVectorMap(user.id); //user ID in this case is the entity ID
 			int locationCompVecIndex = locationStructs.entityToVectorMap(user.id); //user ID in this case is the entity ID
 			
@@ -511,7 +510,7 @@ void gameBroadcast::broadcastGameState(){ //this broadcasts stuff on port 5002
 
 					sf::Packet packet;
 					packet << jsonObj.dump();
-					
+
 					users.compVec[userCompVecIndex].gameSocket->send(packet);
 				}
 			}
@@ -606,6 +605,7 @@ void updateActiveChunkData::updateActiveChunks(){ //this is for updating which c
 void updateActiveChunkData::updateChunkData(){ //this is for updating the gameData object
 	gameData.clear(); //empties the gameData object
 	for(auto &chunkEntityVector : chunks){
+		gameData[chunkEntityVector.first] = json::object();
 		for(int i = 0; i < chunkEntityVector.second.size(); i++){
 			int entityID = users.vectorToEntityMap(i);
 

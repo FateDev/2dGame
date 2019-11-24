@@ -8,6 +8,7 @@
 #include <SFML/Network.hpp>
 #include <thread>
 #include <mutex>
+#include <iostream>
 
 #include "../header/helper.h"
 
@@ -119,13 +120,13 @@ namespace ecs{
         };
 
         struct coordinatesStruct{
-            int uniqueID = 0;    
+            unsigned long uniqueID = 0; //equal to unsigned long int, using long just to be safe
             std::pair<int, int> coordinates;
 
-            coordinatesStruct(int xCoord, int yCoord) { 
-                std::string hashString = std::to_string(xCoord) + std::to_string(yCoord);
-                hashString += std::to_string(hashString.size());
-                uniqueID = std::stoi(hashString);
+            coordinatesStruct(int xCoord, int yCoord) {
+                int a = xCoord < 0 ? (-2)*(xCoord) - 1 : 2*(xCoord); //makes negative variables positive for Cantors function, which only works for positive integers
+                int b = yCoord < 0 ? (-2)*(yCoord) - 1 : 2*(yCoord); //makes negative variables positive for Cantors function, which only works for positive integers
+                uniqueID = (0.5 * (a + b) * (a + b + 1)) + b; //Cantor pairing function, where pairing is to uniquely encode two natural numbers into a single natural number, used for the hashing function thing
 
                 coordinates.first = xCoord; //sets the coordinates
                 coordinates.second = yCoord; //sets the coordinates
