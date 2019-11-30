@@ -10,7 +10,12 @@ void gameNetwork::listenData() {
 		std::string output = "";
 		packet >> output;
 
-		if (gameReference != 0) {
+		if (output == "die") {
+			gameReference->networkObj->active = false; //will break out of all loops and die
+			break;
+		}
+
+		if (gameReference != 0 && output.size() > 0) {
 			exitMutex.lock();
 			//std::cout << jsonObj["chunks"][4].get<std::string>() << std::endl;
 			gameReference->gameData = json::parse(output);
@@ -24,7 +29,8 @@ void gameNetwork::sendData(json payload) {
 	std::string payloadDump = payload.dump();
 	sf::Packet packet;
 	packet << payloadDump;
-	socket.send(packet); //makes the json into a string, then 
+	std::cout << "Send JSON status: " << socket.send(packet) << std::endl; //makes the json into a string, then sends it
+	std::cout << "send keyboard info" << std::endl;
 }
 
 gameNetwork::gameNetwork(std::string ip, unsigned short port, std::string sessionID) {

@@ -34,13 +34,13 @@ public:
 
 class game {
 private:
-	networking* networkObj = NULL;
 	sf::RenderWindow* gameWindow = NULL;
 	sf::View* gameView = NULL;
 	std::unordered_map<sf::Keyboard::Key, std::string> sfKeyToAbstractKeyMap;
 	std::unordered_map<std::string, sf::Keyboard::Key> abstractKeyTosfKeyMap;
 	bool changeInButtonState = false; //used to indicate whether or not any buttons have been pressed or released
 public:
+	networking* networkObj = NULL;
 	std::vector<sf::RectangleShape> rectanglesToDraw;
 	gameNetwork* gameNetworkObj = NULL;
 	json keysObject;

@@ -13,8 +13,8 @@
 #include "../header/helper.h"
 
 //the size of one chunk
-const int chunkPixelSize_x = 1920;
-const int chunkPixelSize_y = 1080;
+const int chunkPixelSize_x = 200;
+const int chunkPixelSize_y = 200;
 const int fps = 60;
 const sf::Vector2f deceleration = { 0, 0.1 }; //x = friction on surface deceleration, y = gravity
 const sf::Vector2f acceleration = { 0, 1 }; //x = acceleration by arrow keys (don't want to accelerate), y = acceleration when jumping up
@@ -43,6 +43,7 @@ namespace ecs{
             sf::TcpSocket* socket = NULL; //the actual socket connection
             sf::TcpSocket* gameSocket = NULL; //the socket connection for sending game data
             sf::Time timeOfExpiry; //the time till the socket should be removed, this is updated every time the client pings the server
+            bool leave = false; //this will be used to flag when the user leaves
         };
 
         struct drawable{
@@ -112,7 +113,7 @@ namespace ecs{
     }
 
     namespace system{
-        extern std::unordered_map<std::string, unsigned int>  uniqueIDToUserVectorIndexMap; //will map user's uniqueID's to their user vector index
+        extern std::unordered_map<std::string, unsigned int>  sessionIDToEntityID; //will map user's uniqueID's to their entity ID
         
         struct mapCleanup{
             void chunksMapCleanup(); //should be run on a thread, should iterate through every single chunk, with something like 100ms sleep inbetween as it's not that important
@@ -149,6 +150,7 @@ namespace ecs{
                 mutexs();
             public:
                 static std::mutex userLocationsMutex; //declares the mutex for reading to/from user location comp vec
+                static std::mutex removeUserMutex;
                 static mutexs* getInstance();
         };
        
@@ -257,8 +259,7 @@ namespace ecs{
 
                 sf::Thread* mainGame = 0;
         };
-
-
+        
         extern std::unordered_map<coordinatesStruct, std::vector<ecs::entity::entity>, Hash> chunks; //will contain a list of all the entities in each chunk, useful for physics + read below
         extern std::unordered_map<coordinatesStruct, json, Hash> gameData; //this basically tells the compiler that the variable declared is defined somewhere else in the program (main.cpp in this case)
     }

@@ -140,28 +140,33 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 		rectanglesToDraw.push_back(rect1); //simply add a RectangleShape to the container for it to be drawn
 		rectanglesToDraw.push_back(rectangle);; //simply add a RectangleShape to the container for it to be drawn
 
-		for (int j = 0; j < 8; j++) {
+		for (int j = 0; j < 9; j++) { //the server sends 9 chunks of data
 			json chunkToDraw = json::parse(gameData["chunks"][j].get<std::string>());
 			//std::cout << chunkToDraw.dump() << std::endl;
-			if (chunkToDraw.dump() != "null") {
+			if (!chunkToDraw.is_null()) {
+				//std::cout << chunkToDraw["entityCount"].dump() << std::endl;
 				//std::cout << chunkToDraw.dump() << std::endl;
 				for (int i = 0; i < chunkToDraw["entityCount"]; i++) {
-					if (networkObj->userID == chunkToDraw["entities"][i]["id"].get<int>()) {
-						gameView->setCenter(chunkToDraw["entities"][i]["location"]["x"].get<float>() * 10, chunkToDraw["entities"][i]["location"]["y"].get<float>() * 10);
-						sf::RectangleShape player(sf::Vector2f(40, 40));
-						player.setOrigin(-20, 40);
-						player.setFillColor(sf::Color::Blue);
-						player.setPosition(chunkToDraw["entities"][i]["location"]["x"].get<float>() * 10, chunkToDraw["entities"][i]["location"]["y"].get<float>() * 10);
+					if (!chunkToDraw["entities"][i].is_null()) { //if the entity is actually null, just skip it
+						if (networkObj->userID == chunkToDraw["entities"][i]["id"].get<int>()) {
+							//std::cout << "Drawing " << chunkToDraw["entities"][i]["username"].get<std::string>() << " -- " << i << std::endl;
+							gameView->setCenter(chunkToDraw["entities"][i]["location"]["x"].get<float>() * 10, chunkToDraw["entities"][i]["location"]["y"].get<float>() * 10);
+							sf::RectangleShape player(sf::Vector2f(40, 40));
+							player.setOrigin(-20, 40);
+							player.setFillColor(sf::Color::Blue);
+							player.setPosition(chunkToDraw["entities"][i]["location"]["x"].get<float>() * 10, chunkToDraw["entities"][i]["location"]["y"].get<float>() * 10);
 
-						rectanglesToDraw.push_back(player);
-					}
-					else {
-						sf::RectangleShape opponent(sf::Vector2f(40, 40));
-						opponent.setOrigin(-20, 40);
-						opponent.setFillColor(sf::Color::Red);
-						opponent.setPosition(chunkToDraw["entities"][i]["location"]["x"].get<float>() * 10, chunkToDraw["entities"][i]["location"]["y"].get<float>() * 10);
+							rectanglesToDraw.push_back(player);
+						}
+						else {
+							//std::cout << "Drawing " << chunkToDraw["entities"][i]["username"].get<std::string>() << " -- " << i << std::endl;
+							sf::RectangleShape opponent(sf::Vector2f(40, 40));
+							opponent.setOrigin(-20, 40);
+							opponent.setFillColor(sf::Color::Red);
+							opponent.setPosition(chunkToDraw["entities"][i]["location"]["x"].get<float>() * 10, chunkToDraw["entities"][i]["location"]["y"].get<float>() * 10);
 
-						rectanglesToDraw.push_back(opponent);
+							rectanglesToDraw.push_back(opponent);
+						}
 					}
 				}
 			}

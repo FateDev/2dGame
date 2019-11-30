@@ -127,6 +127,12 @@ bool networking::login(std::string username) {
 	return active; //return whether or not it's active
 }
 
+bool is_number(const std::string& s) //https://stackoverflow.com/questions/4654636/how-to-determine-if-a-string-is-a-number-with-c, returns whether or not it's a number
+{
+	return !s.empty() && std::find_if(s.begin(),
+		s.end(), [](char c) { return !std::isdigit(c); }) == s.end();
+}
+
 void networking::getResponses() { //retrieves incoming message
 	while (active) { //loop while active is true
 		sf::Packet receivePacket; //a packet variable to hold the incoming packet
@@ -141,6 +147,7 @@ void networking::getResponses() { //retrieves incoming message
 		std::string receiveString(receiveCharArray);
 
 		if (receiveString == "die") {
+			active = false;
 			break;
 		}
 		
@@ -167,6 +174,11 @@ void networking::getResponses() { //retrieves incoming message
 
 		if (chatBoxActive == true) { //checks if the chatbox has been set to active, in which case decode received messages and add them to the chatbox
 			msgContent = xorFunction(msgContent);
+
+			if (!is_number(msgID)) {
+				continue;
+			}
+
 			chatBoxObject->addMessages(time, username, msgContent, imgLocation, std::stoi(msgID)); //sends a message with the extracted data
 		}
 		else {
@@ -192,6 +204,8 @@ void networking::stayAlive() { //for pinging the server
 
 			sendPacket << "SERVER::PING::3SEC"; //puts this string into the packet
 			socket->send(sendPacket); //then sends it off to the server
+			std::cout << "ping time" << std::endl;
+			sf::sleep(sf::seconds(1)); //will sleep until next sending time comes
 		}
 	}
 }
@@ -207,6 +221,7 @@ void networking::sendMessage(std::string msg) {
 	sendPacket << msg.c_str(); //converts the string into a C style array, and puts it into the packet which will be sent
 
 	socket->send(sendPacket); //sends the packet
+	std::cout << "sending message" << std::endl;
 }
 
 networking::~networking() {

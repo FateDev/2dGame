@@ -6,6 +6,7 @@
 #include <TGUI/TGUI.hpp>
 #include <json.hpp>
 #include <thread>
+#include <atomic>
 
 using json = nlohmann::json;
 
@@ -78,7 +79,7 @@ private:
 	std::thread *guildRoomMsgUpdateThread; //thread to be used for async type stuff
 	std::thread *roomGuildBoxUpdateThread; //async stuff again
 	std::thread *guildSelectBoxUpdateThread; //async stuff again
-	bool updateMsgGUI = false; //will be used as a flag, to signal that data for the messages of the new tab has been received
+	std::atomic<bool> updateMsgGUI = false; //will be used as a flag, to signal that data for the messages of the new tab has been received, atomic data types can be written/read from threads so useful here
 
 	tgui::Group::Ptr socialTabGroup = tgui::Group::create({ sf::VideoMode::getDesktopMode().width , sf::VideoMode::getDesktopMode().height });
 	//the above would be an invisible container from tgui which holds everything that gets drawn for this screen

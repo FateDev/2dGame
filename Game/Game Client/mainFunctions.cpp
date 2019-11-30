@@ -123,14 +123,30 @@ void gameBit(sf::Clock* globalClock, networking* networkObject, gameNetwork* gam
 			mainGameScreen.liveUpdate(globalClock);
 
 		}
-		if (socialTabBit.active == true)
+		if (socialTabBit.active == true) {
 			socialTabBit.liveUpdate(globalClock);
 
-		gui.draw(); //draws everything that's been added to it (hopefully just groups of tgui objects for the different screens)
+			try { //it appears there were some inexplicable access violations here, so we'll use this
+				socialTabBit.completeThreadWork();
+			}
+			catch (...) {
+				std::cout << "something went wrong, but we'll pretend it didn't, for the complete thread work bit" << std::endl;
+			}
+		}
 
-		socialTabBit.completeThreadWork();
+		try {
+			gui.draw(); //draws everything that's been added to it (hopefully just groups of tgui objects for the different screens)
+		}
+		catch (...) {
+			std::cout << "something went wrong, but we'll pretend it didn't, for drawing the gui (from tgui)" << std::endl;
+		}
 
-		gameWindow.display(); //the contents of the screen are shown
+		try {
+			gameWindow.display(); //the contents of the screen are shown
+		}
+		catch (...) {
+			std::cout << "something went wrong, but we'll pretend it didn't, for displaying the game window" << std::endl;
+		}
 
 		sf::sleep(sf::milliseconds(1000/60)); //so the program doesnt just fry your CPU
 	}

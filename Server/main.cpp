@@ -17,7 +17,7 @@ ecs::component::ecsComponentStructure<ecs::component::drawable> ecs::component::
 ecs::entity::entityManager ecs::entity::superEntityManager;
 std::unordered_map<ecs::system::coordinatesStruct, std::vector<ecs::entity::entity>, ecs::system::Hash> ecs::system::chunks;
 std::unordered_map<ecs::system::coordinatesStruct, json, ecs::system::Hash> ecs::system::gameData;
-std::unordered_map<std::string, unsigned int>  ecs::system::uniqueIDToUserVectorIndexMap;
+std::unordered_map<std::string, unsigned int>  ecs::system::sessionIDToEntityID;
 
 int main(){
 	curl_global_init(CURL_GLOBAL_ALL); //initialise libcurl functionality globally
