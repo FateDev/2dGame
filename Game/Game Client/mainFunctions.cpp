@@ -25,6 +25,7 @@ size_t WriteCallback(char *contents, size_t size, size_t nmemb, void *userp) //f
 }
 
 void chatBoxBulkAdd(networking* networkObject, chat* chatBox) {
+	networkObject->messagesMutex.lock();
 	//the below for loop loops through the json object from the networking object, and adds all of them to the chat box scrollable panel
 	for (int i = networkObject->messages.size() - 1; i >= 0; i--) {
 		int time = std::stoi(networkObject->messages[i]["time"].get<std::string>());
@@ -47,6 +48,7 @@ void chatBoxBulkAdd(networking* networkObject, chat* chatBox) {
 
 		chatBox->addMessages(time, from, msg, imgLocation, msgID);
 	}
+	networkObject->messagesMutex.unlock();
 }
 
 void gameBit(sf::Clock* globalClock, networking* networkObject, gameNetwork* gameConnection){
@@ -64,7 +66,7 @@ void gameBit(sf::Clock* globalClock, networking* networkObject, gameNetwork* gam
 	/********************************/
 	/********************************/
 
-	sf::Time loadingScreenRemove = sf::milliseconds(globalClock->getElapsedTime().asMilliseconds() + 1); //so it sets the duration of the loading screen as 1 second
+	sf::Time loadingScreenRemove = sf::milliseconds(globalClock->getElapsedTime().asMilliseconds() + 1000); //so it sets the duration of the loading screen as 1 second
 	//the below																									 
 	///temp set the above to 1ms
 	//the above

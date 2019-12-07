@@ -29,8 +29,7 @@ void gameNetwork::sendData(json payload) {
 	std::string payloadDump = payload.dump();
 	sf::Packet packet;
 	packet << payloadDump;
-	std::cout << "Send JSON status: " << socket.send(packet) << std::endl; //makes the json into a string, then sends it
-	std::cout << "send keyboard info" << std::endl;
+	socket.send(packet);
 }
 
 gameNetwork::gameNetwork(std::string ip, unsigned short port, std::string sessionID) {

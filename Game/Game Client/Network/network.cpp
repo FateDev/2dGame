@@ -15,6 +15,8 @@ void networking::getMessagesFromDB() {
 	//the code below gets a json object from my website of the last 50 messages and parses them into a c++ json object from the json library
 	//and also decrypts the message contents with the simple xor function
 
+	messagesMutex.lock();
+
 	CURL* curl = curl_easy_init(); //we can set options for this to make it control how a transfer/transfers will be made
 	std::string readBuffer; //string for the returning data
 
@@ -32,6 +34,8 @@ void networking::getMessagesFromDB() {
 	for (int i = 0; i < messages.size(); i++) {
 		messages[i]["msg"] = xorFunction(messages[i]["msg"]);
 	}
+
+	messagesMutex.unlock();
 }
 
 bool networking::login(std::string username) {
@@ -40,6 +44,8 @@ bool networking::login(std::string username) {
 	}
 
 	std::string msg = "";
+
+	socket = new sf::TcpSocket;
 
 	while (true) {
 		if (socket->connect(ip.c_str(), port) == sf::Socket::Done) { //if the socket successfully connects to the specified IP address at the specified port...
@@ -204,7 +210,7 @@ void networking::stayAlive() { //for pinging the server
 
 			sendPacket << "SERVER::PING::3SEC"; //puts this string into the packet
 			socket->send(sendPacket); //then sends it off to the server
-			std::cout << "ping time" << std::endl;
+
 			sf::sleep(sf::seconds(1)); //will sleep until next sending time comes
 		}
 	}
@@ -221,7 +227,6 @@ void networking::sendMessage(std::string msg) {
 	sendPacket << msg.c_str(); //converts the string into a C style array, and puts it into the packet which will be sent
 
 	socket->send(sendPacket); //sends the packet
-	std::cout << "sending message" << std::endl;
 }
 
 networking::~networking() {
