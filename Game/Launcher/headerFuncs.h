@@ -7,6 +7,7 @@
 #include <iostream>
 #include <vector>
 #include <fstream>
+#include <thread>
 
 //function prototypes
 void helpFunction();
@@ -17,14 +18,13 @@ bool doesFileExist(std::string fileName);
 
 class networking {
 private:
-	std::string ip; //the IP address to connect to
-	unsigned short port; //the port to connect to
-
-	bool updateFiles();
+	void updateFiles();
 	void getChecksumTokens(std::vector<std::pair<std::string, std::string>> &tokens, bool local, std::string location);
 	void compareTokenList(std::vector<std::pair<std::string, std::string>> &localTokens, std::vector<std::pair<std::string, std::string>> &serverTokens, std::vector<std::pair<std::string, std::string>> &returnTokens, std::vector<std::pair<std::string, std::string>> &deleteTokens);
 	void parseReturnTokens(std::vector<std::pair<std::string, std::string>> &returnTokens);
 	void parseDeleteTokens(std::vector<std::pair<std::string, std::string>> &parseDeleteTokens);
+
+	std::thread* udpateFilesThread = NULL;
 public:
 	std::string loggedinToken;
 
@@ -35,10 +35,12 @@ public:
 	bool login(std::string username, std::string password);
 	//this will loop repeatedly until either the user crosses it off or gets the correct login details
 
-	networking(std::string IPADDRESS, int PORT) : ip(IPADDRESS), port(PORT) {};
+	networking() {};
 	//the constructor to store all the necessary data and references to start the networking bit
 
 	~networking(); //destructor to delete socket
+
+	int updateFilesStatus = -1; //-1 is that it hasn't started, 0 is that it's happening, 1 is that it's finished
 };
 
 class launcher { //this would be the 'login' window, the launcher

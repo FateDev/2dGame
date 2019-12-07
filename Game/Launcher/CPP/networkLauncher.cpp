@@ -17,7 +17,8 @@ bool networking::login(std::string username, std::string password) {
 		confirmedUsername = username;
 
 		/*code below gets stuff from the update thing, use this to check against local files n stuff*/
-		updateFiles();
+		updateFilesStatus = 0;
+		udpateFilesThread = new std::thread(&networking::updateFiles, this);
 
 		return true;
 	}
@@ -138,15 +139,22 @@ void networking::parseReturnTokens(std::vector<std::pair<std::string, std::strin
 
 				std::string fileName = tempFilePathTokens[tempFilePathTokens.size() - 1]; //get the filename from the above vector, as it'll be the final parameter
 
-				std::string fileLocation = "Game\\"; //all files for the game are put in this subdirectory
+				std::string fileLocation = "Game\\"; //all files for the game are put in this subdirectory (double backslash to escape the first backslash)
 
 				for (int i = 0; i < tempFilePathTokens.size() - 1; i++) {
 					fileLocation += tempFilePathTokens[i] + "\\"; //appends subdirectories to this string which will be the directory of the files
 				}
 
-				CreateDirectory(fileLocation.c_str(), NULL); //makes the root directory for the file
-
 				tempFilePathTokens.clear(); //clears the temp vector for the file path
+
+				if (doesFileExist(std::string(fileLocation + fileName))) {
+					char result[MAX_PATH];
+					std::string filePath = std::string(result, GetCurrentDirectory(MAX_PATH, result)) + "\\" + fileLocation + fileName; //gets the full file path
+					DeleteFile(filePath.c_str()); //if the file exists, delete it
+					std::cout << "DELETING FILE at " << filePath << "\n";
+				}
+
+				CreateDirectory(fileLocation.c_str(), NULL); //creates the directory needed for the file
 
 				GETftpFile(std::string("Game\\" + fileName), std::string("http://erewhon.xyz/game/latestFiles/" + returnTokens[i].first)); //then downloads the file to the Game directory
 				MoveFile(std::string("Game\\" + fileName).c_str(), std::string(fileLocation + fileName).c_str()); //then moves the file to the subdirectoy
@@ -156,7 +164,12 @@ void networking::parseReturnTokens(std::vector<std::pair<std::string, std::strin
 	}
 }
 
-bool networking::updateFiles() { //updates files
+void networking::updateFiles() { //updates files
+	char result[MAX_PATH];
+	std::string dirPath = std::string(result, GetCurrentDirectory(MAX_PATH, result)) + "\\Game"; //gets the directory the program is being run from
+	std::cout << dirPath << "\n";
+	std::cout << CreateDirectory(dirPath.c_str(), NULL) << "\n"; //creates the directory if it doesn't already exist
+
 	std::vector<std::pair<std::string, std::string>> serverTokens;
 	getChecksumTokens(serverTokens, false, "https://erewhon.xyz/game/update.php"); //gets the tokens on the server
 
@@ -179,4 +192,6 @@ bool networking::updateFiles() { //updates files
 
 		parseReturnTokens(serverTokens); //and redownload all files just in case, as we have no way of knowing if the file are already there
 	}
+
+	updateFilesStatus = 1;
 }

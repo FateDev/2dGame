@@ -56,6 +56,11 @@ game::game(networking* networkObject, gameNetwork* gameConnection, sf::RenderWin
 	keysObject["custom_binding3"] = false;
 
 	keysObject["sessionID"] = networkObj->sessionID; //adds the session ID for the basic auth
+
+	font.loadFromFile("Lato-Regular.ttf");
+
+	playerTexture.loadFromFile("resources/padoru_giorno_small.png");
+	opponentTexture.loadFromFile("resources/padoru_padoru_small.png");
 }
 
 void game::listenForKeys(sf::Event event) {
@@ -129,6 +134,9 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 	gameNetworkObj->drawMutex.lock();
 
 	rectanglesToDraw.clear(); //this empties the container of rectangles, which are drawn to the screen
+	circlesToDraw.clear();
+	textToDraw.clear();
+	spritesToDraw.clear();
 
 	if (!gameData.is_null()) {	//it now moves it
 		sf::RectangleShape rect1(sf::Vector2f(60, 100));
@@ -148,25 +156,38 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 				//std::cout << chunkToDraw.dump() << std::endl;
 				for (int i = 0; i < chunkToDraw["entityCount"]; i++) {
 					if (!chunkToDraw["entities"][i].is_null()) { //if the entity is actually null, just skip it
-						if (networkObj->userID == chunkToDraw["entities"][i]["id"].get<int>()) {
-							//std::cout << "Drawing " << chunkToDraw["entities"][i]["username"].get<std::string>() << " -- " << i << std::endl;
-							gameView->setCenter(chunkToDraw["entities"][i]["location"]["x"].get<float>() * 10, chunkToDraw["entities"][i]["location"]["y"].get<float>() * 10);
-							sf::RectangleShape player(sf::Vector2f(40, 40));
-							player.setOrigin(-20, 40);
-							player.setFillColor(sf::Color::Blue);
-							player.setPosition(chunkToDraw["entities"][i]["location"]["x"].get<float>() * 10, chunkToDraw["entities"][i]["location"]["y"].get<float>() * 10);
+						sf::Sprite player;
+						player.setOrigin(sf::Vector2f(-10, 72));
 
-							rectanglesToDraw.push_back(player);
+						if (chunkToDraw["entities"][i]["direction"].get<int>() == 0) {
+							player.setOrigin(sf::Vector2f(-10, 72));
+							player.setScale(1.0, 1.0);
 						}
 						else {
-							//std::cout << "Drawing " << chunkToDraw["entities"][i]["username"].get<std::string>() << " -- " << i << std::endl;
-							sf::RectangleShape opponent(sf::Vector2f(40, 40));
-							opponent.setOrigin(-20, 40);
-							opponent.setFillColor(sf::Color::Red);
-							opponent.setPosition(chunkToDraw["entities"][i]["location"]["x"].get<float>() * 10, chunkToDraw["entities"][i]["location"]["y"].get<float>() * 10);
-
-							rectanglesToDraw.push_back(opponent);
+							player.setOrigin(sf::Vector2f(70, 72));
+							player.setScale(-1.0, 1.0);
 						}
+
+						if (chunkToDraw["entities"][i]["id"].get<int>() == networkObj->userID) { //do some operations meant for only this client
+							//player.setFillColor(sf::Color::Blue);
+							player.setTexture(playerTexture);
+							gameView->setCenter(chunkToDraw["entities"][i]["location"]["x"].get<float>() * 10, chunkToDraw["entities"][i]["location"]["y"].get<float>() * 10);
+						}
+						else {
+							//player.setFillColor(sf::Color::Red);
+							player.setTexture(opponentTexture);
+						}
+
+						player.setPosition(chunkToDraw["entities"][i]["location"]["x"].get<float>() * 10, chunkToDraw["entities"][i]["location"]["y"].get<float>() * 10);
+
+						sf::Text text;
+						text.setFont(font);
+						text.setString(chunkToDraw["entities"][i]["username"].get<std::string>());
+						text.setCharacterSize(24);
+						text.setPosition(chunkToDraw["entities"][i]["location"]["x"].get<float>() * 10 + 20, chunkToDraw["entities"][i]["location"]["y"].get<float>() * 10 - 93);
+
+						textToDraw.push_back(text);
+						spritesToDraw.push_back(player);
 					}
 				}
 			}
@@ -196,6 +217,15 @@ void game::live() { //this is called from the main thread
 	gameNetworkObj->drawMutex.lock(); //called from main thread, don't want access violations so use mutex
 	gameWindow->setView(*gameView);
 	for (auto& x : rectanglesToDraw) {
+		gameWindow->draw(x);
+	}
+	for (auto& x : textToDraw) {
+		gameWindow->draw(x);
+	}
+	for (auto& x : circlesToDraw) {
+		gameWindow->draw(x);
+	}
+	for (auto& x : spritesToDraw) {
 		gameWindow->draw(x);
 	}
 	gameNetworkObj->drawMutex.unlock();

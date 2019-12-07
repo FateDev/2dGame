@@ -19,7 +19,7 @@ int main() {
 	curl_global_init(CURL_GLOBAL_ALL); //initialise libcurl functionality globally, as it'll be used now that login was successful
 
 	sf::Clock* globalClock = new sf::Clock; //the clock which is used to check when to ping the server
-	networking* networkObject = new networking("82.40.114.214", 5000); //initialises the network object
+	networking* networkObject = new networking(); //initialises the network object
 
 	sf::RenderWindow *launcherWindow = new sf::RenderWindow(sf::VideoMode(800, 600), "One More Time", sf::Style::Close); //window, the one used for the launcher
 	launcher* launcherObject = new launcher(networkObject, launcherWindow, globalClock); //launcher
@@ -36,7 +36,9 @@ int main() {
 		}
 
 		if (networkObject->loggedIn == true) { //this means the login was successful
-			launcherWindow->close(); //close the window afterwards
+			if (networkObject->updateFilesStatus == 1) { //if the updates have finished
+				launcherWindow->close(); //close the window afterwards
+			}
 		}
 
 		launcherWindow->clear(); //clears the previous contents of the screen off
