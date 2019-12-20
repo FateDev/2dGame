@@ -281,7 +281,7 @@ void network::process()
 	}
 }
 
-bool network::login(std::string input, user *userPtr)
+std::string network::login(std::string input, user *userPtr)
 {
 	std::string usernameToken = "SERVER::LOGON::USERNAME::";
 	std::string username = input;
@@ -297,7 +297,7 @@ bool network::login(std::string input, user *userPtr)
 		{ //makes sure the same user can't join twice
 			if (users.compVec[i].username == username)
 			{
-				return false;
+				return "failed";
 			}
 		}
 
@@ -310,21 +310,27 @@ bool network::login(std::string input, user *userPtr)
 
 		curl_easy_perform(curl);
 
-		if (readBuffer.find("USER::ID::") != 0 || readBuffer.find("USER::ID::") == std::string::npos)
+		if (readBuffer.find("AVATAR::") != 0 || readBuffer.find("AVATAR::") == std::string::npos || readBuffer.find("USER::ID::") == std::string::npos)
 		{
-			return false; //login failed if no ID found
+			return "failed"; //login failed if no ID found
 		}
 		else
 		{
-			readBuffer.erase(readBuffer.begin(), readBuffer.begin() + std::string("USER::ID::").length());
+			//the below will extract the user's avatar's name
+			std::string avatar = readBuffer;
+			avatar.erase(0, avatar.find("AVATAR::") + std::string("AVATAR::").size());
+			avatar.erase(avatar.find("USER::ID::"), avatar.size());
+
+			//the below will erase all irrelavent information and extract the user ID
+			readBuffer.erase(0, readBuffer.find("USER::ID::") + std::string("USER::ID::").length());
 			userPtr->userID = std::stoi(readBuffer);
 			userPtr->username = username;
 
-			return true;
+			return avatar;
 		}
 	}
 
-	return false; //otherwise return false
+	return "failed"; //otherwise return false
 }
 
 void network::server(unsigned short PORT)
@@ -364,7 +370,8 @@ void network::server(unsigned short PORT)
 
 			sf::Packet sendPacket;
 
-			if (!login(std::string(receiveString), userPtr))
+			std::string response = login(std::string(receiveString), userPtr); //this will either contain the user's avatar's name, or it will be "failed" in the event that it failed to log in
+			if (response == "failed")
 			{
 				sendPacket << "SERVER::LOGON::RESPONSE::falseUSER::ID::-1";
 				socket->send(sendPacket);
@@ -384,14 +391,14 @@ void network::server(unsigned short PORT)
 
 				unsigned int entityID = ecs::entity::superEntityManager.create({components::USER, components::LOCATION, components::DRAWABLE}); //a new object with those attributes is made
 
-				//std::cout << entityID << std::endl;
-				tempEntity.id = entityID;							   //sets the temp entity to have the correct ID
+				tempEntity.id = entityID; //sets the temp entity to have the correct ID
 				ecs::system::chunks[startCoord].push_back(tempEntity); //pushes users to the (0, 0) chunk
-
+				
 				unsigned int componentVectorIndex = users.entityToVectorMap(entityID);	//gets the component vector index of this entity
 				unsigned int drawableVectorIndex = drawables.entityToVectorMap(entityID); //gets the component vector index of this entity
 
 				drawables.compVec[drawableVectorIndex].type = ecs::entity::USER;
+				drawables.compVec[drawableVectorIndex].avatar = response;
 
 				userPtr->socket = socket;														   //make the new user object contain their socket
 				userPtr->timeOfExpiry = sf::seconds(expiryTimer.getElapsedTime().asSeconds() + 5); //set the expiry time for their socket
@@ -399,8 +406,6 @@ void network::server(unsigned short PORT)
 
 				users.compVec[componentVectorIndex] = *userPtr;									 //add this user to the users vector
 				sessionIDToEntityID.insert({userPtr->sessionID, entityID}); //will add a map entry, mapping their unique session ID to some index in the component vector
-
-				socket->getRemoteAddress();
 
 				selector.add(*socket); //add this vector to the selector
 
@@ -435,11 +440,13 @@ void physics::userInput(json keysAndID)
 
 	unsigned short entityID = sessionIDToEntityID[keysAndID["sessionID"]];
 	unsigned short locationVectorIndex = locationStructs.entityToVectorMap(entityID);
+	unsigned short drawablesVectorIndex = drawables.entityToVectorMap(entityID);
 
 	//std::cout << entityID << " :: " << locationVectorIndex << "\n";
 
 	sf::Vector2f *userVelocity = &ecs::component::locationStructs.compVec[locationVectorIndex].velocity;
 	bool *onFloor = &ecs::component::locationStructs.compVec[locationVectorIndex].onFloor;
+	int *direction = &ecs::component::drawables.compVec[drawablesVectorIndex].direction;
 
 	if ((keysAndID["left"] && keysAndID["right"]) || (!keysAndID["left"] && !keysAndID["right"]))
 	{ //if both or neither of them are pressed, the velocity is zero
@@ -447,10 +454,14 @@ void physics::userInput(json keysAndID)
 	}
 	else
 	{
-		if (keysAndID["left"])
+		if (keysAndID["left"]){
 			userVelocity->x = -velocity.x;
-		if (keysAndID["right"])
+			*direction = 1;
+		}
+		if (keysAndID["right"]){
 			userVelocity->x = velocity.x;
+			*direction = 0;
+		}
 	}
 
 	if (keysAndID["jump"] && *onFloor)
@@ -731,18 +742,20 @@ void updateActiveChunkData::updateChunkData()
 		for (int i = 0; i < chunkEntityVector.second.size(); i++)
 		{
 			int entityID = chunkEntityVector.second[i].id;
-
+			
 			gameData[chunkEntityVector.first]["entities"][i]["type"] = drawables.compVec[drawables.entityToVectorMap(entityID)].type;
 
-			if (gameData[chunkEntityVector.first]["entities"][i]["type"] == ecs::entity::USER)
+			if (drawables.compVec[drawables.entityToVectorMap(entityID)].type == ecs::component::USER) //if the type is user
 			{
 				gameData[chunkEntityVector.first]["entities"][i]["username"] = users.compVec[users.entityToVectorMap(entityID)].username;
 				gameData[chunkEntityVector.first]["entities"][i]["id"] = users.compVec[users.entityToVectorMap(entityID)].userID;
-			}
+				gameData[chunkEntityVector.first]["entities"][i]["direction"] = drawables.compVec[drawables.entityToVectorMap(entityID)].direction;
+				gameData[chunkEntityVector.first]["entities"][i]["avatar"] = drawables.compVec[drawables.entityToVectorMap(entityID)].avatar;
 
-			gameData[chunkEntityVector.first]["entities"][i]["imgLocation"] = drawables.compVec[drawables.entityToVectorMap(entityID)].imgLocation;
-			gameData[chunkEntityVector.first]["entities"][i]["location"]["x"] = locationStructs.compVec[locationStructs.entityToVectorMap(entityID)].coordinates.x;
-			gameData[chunkEntityVector.first]["entities"][i]["location"]["y"] = locationStructs.compVec[locationStructs.entityToVectorMap(entityID)].coordinates.y;
+				gameData[chunkEntityVector.first]["entities"][i]["location"]["x"] = locationStructs.compVec[locationStructs.entityToVectorMap(entityID)].coordinates.x;
+				gameData[chunkEntityVector.first]["entities"][i]["location"]["y"] = locationStructs.compVec[locationStructs.entityToVectorMap(entityID)].coordinates.y;
+			}
+			
 		}
 		gameData[chunkEntityVector.first]["entityCount"] = chunkEntityVector.second.size();
 	}

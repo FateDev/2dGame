@@ -59,8 +59,8 @@ game::game(networking* networkObject, gameNetwork* gameConnection, sf::RenderWin
 
 	font.loadFromFile("Lato-Regular.ttf");
 
-	playerTexture.loadFromFile("resources/padoru_giorno_small.png");
-	opponentTexture.loadFromFile("resources/padoru_padoru_small.png");
+	playerTexture.loadFromFile("resources/default_character.png");
+	opponentTexture.loadFromFile("resources/default_character.png");
 }
 
 void game::listenForKeys(sf::Event event) {
@@ -184,7 +184,7 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 						text.setFont(font);
 						text.setString(chunkToDraw["entities"][i]["username"].get<std::string>());
 						text.setCharacterSize(24);
-						text.setPosition(chunkToDraw["entities"][i]["location"]["x"].get<float>() * 10 + 20, chunkToDraw["entities"][i]["location"]["y"].get<float>() * 10 - 93);
+						text.setPosition(chunkToDraw["entities"][i]["location"]["x"].get<float>() * 10 + 20, chunkToDraw["entities"][i]["location"]["y"].get<float>() * 10 - 103);
 
 						textToDraw.push_back(text);
 						spritesToDraw.push_back(player);

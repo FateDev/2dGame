@@ -78,7 +78,7 @@ bool networking::login(std::string username) {
 	std::string sessionIDFlag = "USER::SESSION_ID::";
 	std::string userIDFlag = "USER::ID::";
 
-	// std::cout << receiveString << std::endl;
+	//std::cout << receiveString << std::endl;
 
 	if (receiveString.find(removeFlag) == 0) { //if the flag is at the beginning of the string
 		receiveString.erase(receiveString.begin(), receiveString.begin() + removeFlag.length());

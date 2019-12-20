@@ -47,7 +47,8 @@ namespace ecs{
         };
 
         struct drawable{
-            std::string imgLocation;
+            std::string avatar;
+            int direction = 0;
             ecs::entity::entityType type;
         };
 
@@ -197,7 +198,7 @@ namespace ecs{
                 void saveMsgDB(std::string msg, int userNum, int time);
                 void forwardToAllUsers(std::string msg, int userNum);
                 void broadcastToLocal(std::string msg, int userNum);
-                bool login(std::string input, ecs::component::user* userPtr);
+                std::string login(std::string input, ecs::component::user *userPtr);
         };
 
         struct updateActiveChunkData{

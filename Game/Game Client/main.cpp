@@ -35,7 +35,7 @@ int main(int argc, char **argv) { //will accept parameters from command line, th
 	*/
 	///>>>below are set temporarily for debugging and development
 	std::string launcherKey = "Hg+Lb9B6Q/zrMduYEvPmuQ==";
-	std::string username = "fate";
+	std::string username = "test";
 
 	if (launcherKey == "Hg+Lb9B6Q/zrMduYEvPmuQ==") { //really weak check to verify that the launcher opened the program
 		sf::Clock* globalClock = new sf::Clock; //the clock which is used to check when to ping the server

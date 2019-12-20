@@ -40,9 +40,9 @@ private:
 	std::unordered_map<std::string, sf::Keyboard::Key> abstractKeyTosfKeyMap;
 	bool changeInButtonState = false; //used to indicate whether or not any buttons have been pressed or released
 	sf::Font font;
+public:
 	sf::Texture playerTexture; //temp
 	sf::Texture opponentTexture; //temp
-public:
 	networking* networkObj = NULL;
 	std::vector<sf::RectangleShape> rectanglesToDraw;
 	std::vector<sf::CircleShape> circlesToDraw;
