@@ -10,11 +10,11 @@ socialTabClass::socialTabClass(tgui::Gui &gui, networking* networkObject) : wind
 	float percentX = (float)(400.0f / (float)sf::VideoMode::getDesktopMode().width) * 100;
 
 	chatBox = new chat(percentWidth, 70, percentX, 30); //setting temp values as also need to use absolute positioning
-	chatBox->chatBoxContainer->setPosition(std::to_string(percentX) + "%", sf::VideoMode::getDesktopMode().height - chatBox->chatBoxContainer->getFullSize().y - 30);
+	chatBox->chatBoxContainer->setPosition(std::to_string(percentX) + "%", sf::VideoMode::getDesktopMode().height - chatBox->chatBoxContainer->getFullSize().y - 60);
 	chatBox->chatBoxContainer->setPositionLocked(true); //so that it can't move
 
 	chatBoxContainerHeight = sf::VideoMode::getDesktopMode().height * 0.7 + 50;
-	chatBoxContainerYCoord = sf::VideoMode::getDesktopMode().height - chatBox->chatBoxContainer->getFullSize().y - 30;
+	chatBoxContainerYCoord = sf::VideoMode::getDesktopMode().height - chatBox->chatBoxContainer->getFullSize().y - 60;
 
 	roomGuildSelectBox = tgui::ScrollablePanel::create({ std::to_string(100 - percentWidth) + "%", chatBox->chatBoxContainer->getFullSize().y + 1 });
 	roomGuildSelectBox->setPosition(0, chatBox->chatBoxContainer->getPosition().y - 1);
@@ -247,7 +247,7 @@ void socialTabClass::switchTabs(std::string buttonText) { //this will enable swi
 			//code to disable the private messaging stuff
 		}
 		if (activeTab != "Area Chat") { //this sets the UI to look like how it should for this specific tab, but only once
-			chatBox->chatBoxContainer->setPosition("10%", sf::VideoMode::getDesktopMode().height - chatBox->chatBoxContainer->getFullSize().y - 30);  //sets correct positioning as it's also used for the Rooms tab
+			chatBox->chatBoxContainer->setPosition("10%", sf::VideoMode::getDesktopMode().height - chatBox->chatBoxContainer->getFullSize().y - 60);  //sets correct positioning as it's also used for the Rooms tab
 			chatBox->chatBoxContainer->setSize("80%", chatBoxContainerHeight); //sets correct sizing as it's also used for the Rooms tab
 			activeTab = "Area Chat"; //sets active tab
 			

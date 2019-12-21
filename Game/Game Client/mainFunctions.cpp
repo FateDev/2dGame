@@ -55,8 +55,16 @@ void gameBit(sf::Clock* globalClock, networking* networkObject, gameNetwork* gam
 	//the below is just the settings stuff for it
 	sf::ContextSettings settings;
 	settings.antialiasingLevel = 8; //so drawn objects don't look too sharp (especially for circles and stuff)
+	
+	int taskbarHeight = 0;
+	RECT rect;
+	HWND taskBar = FindWindow(L"Shell_traywnd", NULL);
+	if (taskBar && GetWindowRect(taskBar, &rect)) {
+		taskbarHeight = rect.bottom - rect.top;
+	}
 
-	sf::RenderWindow gameWindow(sf::VideoMode(sf::VideoMode::getDesktopMode().width, sf::VideoMode::getDesktopMode().height), "One More Time", sf::Style::Fullscreen, settings);
+	sf::RenderWindow gameWindow(sf::VideoMode(sf::VideoMode::getDesktopMode().width, sf::VideoMode::getDesktopMode().height-taskbarHeight), "One More Time", sf::Style::None, settings);
+	gameWindow.setPosition(sf::Vector2i(0, 0));
 	gameWindow.setVerticalSyncEnabled(true);
 	//fullscreen window for the game
 

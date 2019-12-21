@@ -82,23 +82,42 @@ if(isset($_GET['error'])){
 			transition:background-color 0.2s ease;
 		}
 
+		a{
+			padding:10px;
+			display:inline-block;
+			color: white;
+			text-decoration:none;
+			transition: background-color .2s ease;
+			background-color: #3498db;
+			border-radius:5px;
+		}
+
 		input[type='submit']{
 			background-color:rgba(255, 255, 255, 0.9);
 			padding:15px;
 		}
 
-		input[type='submit']:hover{
+		input[type='submit']:hover, a:hover{
 			background-color:rgba(255, 255, 255, 0.7) !important;
 		}
 
-		input[type='submit']:active{
+		input[type='submit']:active, a:active{
 			background-color:rgba(255, 255, 255, 0.5) !important;
+		}
+
+		ul{
+			text-align:left;
+			max-width:500px;
+			line-height:170%;
+			margin:auto;
 		}
 	</style>
 	<body>
 		<div class='float-contain'>
 			<h1>Game</h1>
 			You can sign up for the game on this page, or go to the ones below for whatever you need.
+			<br><br>
+			<a href='game.rar'>Download <br> (latest as of 08/12/2019 23:15)</a>
 			<br>
 			<form action="settings" method="GET" autocomplete="no" style="display: inline-block;">
 				<input type="submit" value="Settings" style="color: white;background-color: #3498db;width: 100px;min-width: 0;">
@@ -106,6 +125,11 @@ if(isset($_GET['error'])){
 			<form action="help" method="GET" autocomplete="no" style="display: inline-block;">
 				<input type="submit" value="Help" style="background-color: #3498db;color: white;width: 100px;min-width: 0;">
 			</form>
+			<ul>
+				<li>Extract all of the files from the game download archive to some folder</li>
+				<li>Make sure to allow the game through the firewall manually if it doesn't let it through automatically or doesn't prompt you to allow it</li>
+				<li>If you had to manually allow it through, this can cause the launcher to malfunction, in which case, delete and re-extract all of the launcher related files</li>
+			</ul>
 		</div>
 		<div class='float-contain'>
 			<form action='signup.php' method="POST">

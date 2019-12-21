@@ -73,16 +73,16 @@ void eraseEntityFromChunks(int entityID) //make this more efficient, we have whe
 {
 	for (auto &chunk : chunks)
 	{
-		for (int i = 0; i < chunk.second.size(); i++)
+		for (int i = 0; i < chunk.second.second.size(); i++)
 		{
 			int removeIndex = -1;
-			if (chunk.second[i].id == entityID)
+			if (chunk.second.second[i].id == entityID)
 			{
 				removeIndex = i;
 			}
 			if (removeIndex > -1)
 			{
-				chunk.second.erase(chunk.second.begin() + removeIndex);
+				chunk.second.second.erase(chunk.second.second.begin() + removeIndex);
 			}
 		}
 		//std::cout << "(" << chunk.first.coordinates.first << ", " << chunk.first.coordinates.second << "): size -> " << chunk.second.size() << std::endl;
@@ -107,7 +107,7 @@ void network::removeUser(unsigned int i)
 
 	sessionIDToEntityID.erase(users.compVec[i].sessionID); //will erase the mapping of the unique session ID to the index in the component vector for this user
 
-	ecs::entity::superEntityManager.destroy(entityID); //removes them from the array if it is
+	ecs::entity::superEntityManager.destroy(entity::entity(entityID, ecs::entity::USER)); //removes them from the array if it is
 
 	std::string msgString = "SERVER: A USER HAS LEFT\nSERVER: CLIENTS ONLINE: " + std::to_string(users.compVec.size()); //outputs some server info to indicate that the user is gone
 	std::cout << msgString << "\n";	//outputs this string
@@ -392,12 +392,13 @@ void network::server(unsigned short PORT)
 				unsigned int entityID = ecs::entity::superEntityManager.create({components::USER, components::LOCATION, components::DRAWABLE}); //a new object with those attributes is made
 
 				tempEntity.id = entityID; //sets the temp entity to have the correct ID
-				ecs::system::chunks[startCoord].push_back(tempEntity); //pushes users to the (0, 0) chunk
+				tempEntity.type = ecs::entity::USER; //sets the temp entity to have the correct ID
+				ecs::system::chunks[startCoord].second.push_back(tempEntity); //pushes users to the (0, 0) chunk
 				
 				unsigned int componentVectorIndex = users.entityToVectorMap(entityID);	//gets the component vector index of this entity
 				unsigned int drawableVectorIndex = drawables.entityToVectorMap(entityID); //gets the component vector index of this entity
 
-				drawables.compVec[drawableVectorIndex].type = ecs::entity::USER;
+				//drawables.compVec[drawableVectorIndex].type = ecs::entity::USER;
 				drawables.compVec[drawableVectorIndex].avatar = response;
 
 				userPtr->socket = socket;														   //make the new user object contain their socket
@@ -545,13 +546,13 @@ void physics::moveEntities()
 		{
 			unsigned int entityID = locationStructs.vectorToEntityMap(componentIndex);
 
-			for (int i = 0; i < chunks[currentChunkCoords].size(); i++)
+			for (int i = 0; i < chunks[currentChunkCoords].second.size(); i++)
 			{ //get the coordinate retrieved above, and get the chunk at that coordinate, and loop through the vector storing all the entities at that coordinate
-				if (chunks[currentChunkCoords][i].id == entityID)
+				if (chunks[currentChunkCoords].second[i].id == entityID)
 				{																			  //if the entityID is equal to the one we retrieved, it's the user we're looking for
-					chunks[currentChunkCoords].erase(chunks[currentChunkCoords].begin() + i); //remove the user from the vector
+					chunks[currentChunkCoords].second.erase(chunks[currentChunkCoords].second.begin() + i); //remove the user from the vector
 					tempEntity.id = entityID;												  //sets the correct entityID
-					chunks[newChunkCoords].push_back(tempEntity);							  //and pushes to the vector in the new chunk
+					chunks[newChunkCoords].second.push_back(tempEntity);							  //and pushes to the vector in the new chunk
 					break;
 				}
 			}
@@ -596,7 +597,7 @@ void gameBroadcast::broadcastGameState()
 	std::lock_guard<std::mutex> mutex(mutexs::removeUserMutex);	
 	for (auto &chunkEntityVector : chunks)
 	{
-		for (auto &user : chunkEntityVector.second)
+		for (auto &user : chunkEntityVector.second.second)
 		{
 			json jsonObj = json::object();
 			int userCompVecIndex = users.entityToVectorMap(user.id);			   //user ID in this case is the entity ID
@@ -739,13 +740,14 @@ void updateActiveChunkData::updateChunkData()
 	for (auto &chunkEntityVector : chunks)
 	{
 		gameData[chunkEntityVector.first] = json::object();
-		for (int i = 0; i < chunkEntityVector.second.size(); i++)
+		for (int i = 0; i < chunkEntityVector.second.second.size(); i++)
 		{
-			int entityID = chunkEntityVector.second[i].id;
+			int entityID = chunkEntityVector.second.second[i].id;
+			int entityType = chunkEntityVector.second.second[i].type;
 			
-			gameData[chunkEntityVector.first]["entities"][i]["type"] = drawables.compVec[drawables.entityToVectorMap(entityID)].type;
+			gameData[chunkEntityVector.first]["entities"][i]["type"] = entityType;
 
-			if (drawables.compVec[drawables.entityToVectorMap(entityID)].type == ecs::component::USER) //if the type is user
+			if (entityType == ecs::entity::USER) //if the type is user
 			{
 				gameData[chunkEntityVector.first]["entities"][i]["username"] = users.compVec[users.entityToVectorMap(entityID)].username;
 				gameData[chunkEntityVector.first]["entities"][i]["id"] = users.compVec[users.entityToVectorMap(entityID)].userID;
@@ -757,7 +759,7 @@ void updateActiveChunkData::updateChunkData()
 			}
 			
 		}
-		gameData[chunkEntityVector.first]["entityCount"] = chunkEntityVector.second.size();
+		gameData[chunkEntityVector.first]["entityCount"] = chunkEntityVector.second.second.size();
 	}
 }
 

@@ -1,65 +1,38 @@
 <?php
 require 'info.php';
 
-function generateRandomString($length = 20) {
-    $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    $charactersLength = strlen($characters);
-    $randomString = '';
-    for ($i = 0; $i < $length; $i++) {
-        $randomString .= $characters[rand(0, $charactersLength - 1)];
-    }
-    return $randomString;
-}
-
 $username = urldecode($_GET['username']);
 $password = urldecode($_GET['password']);
 
 if(strlen($password) > 20){
-    echo "false1";
+    echo "false";
 	exit();
 }
 
 if(strlen($username) > 20){
-    echo "false2";
+    echo "false";
 	exit();
 }
 
 $pdo = new PDO("mysql:host=$host;dbname=$database", $dbUsername, $dbPassword);
 
-$statement = $pdo->prepare("SELECT pword, UserID, loggedIn FROM usersVerified WHERE username=:username");
+$statement = $pdo->prepare("SELECT pword, UserID FROM usersVerified WHERE username=:username");
 $statement->bindParam(':username', $username, PDO::PARAM_STR);
 $statement->execute();
 
 if($statement->rowCount() != 0){
 	$row = $statement->fetch(PDO::FETCH_ASSOC);
 	$realPassword = $row['pword'];
-   $id = $row['UserID'];
-   $loggedIn = $row['loggedIn'];
-
-    if($loggedIn == 1){
-        echo "false3";
-        exit();
-    }
+	$id = $row['UserID'];
 
 	if(password_verify($password, $realPassword)){
-		if(isset($_GET['online'])){
-			echo "true";
-		}else{
-	            $token = generateRandomString();
-
-	    	    $statement = $pdo->prepare("UPDATE usersVerified SET sessionToken=:token, loggedIn=1 WHERE UserID=:id");
-		    $statement->bindParam(':id', $id, PDO::PARAM_STR);
-		    $statement->bindParam(':token', $token, PDO::PARAM_STR);
-		    $statement->execute();
-
-			echo $token;
-		}
+		echo "true";
 	}else{
-	    echo "false4";
+	    echo "false";
     	exit();
 	}
 }else{
-    echo "false5";
+    echo "false";
     exit();
 }
 ?>
