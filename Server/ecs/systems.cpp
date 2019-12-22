@@ -69,26 +69,6 @@ float distanceMagnitude(unsigned int index_1, unsigned int index_2)
 	return sqrt(pow(xDist, 2) + pow(yDist, 2)); //this is the magnitude of the x and y distances combined (the hypotenuse)
 }
 
-void eraseEntityFromChunks(int entityID) //make this more efficient, we have where the user should be so just make it remove from that (I can't be bothered right now)
-{
-	for (auto &chunk : chunks)
-	{
-		for (int i = 0; i < chunk.second.second.size(); i++)
-		{
-			int removeIndex = -1;
-			if (chunk.second.second[i].id == entityID)
-			{
-				removeIndex = i;
-			}
-			if (removeIndex > -1)
-			{
-				chunk.second.second.erase(chunk.second.second.begin() + removeIndex);
-			}
-		}
-		//std::cout << "(" << chunk.first.coordinates.first << ", " << chunk.first.coordinates.second << "): size -> " << chunk.second.size() << std::endl;
-	}
-}
-
 void network::removeUser(unsigned int i)
 {											
 	std::lock_guard<std::mutex> mutex(mutexs::removeUserMutex);	//function to basically properly log out a user
@@ -98,7 +78,15 @@ void network::removeUser(unsigned int i)
 	ecs::system::coordinatesStruct removeUserCoordinates(chunkCoordHelper(int(coordinates.x), chunkPixelSize_x), chunkCoordHelper(int(coordinates.y), chunkPixelSize_y)); //get what their coordinates would be in the world using simple mod math
 
 	int counter = 0;
-	eraseEntityFromChunks(entityID);
+	for(int i = 0; i < chunks[removeUserCoordinates].second.size(); i++){
+		if(chunks[removeUserCoordinates].second[i].id == entityID){
+			chunks[removeUserCoordinates].second.erase(chunks[removeUserCoordinates].second.begin() + i);
+			break;
+		}
+	}
+	
+	chunks[removeUserCoordinates].first.userCount--; //decrements the number of users in this chunk
+	//std::cout << "decrementing user count (removing) \n";
 
 	sf::Packet packet; //a packet to hold a string
 	packet << std::string("die").c_str(); //putting the c style string into the packet
@@ -107,7 +95,9 @@ void network::removeUser(unsigned int i)
 
 	sessionIDToEntityID.erase(users.compVec[i].sessionID); //will erase the mapping of the unique session ID to the index in the component vector for this user
 
-	ecs::entity::superEntityManager.destroy(entity::entity(entityID, ecs::entity::USER)); //removes them from the array if it is
+	ecs::entity::superEntityManager.destroy(entity::entity(entityID), ecs::entity::USER); //removes them from the array if it is
+
+	updateActiveChunkData::getInstance()->updateActiveChunks(); //updates the active chunks
 
 	std::string msgString = "SERVER: A USER HAS LEFT\nSERVER: CLIENTS ONLINE: " + std::to_string(users.compVec.size()); //outputs some server info to indicate that the user is gone
 	std::cout << msgString << "\n";	//outputs this string
@@ -244,7 +234,7 @@ void network::process()
 						sendString += "USER::TIME::" + time;
 						sendString += "USER::MSG::" + receiveString;
 
-						std::cout << sendString << std::endl;
+						std::cout << sendString << "\n";
 
 						if (users.compVec[i].roomGuild != "LOCALCHAT")
 						{
@@ -392,14 +382,18 @@ void network::server(unsigned short PORT)
 				unsigned int entityID = ecs::entity::superEntityManager.create({components::USER, components::LOCATION, components::DRAWABLE}); //a new object with those attributes is made
 
 				tempEntity.id = entityID; //sets the temp entity to have the correct ID
-				tempEntity.type = ecs::entity::USER; //sets the temp entity to have the correct ID
+				//tempEntity.type = ecs::entity::USER; //sets the temp entity to have the correct ID
 				ecs::system::chunks[startCoord].second.push_back(tempEntity); //pushes users to the (0, 0) chunk
+				chunks[startCoord].first.userCount++; //increments the number of users in this chunk
+				chunks[startCoord].first.settingID = 1; //sets the first chunk's setting ID to 1, which is a city
+
+				updateActiveChunkData::getInstance()->updateActiveChunks(); //updates the active chunks
 				
 				unsigned int componentVectorIndex = users.entityToVectorMap(entityID);	//gets the component vector index of this entity
 				unsigned int drawableVectorIndex = drawables.entityToVectorMap(entityID); //gets the component vector index of this entity
 
 				//drawables.compVec[drawableVectorIndex].type = ecs::entity::USER;
-				drawables.compVec[drawableVectorIndex].avatar = response;
+				drawables.compVec[drawableVectorIndex].avatar = response; //sets the avatar to the one retrieved from the server
 
 				userPtr->socket = socket;														   //make the new user object contain their socket
 				userPtr->timeOfExpiry = sf::seconds(expiryTimer.getElapsedTime().asSeconds() + 5); //set the expiry time for their socket
@@ -414,7 +408,7 @@ void network::server(unsigned short PORT)
 			}
 		}
 		else
-		{					//if a new user hasn't joined...
+		{ //if a new user hasn't joined...
 			delete userPtr; //delete the user struct
 			delete socket;  //and delete the socket
 		}
@@ -551,12 +545,16 @@ void physics::moveEntities()
 				if (chunks[currentChunkCoords].second[i].id == entityID)
 				{																			  //if the entityID is equal to the one we retrieved, it's the user we're looking for
 					chunks[currentChunkCoords].second.erase(chunks[currentChunkCoords].second.begin() + i); //remove the user from the vector
-					tempEntity.id = entityID;												  //sets the correct entityID
-					chunks[newChunkCoords].second.push_back(tempEntity);							  //and pushes to the vector in the new chunk
+					chunks[currentChunkCoords].first.userCount--; //decrements the number of users in this chunk
+					//std::cout << "decrementing user count (moving) \n";
+					tempEntity.id = entityID; //sets the correct entityID
+					chunks[newChunkCoords].second.push_back(tempEntity); //and pushes to the vector in the new chunk
+					chunks[newChunkCoords].first.userCount++; //increments the number of users in this chunk
 					break;
 				}
 			}
 			//std::cout << chunks[newChunkCoords].size() << " -- " << chunks[currentChunkCoords].size() << std::endl;
+			updateActiveChunkData::getInstance()->updateActiveChunks(); //updates the active chunks
 
 			//std::cout << "moved " << users.compVec[users.entityToVectorMap(entityID)].username << " to chunk: " << newChunkCoords.coordinates.first << ", " << newChunkCoords.coordinates.second << std::endl;
 		}
@@ -729,8 +727,63 @@ updateActiveChunkData *updateActiveChunkData::getInstance()
 
 void updateActiveChunkData::updateActiveChunks()
 { //this is for updating which chunks are actually active
-	for (ecs::component::location const &location : ecs::component::locationStructs.compVec)
+	std::vector<coordinatesStruct> generationCoords = {}; //a vector containing all of the coordinates to generate a new chunk at
+	//std::vector<coordinatesStruct> deletionCoords = {}; //a vector containing all of the coordinates to delete chunks from
+	for (auto &chunk : chunks)
 	{
+		if(chunk.second.first.userCount > 0){
+			for(int i = chunk.first.coordinates.first-1; i <= chunk.first.coordinates.first+1;i++){
+				for(int j = chunk.first.coordinates.second-1; j <= chunk.first.coordinates.second+1;j++){ //loops around all the surrounding chunks
+					if(!chunks.count(coordinatesStruct(i, j))){ //if the chunk hasn't been made yet (active is initialised to false)
+						generationCoords.push_back(coordinatesStruct(i, j)); //flag this up for generation
+					}
+				}
+			}
+		}
+		/*
+		else{ //if there are no users in this, then potentially flag it up for deletion
+			bool usersPresentInSurroundingChunks = false; //any users present in how many surrounding chunks?
+			for(int i = chunk.first.coordinates.first-1; i <= chunk.first.coordinates.first+1;i++){
+				for(int j = chunk.first.coordinates.second-1; j <= chunk.first.coordinates.second+1;j++){
+					if(chunks.count(coordinatesStruct(i, j))){
+						usersPresentInSurroundingChunks = true;
+						break;
+					}
+				}
+				if(usersPresentInSurroundingChunks) { break; } //if users are present in surrounding chunk, no longer need to continue checking
+			}
+			if(!usersPresentInSurroundingChunks){
+				deletionCoords.push_back(chunk.first); //flag for deletion
+			}
+		}
+		*/
+	}
+
+	/*
+	for(auto &deletion : deletionCoords){ //deletes the ones flagged for deletion
+		std::cout << "DELETING CHUNK AT: " << deletion.coordinates.first << ", " << deletion.coordinates.second << "\n";
+		chunks.erase(deletion);
+	}
+	*/
+	
+	/*
+	Generation:
+	-Every power of 2 on the x-axis excluding the first 3 (so until the 8th chunk), generate a city there
+		-> their y vaues are always multiples of 5
+	*/
+	for(auto &generation : generationCoords){
+		if(generation.coordinates.first == 0 && std::floor((float)generation.coordinates.second/5) == generation.coordinates.second/5){
+			chunks[generation].first.settingID = 1; //ID: 1 is city
+		}else if(std::floor((float)log2(abs(generation.coordinates.first))) == (float)log2(abs(generation.coordinates.first)) && std::floor((float)generation.coordinates.second/5) == generation.coordinates.second/5){
+			int newChunkX = (int)log2(abs(generation.coordinates.first));
+			if(newChunkX >= 3){ //don't want to generate for the first 8*chunkWidth pixels
+				chunks[generation].first.settingID = 1; //ID: 1 is city
+			}else{
+				chunks[generation].first.settingID = 9;
+			}
+		}else{
+			chunks[generation].first.settingID = 9; //ID: 1 is city
+		}
 	}
 }
 
@@ -742,30 +795,29 @@ void updateActiveChunkData::updateChunkData()
 		gameData[chunkEntityVector.first] = json::object();
 		for (int i = 0; i < chunkEntityVector.second.second.size(); i++)
 		{
+			std::lock_guard<std::mutex> mutex(mutexs::removeUserMutex);	//locks the mutex so user can't logout while this is being updated or vice versa
 			int entityID = chunkEntityVector.second.second[i].id;
-			int entityType = chunkEntityVector.second.second[i].type;
-			
-			gameData[chunkEntityVector.first]["entities"][i]["type"] = entityType;
 
-			if (entityType == ecs::entity::USER) //if the type is user
-			{
-				gameData[chunkEntityVector.first]["entities"][i]["username"] = users.compVec[users.entityToVectorMap(entityID)].username;
-				gameData[chunkEntityVector.first]["entities"][i]["id"] = users.compVec[users.entityToVectorMap(entityID)].userID;
-				gameData[chunkEntityVector.first]["entities"][i]["direction"] = drawables.compVec[drawables.entityToVectorMap(entityID)].direction;
-				gameData[chunkEntityVector.first]["entities"][i]["avatar"] = drawables.compVec[drawables.entityToVectorMap(entityID)].avatar;
+			gameData[chunkEntityVector.first]["entities"][i]["username"] = users.compVec[users.entityToVectorMap(entityID)].username;
+			gameData[chunkEntityVector.first]["entities"][i]["id"] = users.compVec[users.entityToVectorMap(entityID)].userID;
+			gameData[chunkEntityVector.first]["entities"][i]["direction"] = drawables.compVec[drawables.entityToVectorMap(entityID)].direction;
+			gameData[chunkEntityVector.first]["entities"][i]["avatar"] = drawables.compVec[drawables.entityToVectorMap(entityID)].avatar;
 
-				gameData[chunkEntityVector.first]["entities"][i]["location"]["x"] = locationStructs.compVec[locationStructs.entityToVectorMap(entityID)].coordinates.x;
-				gameData[chunkEntityVector.first]["entities"][i]["location"]["y"] = locationStructs.compVec[locationStructs.entityToVectorMap(entityID)].coordinates.y;
-			}
-			
+			gameData[chunkEntityVector.first]["entities"][i]["location"]["x"] = locationStructs.compVec[locationStructs.entityToVectorMap(entityID)].coordinates.x;
+			gameData[chunkEntityVector.first]["entities"][i]["location"]["y"] = locationStructs.compVec[locationStructs.entityToVectorMap(entityID)].coordinates.y;
 		}
-		gameData[chunkEntityVector.first]["entityCount"] = chunkEntityVector.second.second.size();
+		gameData[chunkEntityVector.first]["data"]["x"] = chunkEntityVector.first.coordinates.first * chunkPixelSize_x;
+		gameData[chunkEntityVector.first]["data"]["y"] = chunkEntityVector.first.coordinates.second * chunkPixelSize_y;
+		gameData[chunkEntityVector.first]["data"]["width"] = chunkPixelSize_x;
+		gameData[chunkEntityVector.first]["data"]["height"] = chunkPixelSize_y;
+		gameData[chunkEntityVector.first]["data"]["userCount"] = chunkEntityVector.second.first.userCount;
+		gameData[chunkEntityVector.first]["data"]["setting_id"] = chunkEntityVector.second.first.settingID;
 	}
 }
 
 game *game::instance = 0;
 game::game() {}
-game *game::getInstance()
+game *game::getInstance() 
 {
 	if (instance == 0)
 	{

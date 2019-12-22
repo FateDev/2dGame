@@ -43,4 +43,3 @@ unsigned int ecsComponentStructure<T>::vectorToEntityMap(unsigned int componentI
 template class ecsComponentStructure<ecs::component::location>;
 template class ecsComponentStructure<ecs::component::drawable>;
 template class ecsComponentStructure<ecs::component::user>;
-template class ecsComponentStructure<ecs::component::chunkData>;

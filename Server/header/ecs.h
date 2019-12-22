@@ -13,8 +13,8 @@
 #include "../header/helper.h"
 
 //the size of one chunk
-const int chunkPixelSize_x = 200;
-const int chunkPixelSize_y = 200;
+const int chunkPixelSize_x = 100;
+const int chunkPixelSize_y = 70;
 const int fps = 60;
 const sf::Vector2f deceleration = { 0, 0.1 }; //x = friction on surface deceleration, y = gravity
 const sf::Vector2f acceleration = { 0, 1 }; //x = acceleration by arrow keys (don't want to accelerate), y = acceleration when jumping up
@@ -25,7 +25,7 @@ using json = nlohmann::json;
 
 namespace ecs{
     namespace entity{
-        enum entityType {USER, MOB, DATA, OTHER}; //enum for the types of entities
+        enum entityType {USER, MOB, OTHER}; //enum for the types of entities, only used for deleting them though
     }
 }
 
@@ -56,18 +56,13 @@ namespace ecs{
             float hitBoxRadius = 1; //the radius of the hit box
         };
 
-        struct chunkData{
-            int settingID = 9; //1 is City, 9 is cave, have a look at that piece of paper is drew on
-            int permanent = false; //whether or not it should be deleted eventually
-        };
-
         struct location{
             sf::Vector2f coordinates = { 0, 0 }; //the in game location of the player
             sf::Vector2f velocity = { 0, 0 }; //this is the velocity of the player
             bool onFloor = true;
         };
 
-        enum components {USER, LOCATION, DRAWABLE, PHYSICAL, CHUNK_DATA}; //enum for all of the components
+        enum components {USER, LOCATION, DRAWABLE, PHYSICAL}; //enum for all of the components
 
         //it's using a template because it could be used for any of the components above
         template <class T>
@@ -87,7 +82,6 @@ namespace ecs{
         extern ecsComponentStructure<user> users; //this basically tells the compiler that the variable declared is defined somewhere else in the program (main.cpp in this case)
         extern ecsComponentStructure<drawable> drawables; //this basically tells the compiler that the variable declared is defined somewhere else in the program (main.cpp in this case)
         extern ecsComponentStructure<location> locationStructs; //this basically tells the compiler that the variable declared is defined somewhere else in the program (main.cpp in this case)
-        extern ecsComponentStructure<chunkData> chunkDataStructs;
 
         //to make a new componenent, (1) make an enum in ecs::component::components, and (1.5) optionally if it needs to be like a mob or something, also in entity::entityType
         //then (3) you need to put the extern bit here and put the (4) definitions of it in main.cpp
@@ -99,9 +93,9 @@ namespace ecs{
     namespace entity{
         struct entity{
             unsigned int id; //basic struct to say that this is actually an entity
-            ecs::entity::entityType type = ecs::entity::USER; //the exact type of the entity, by default user
+            //ecs::entity::entityType type = ecs::entity::USER; //the exact type of the entity, by default user
 
-            entity(int id, ecs::entity::entityType type) : type(type), id(id) {}; //initialisation list constructor
+            entity(int id) : id(id) {}; //initialisation list constructor
             entity() {}; //default constructor
 
             bool operator==(const entity& t) const { //this is needed to put entities in the unordered_set structure, this basically allows for direct comparison of different entity structs
@@ -122,7 +116,7 @@ namespace ecs{
             public:
                 unsigned int create(std::initializer_list<ecs::component::components> initialiseWithStructs); //makes entity struct with provided structs, will return the entity
                 bool alive(entity entityStruct); //will simply check if the provided entity exists in the entities set
-                void destroy(entity entityStruct); //will destroy an entity, removing it from the above set, and removing all of its entries from the components struct
+                void destroy(entity entityStruct, ecs::entity::entityType type); //will destroy an entity, removing it from the above set, and removing all of its entries from the components struct
         };
         
         extern entityManager superEntityManager; //this basically tells the compiler that the variable declared is defined somewhere else in the program (main.cpp in this case)
@@ -130,6 +124,11 @@ namespace ecs{
 
     namespace system{
         extern std::unordered_map<std::string, unsigned int>  sessionIDToEntityID; //will map user's uniqueID's to their entity ID
+
+        struct chunkData{
+            int settingID = 9; //1 is City, 9 is cave, have a look at that piece of paper is drew on
+            int userCount = 0; //how many users are in this chunk
+        };
         
         struct mapCleanup{
             void chunksMapCleanup(); //should be run on a thread, should iterate through every single chunk, with something like 100ms sleep inbetween as it's not that important
@@ -276,7 +275,7 @@ namespace ecs{
                 sf::Thread* mainGame = 0;
         };
         
-        extern std::unordered_map<coordinatesStruct, std::pair<int, std::vector<ecs::entity::entity>>, Hash> chunks; //will contain a list of all the entities in each chunk, useful for physics + read below
+        extern std::unordered_map<coordinatesStruct, std::pair<chunkData, std::vector<ecs::entity::entity>>, Hash> chunks; //will contain a list of all the entities in each chunk, useful for physics + read below
         extern std::unordered_map<coordinatesStruct, json, Hash> gameData; //this basically tells the compiler that the variable declared is defined somewhere else in the program (main.cpp in this case)
         //the pair in the chunk structure is used, so that I can store the entityID in the first value, and the entities of the scene in the second bit
     }

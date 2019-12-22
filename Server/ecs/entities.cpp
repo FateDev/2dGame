@@ -10,24 +10,16 @@ unsigned int entityManager::create(std::initializer_list<ecs::component::compone
     entities.insert(nextEntity); //and when it is found, the entity with this ID is inserted
 
     for(int i = 0;i < initialiseWithStructs.size(); i++){ //loops through the initializer
+        //std::cout << "Enum: " << *(initialiseWithStructs.begin()+i) << std::endl;
         if(*(initialiseWithStructs.begin()+i) == ecs::component::components::USER){ //uses the *(struct.begin()+i) rather than struct[i] notation because that notation doesn't work here
             ecs::component::user userTemp;
             ecs::component::users.addComponent(userTemp, nextEntity.id); //appropriate component added to the appropriate structure
-        }
-        
-        if(*(initialiseWithStructs.begin()+i) == ecs::component::components::LOCATION){
+        } else if(*(initialiseWithStructs.begin()+i) == ecs::component::components::LOCATION){
             ecs::component::location location;
             ecs::component::locationStructs.addComponent(location, nextEntity.id); //appropriate component added to the appropriate structure
-        }
-        
-        if(*(initialiseWithStructs.begin()+i) == ecs::component::components::DRAWABLE){
+        }else if(*(initialiseWithStructs.begin()+i) == ecs::component::components::DRAWABLE){
             ecs::component::drawable drawableStruct;
             ecs::component::drawables.addComponent(drawableStruct, nextEntity.id); //appropriate component added to the appropriate structure
-        }
-        
-        if(*(initialiseWithStructs.begin()+i) == ecs::component::components::CHUNK_DATA){
-            ecs::component::chunkData chunkDataStruct;
-            ecs::component::chunkDataStructs.addComponent(chunkDataStruct, nextEntity.id); //appropriate component added to the appropriate structure
         }
     }
     
@@ -42,13 +34,11 @@ bool entityManager::alive(entity entityStruct){ //returns whether or not the ent
     }
 }
 
-void entityManager::destroy(entity entityStruct){ //removes entities and all of the associated components
-    if(entityStruct.type == ecs::entity::USER){
+void entityManager::destroy(entity entityStruct, ecs::entity::entityType type){ //removes entities and all of the associated components
+    if(type == ecs::entity::USER){
         ecs::component::users.removeComponent(entityStruct.id);
         ecs::component::locationStructs.removeComponent(entityStruct.id);
-        //add in any other component objects
-    }else if(entityStruct.type == ecs::entity::DATA){
-        ecs::component::chunkDataStructs.removeComponent(entityStruct.id);
+        ecs::component::drawables.removeComponent(entityStruct.id);
         //add in any other component objects
     }
 

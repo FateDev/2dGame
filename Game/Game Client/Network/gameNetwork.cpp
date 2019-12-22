@@ -10,7 +10,7 @@ void gameNetwork::listenData() {
 		std::string output = "";
 		packet >> output;
 
-		if (output == "die") {
+		if (output == "die" && gameReference != nullptr) {
 			gameReference->networkObj->active = false; //will break out of all loops and die
 			break;
 		}

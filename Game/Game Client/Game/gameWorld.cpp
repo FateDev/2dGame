@@ -139,22 +139,29 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 	spritesToDraw.clear();
 
 	if (!gameData.is_null()) {	//it now moves it
-		sf::RectangleShape rect1(sf::Vector2f(60, 100));
-		rect1.setPosition(-50, -50);
-
-		sf::RectangleShape rectangle(sf::Vector2f(gameWindow->getSize().x, gameWindow->getSize().y / 2));
-		rectangle.setPosition(sf::Vector2f(-int(gameWindow->getSize().x) / 2, 0));
-
-		rectanglesToDraw.push_back(rect1); //simply add a RectangleShape to the container for it to be drawn
-		rectanglesToDraw.push_back(rectangle);; //simply add a RectangleShape to the container for it to be drawn
 
 		for (int j = 0; j < 9; j++) { //the server sends 9 chunks of data
 			json chunkToDraw = json::parse(gameData["chunks"][j].get<std::string>());
-			//std::cout << chunkToDraw.dump() << std::endl;
+			std::cout << chunkToDraw.dump() << std::endl;
+			int scaleFactor = 10; //rather than changing server side stuff, just change this to make everything appear correctly
 			if (!chunkToDraw.is_null()) {
+				if (chunkToDraw["data"]["setting_id"].get<int>() == 1) {
+					sf::RectangleShape rectangle(sf::Vector2f(chunkToDraw["data"]["width"].get<int>() * scaleFactor, chunkToDraw["data"]["height"].get<int>() * scaleFactor * 0.25));
+					rectangle.setPosition(sf::Vector2f(chunkToDraw["data"]["x"].get<int>() * scaleFactor - ((float)chunkToDraw["data"]["width"].get<int>() * (float)scaleFactor * 0.05), chunkToDraw["data"]["y"].get<int>() * scaleFactor));
+					rectangle.setFillColor(sf::Color(41, 128, 185));
+
+					rectanglesToDraw.push_back(rectangle);; //simply add a RectangleShape to the container for it to be drawn
+				}
+				else if (chunkToDraw["data"]["setting_id"].get<int>() == 9) {
+					sf::RectangleShape rectangle(sf::Vector2f(chunkToDraw["data"]["width"].get<int>() * scaleFactor * 0.9, chunkToDraw["data"]["height"].get<int>() * scaleFactor * 0.1));
+					rectangle.setPosition(sf::Vector2f(chunkToDraw["data"]["x"].get<int>() * scaleFactor, chunkToDraw["data"]["y"].get<int>() * scaleFactor));
+					rectangle.setFillColor(sf::Color(39, 174, 96));
+
+					rectanglesToDraw.push_back(rectangle);; //simply add a RectangleShape to the container for it to be drawn
+				}
 				//std::cout << chunkToDraw["entityCount"].dump() << std::endl;
 				//std::cout << chunkToDraw.dump() << std::endl;
-				for (int i = 0; i < chunkToDraw["entityCount"]; i++) {
+				for (int i = 0; i < chunkToDraw["data"]["userCount"]; i++) {
 					if (!chunkToDraw["entities"][i].is_null()) { //if the entity is actually null, just skip it
 						sf::Sprite player;
 						player.setOrigin(sf::Vector2f(-10, 72));
@@ -171,20 +178,20 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 						if (chunkToDraw["entities"][i]["id"].get<int>() == networkObj->userID) { //do some operations meant for only this client
 							//player.setFillColor(sf::Color::Blue);
 							player.setTexture(playerTexture);
-							gameView->setCenter(chunkToDraw["entities"][i]["location"]["x"].get<float>() * 10, chunkToDraw["entities"][i]["location"]["y"].get<float>() * 10);
+							gameView->setCenter(chunkToDraw["entities"][i]["location"]["x"].get<float>() * scaleFactor, chunkToDraw["entities"][i]["location"]["y"].get<float>() * scaleFactor);
 						}
 						else {
 							//player.setFillColor(sf::Color::Red);
 							player.setTexture(opponentTexture);
 						}
 
-						player.setPosition(chunkToDraw["entities"][i]["location"]["x"].get<float>() * 10, chunkToDraw["entities"][i]["location"]["y"].get<float>() * 10);
+						player.setPosition(chunkToDraw["entities"][i]["location"]["x"].get<float>() * scaleFactor, chunkToDraw["entities"][i]["location"]["y"].get<float>() * scaleFactor);
 
 						sf::Text text;
 						text.setFont(font);
 						text.setString(chunkToDraw["entities"][i]["username"].get<std::string>());
 						text.setCharacterSize(24);
-						text.setPosition(chunkToDraw["entities"][i]["location"]["x"].get<float>() * 10 + 20, chunkToDraw["entities"][i]["location"]["y"].get<float>() * 10 - 103);
+						text.setPosition(chunkToDraw["entities"][i]["location"]["x"].get<float>() * scaleFactor + 20, chunkToDraw["entities"][i]["location"]["y"].get<float>() * scaleFactor - 103);
 
 						textToDraw.push_back(text);
 						spritesToDraw.push_back(player);
