@@ -164,8 +164,8 @@ void networking::getResponses() { //retrieves incoming message
 		std::string imgLocation = "";
 		int time = 0;
 
-		if (msgID.find("USER::ID::") == 0) {
-			msgID.erase(msgID.begin(), msgID.begin() + std::string("USER::ID::").length());
+		if (msgID.find("MSG::ID::") == 0) {
+			msgID.erase(msgID.begin(), msgID.begin() + std::string("MSG::ID::").length());
 			msgID.erase(msgID.find("USER::USERNAME"), msgID.size());
 
 			username.erase(username.begin(), username.begin() + username.find("USER::USERNAME::") + std::string("USER::USERNAME::").length());
@@ -181,7 +181,7 @@ void networking::getResponses() { //retrieves incoming message
 		if (chatBoxActive == true) { //checks if the chatbox has been set to active, in which case decode received messages and add them to the chatbox
 			msgContent = xorFunction(msgContent);
 
-			if (!is_number(msgID)) {
+			if (!is_number(msgID) && msgID != "-1") { //doesn't regist '-1' as a number for some reason
 				continue;
 			}
 

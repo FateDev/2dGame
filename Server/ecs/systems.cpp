@@ -55,20 +55,6 @@ void systemsManager::systemEnd()
 	}
 }
 
-float distanceMagnitude(unsigned int index_1, unsigned int index_2)
-{ //this simple function takes in the component vector indexes of two users, retrieves their in game positions and returns the distance between them
-	unsigned int entityID_1 = users.vectorToEntityMap(index_1);
-	unsigned int entityID_2 = users.vectorToEntityMap(index_2);
-
-	sf::Vector2f location1 = locationStructs.compVec[entityID_1].coordinates;
-	sf::Vector2f location2 = locationStructs.compVec[entityID_2].coordinates;
-
-	float yDist = abs(location2.y - location1.y);
-	float xDist = abs(location2.x - location1.x);
-
-	return sqrt(pow(xDist, 2) + pow(yDist, 2)); //this is the magnitude of the x and y distances combined (the hypotenuse)
-}
-
 void network::removeUser(unsigned int i)
 {											
 	std::lock_guard<std::mutex> mutex(mutexs::removeUserMutex);	//function to basically properly log out a user
@@ -124,21 +110,18 @@ void network::forwardToAllUsers(std::string msg, int userNum)
 
 void network::broadcastToLocal(std::string msg, int userNum)
 { //this broadcasts to users within 100 units of the player (hence the 100 in the if statement below)
-	for (int i = 0; i < users.compVec.size(); i++)
-	{
-		if (users.compVec[i].loggedIn != true)
-		{
-			continue;
-		}
+	auto userChunk = coordinatesStruct(locationStructs.compVec[locationStructs.entityToVectorMap(users.vectorToEntityMap(userNum))].coordinates.x, locationStructs.compVec[locationStructs.entityToVectorMap(users.vectorToEntityMap(userNum))].coordinates.y);
+	for(int x = userChunk.coordinates.first-1; x <= userChunk.coordinates.first+1; x++){
+		for(int y = userChunk.coordinates.second-1; y <= userChunk.coordinates.second+1; y++){
+			auto currentChunk = coordinatesStruct(x, y);
+			for(auto user : chunks[currentChunk].second){
+				if(users.compVec[users.entityToVectorMap(user.id)].roomGuild == users.compVec[userNum].roomGuild){
+					sf::Packet packet;	 //a packet to hold a string
+					packet << msg.c_str(); //putting the c style string into the packet
 
-		if (users.compVec[i].roomGuild == users.compVec[userNum].roomGuild)
-		{
-			if (distanceMagnitude(userNum, i) < 100)
-			{						   //if the distance between player is less than 100, transmit messages between them using area chat
-				sf::Packet packet;	 //a packet to hold a string
-				packet << msg.c_str(); //putting the c style string into the packet
-
-				users.compVec[i].socket->send(packet); //sending the packet
+					users.compVec[users.entityToVectorMap(user.id)].socket->send(packet); //sends the packet to the user currently being looped over
+					std::cout << "sending" << std::endl;
+				}
 			}
 		}
 	}
@@ -229,7 +212,7 @@ void network::process()
 
 						std::string time = std::to_string(t);
 
-						sendString += "USER::ID::" + users.compVec[i].tempNewestMsgID; //USER::ID is actually the message ID
+						sendString += "MSG::ID::" + users.compVec[i].tempNewestMsgID;
 						sendString += "USER::USERNAME::" + users.compVec[i].username;
 						sendString += "USER::TIME::" + time;
 						sendString += "USER::MSG::" + receiveString;

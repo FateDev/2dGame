@@ -142,7 +142,7 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 
 		for (int j = 0; j < 9; j++) { //the server sends 9 chunks of data
 			json chunkToDraw = json::parse(gameData["chunks"][j].get<std::string>());
-			std::cout << chunkToDraw.dump() << std::endl;
+			//std::cout << chunkToDraw.dump() << std::endl;
 			int scaleFactor = 10; //rather than changing server side stuff, just change this to make everything appear correctly
 			if (!chunkToDraw.is_null()) {
 				if (chunkToDraw["data"]["setting_id"].get<int>() == 1) {
