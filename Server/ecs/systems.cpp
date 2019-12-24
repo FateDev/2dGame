@@ -757,13 +757,12 @@ void updateActiveChunkData::updateActiveChunks()
 	for(auto &generation : generationCoords){
 		if(generation.coordinates.first == 0 && std::floor((float)generation.coordinates.second/5) == (float)generation.coordinates.second/5){
 			chunks[generation].first.settingID = 1; //ID: 1 is city
-			std::cout << "City: " << generation.coordinates.first << " -- " << generation.coordinates.second << "\n";
 			generationFlag = true;
 		}else if(std::floor((float)log2(abs(generation.coordinates.first))) == (float)log2(abs(generation.coordinates.first)) && std::floor((float)generation.coordinates.second/5) == (float) generation.coordinates.second/5){
 			int newChunkX = (int)log2(abs((float)generation.coordinates.first));
 			if(newChunkX >= 3){ //don't want to generate for the first 8*chunkWidth pixels
 				chunks[generation].first.settingID = 1; //ID: 1 is city
-				std::cout << "City: " << generation.coordinates.first << " -- " << generation.coordinates.second << "\n";
+				chunks[coordinatesStruct(generation.coordinates.first, generation.coordinates.second+1)].first.settingID = 9; //below it a cave is generated (this is for the edge case when nothing is generated)
 				generationFlag = true;
 			}
 		}
@@ -772,12 +771,10 @@ void updateActiveChunkData::updateActiveChunks()
 			int chance = rand() % 100 + 1;
 			if(chance > 90 && chance < 95 && chunks[coordinatesStruct(generation.coordinates.first, generation.coordinates.second-1)].first.settingID != 1){ //so long as city isn't above
 				chunks[generation].first.settingID = 4; //ID: 4 is stairs right
-				airCoords.push_back(coordinatesStruct(generation.coordinates.first, generation.coordinates.second-1));
-				std::cout << "4 -- " << std::endl;
+				airCoords.push_back(coordinatesStruct(generation.coordinates.first, generation.coordinates.second-1)); //-1 is above it
 			}else if(chance > 95 && chunks[coordinatesStruct(generation.coordinates.first, generation.coordinates.second-1)].first.settingID != 1){ //so long as city isn't above
 				chunks[generation].first.settingID = 5; //ID: 5 is stairs left
-				airCoords.push_back(coordinatesStruct(generation.coordinates.first, generation.coordinates.second-1));
-				std::cout << "5 -- " << std::endl;
+				airCoords.push_back(coordinatesStruct(generation.coordinates.first, generation.coordinates.second-1)); //-1 is above it
 			}else{
 				chunks[generation].first.settingID = 9; //ID: 9 is cave
 			}
@@ -785,7 +782,6 @@ void updateActiveChunkData::updateActiveChunks()
 	}
 
 	for(auto &generateAir : airCoords){
-		std::cout << generateAir.coordinates.first << " -- " << generateAir.coordinates.second << std::endl;
 		chunks[generateAir].first.settingID = 0; //ID: 0 is air
 	}
 }

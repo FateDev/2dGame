@@ -144,9 +144,14 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 			json chunkToDraw = json::parse(gameData["chunks"][j].get<std::string>());
 
 			int scaleFactor = 10; //rather than changing server side stuff, just change this to make everything appear correctly
+
+			if (chunkToDraw.is_null()) { //if the data is null skip it (it only happens for the edge of what can be seen for cities, not a huge issue but should fix it (it's a server side issue)
+				continue;
+			}
+
+			std::cout << chunkToDraw.dump() << std::endl;
 			sf::Vector2i chunkOrigin(chunkToDraw["data"]["x"].get<int>(), chunkToDraw["data"]["y"].get<int>()); //the origin of the chunk
 			sf::Vector2i chunkDimensions(chunkToDraw["data"]["width"].get<int>(), chunkToDraw["data"]["height"].get<int>()); //the size of the chunk
-			std::cout << chunkToDraw.dump() << std::endl;
 			if (!chunkToDraw.is_null()) {
 				sf::RectangleShape rectangle(sf::Vector2f(chunkDimensions.x * scaleFactor, chunkDimensions.y * scaleFactor));
 				rectangle.setPosition(sf::Vector2f(chunkOrigin.x * scaleFactor, chunkOrigin.y * scaleFactor));

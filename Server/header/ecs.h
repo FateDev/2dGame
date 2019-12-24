@@ -13,7 +13,7 @@
 #include "../header/helper.h"
 
 //the size of one chunk
-const int chunkPixelSize_x = 100;
+const int chunkPixelSize_x = 150;
 const int chunkPixelSize_y = 70;
 const int fps = 60;
 const sf::Vector2f deceleration = { 0, 0.1 }; //x = friction on surface deceleration, y = gravity
