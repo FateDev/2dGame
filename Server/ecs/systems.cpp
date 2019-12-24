@@ -10,7 +10,7 @@
 using namespace ecs::system;
 using namespace ecs::component;
 
-int chunkCoordHelper(int coord, int screenSize)
+int chunkCoordHelperX(int coord, int screenSize)
 {
 	if (coord >= 0)
 	{
@@ -20,6 +20,11 @@ int chunkCoordHelper(int coord, int screenSize)
 	{
 		return div(coord, screenSize).quot - 1;
 	}
+}
+
+int chunkCoordHelperY(int coord, int screenSize)
+{
+	return div(coord, screenSize).quot;
 }
 
 void systemsManager::systemStart()
@@ -61,7 +66,7 @@ void network::removeUser(unsigned int i)
 	
 	unsigned int entityID = users.vectorToEntityMap(i);	//get the user entityID
 	sf::Vector2f coordinates = locationStructs.compVec[locationStructs.entityToVectorMap(entityID)].coordinates; //get the user's coordinates
-	ecs::system::coordinatesStruct removeUserCoordinates(chunkCoordHelper(int(coordinates.x), chunkPixelSize_x), chunkCoordHelper(int(coordinates.y), chunkPixelSize_y)); //get what their coordinates would be in the world using simple mod math
+	ecs::system::coordinatesStruct removeUserCoordinates(chunkCoordHelperX(int(coordinates.x), chunkPixelSize_x), chunkCoordHelperY(int(coordinates.y), chunkPixelSize_y)); //get what their coordinates would be in the world using simple mod math
 
 	int counter = 0;
 	for(int i = 0; i < chunks[removeUserCoordinates].second.size(); i++){
@@ -424,7 +429,7 @@ void physics::userInput(json keysAndID)
 
 	sf::Vector2f *userVelocity = &ecs::component::locationStructs.compVec[locationVectorIndex].velocity;
 	bool *onFloor = &ecs::component::locationStructs.compVec[locationVectorIndex].onFloor;
-	int *direction = &ecs::component::drawables.compVec[drawablesVectorIndex].direction;
+	sf::Vector2i *direction = &ecs::component::drawables.compVec[drawablesVectorIndex].direction;
 
 	if ((keysAndID["left"] && keysAndID["right"]) || (!keysAndID["left"] && !keysAndID["right"]))
 	{ //if both or neither of them are pressed, the velocity is zero
@@ -434,11 +439,9 @@ void physics::userInput(json keysAndID)
 	{
 		if (keysAndID["left"]){
 			userVelocity->x = -velocity.x;
-			*direction = 1;
 		}
 		if (keysAndID["right"]){
 			userVelocity->x = velocity.x;
-			*direction = 0;
 		}
 	}
 
@@ -447,6 +450,24 @@ void physics::userInput(json keysAndID)
 		userVelocity->y = -acceleration.y; //negative y is upwards
 		*onFloor = false;
 	}
+	
+	//if velocity in x/y is more than 0 (so right of the screen or down respectively), then direction = 1, otherwise the opposite is direction = -1, and 0 means it's not moving
+	if(userVelocity->x > 0){
+		direction->x = 1;
+	}else if(userVelocity->x < 0){
+		direction->x = -1;
+	}else{
+		direction->x = 0;
+	}
+	
+	if(userVelocity->y > 0){
+		direction->y = 1;
+	}else if(userVelocity->y < 0){
+		direction->y = -1;
+	}else{
+		direction->y = 0;
+	}
+	
 	//std::cout << ecs::component::locationStructs.compVec[userVectorIndex].velocity.x << " -- " << ecs::component::locationStructs.compVec[userVectorIndex].velocity.y << " -- " << ecs::component::locationStructs.compVec[userVectorIndex].onFloor << std::endl;
 }
 
@@ -458,7 +479,7 @@ void physics::userIndependentPhysics()
 physics::collisionType physics::checkCollision(sf::Vector2f coordinates, sf::Vector2f velocity)
 {
 	//checks collision detection, uses mod math to find current chunk, then does collision detection
-	sf::Vector2f currentChunkCoords(chunkCoordHelper(int(coordinates.x), chunkPixelSize_x), chunkCoordHelper(int(coordinates.y), chunkPixelSize_y));
+	sf::Vector2f currentChunkCoords(chunkCoordHelperX(int(coordinates.x), chunkPixelSize_x), chunkCoordHelperY(int(coordinates.y), chunkPixelSize_y));
 
 	for (auto &locationStruct : ecs::component::locationStructs.compVec)
 	{ //loops through location structs, by reference
@@ -515,8 +536,8 @@ void physics::moveEntities()
 
 		sf::Vector2f newCoordinates(locationStruct->coordinates.x + locationStruct->velocity.x, locationStruct->coordinates.y + locationStruct->velocity.y);
 
-		coordinatesStruct newChunkCoords(chunkCoordHelper(int(newCoordinates.x), chunkPixelSize_x), chunkCoordHelper(int(newCoordinates.y), chunkPixelSize_y));
-		coordinatesStruct currentChunkCoords(chunkCoordHelper(int(locationStruct->coordinates.x), chunkPixelSize_x), chunkCoordHelper(int(locationStruct->coordinates.y), chunkPixelSize_y)); //get what their coordinates would be in the world using simple mod math
+		coordinatesStruct newChunkCoords(chunkCoordHelperX(int(newCoordinates.x), chunkPixelSize_x), chunkCoordHelperY(int(newCoordinates.y), chunkPixelSize_y));
+		coordinatesStruct currentChunkCoords(chunkCoordHelperX(int(locationStruct->coordinates.x), chunkPixelSize_x), chunkCoordHelperY(int(locationStruct->coordinates.y), chunkPixelSize_y)); //get what their coordinates would be in the world using simple mod math
 
 		//the below moves an entity out of its old chunk and into the one it is now in
 		if (newChunkCoords.coordinates.first != currentChunkCoords.coordinates.first || newChunkCoords.coordinates.second != currentChunkCoords.coordinates.second)
@@ -588,7 +609,7 @@ void gameBroadcast::broadcastGameState()
 			{
 				if (selector.isReady(*(users.compVec[userCompVecIndex].gameSocket)))
 				{
-					sf::Vector2f currentChunk = {chunkCoordHelper(int(locationStructs.compVec[locationCompVecIndex].coordinates.x), chunkPixelSize_x), chunkCoordHelper(int(locationStructs.compVec[locationCompVecIndex].coordinates.y), chunkPixelSize_y)};
+					sf::Vector2f currentChunk = {chunkCoordHelperX(int(locationStructs.compVec[locationCompVecIndex].coordinates.x), chunkPixelSize_x), chunkCoordHelperY(int(locationStructs.compVec[locationCompVecIndex].coordinates.y), chunkPixelSize_y)};
 					sf::IpAddress userIP = users.compVec[userCompVecIndex].socket->getRemoteAddress();
 					double size = gameData.size();
 					jsonObj["chunks"][0] = gameData[coordinatesStruct(currentChunk.x - 1, currentChunk.y - 1)].dump();
@@ -711,62 +732,61 @@ updateActiveChunkData *updateActiveChunkData::getInstance()
 void updateActiveChunkData::updateActiveChunks()
 { //this is for updating which chunks are actually active
 	std::vector<coordinatesStruct> generationCoords = {}; //a vector containing all of the coordinates to generate a new chunk at
-	//std::vector<coordinatesStruct> deletionCoords = {}; //a vector containing all of the coordinates to delete chunks from
 	for (auto &chunk : chunks)
 	{
 		if(chunk.second.first.userCount > 0){
 			for(int i = chunk.first.coordinates.first-1; i <= chunk.first.coordinates.first+1;i++){
 				for(int j = chunk.first.coordinates.second-1; j <= chunk.first.coordinates.second+1;j++){ //loops around all the surrounding chunks
-					if(!chunks.count(coordinatesStruct(i, j))){ //if the chunk hasn't been made yet (active is initialised to false)
+					if(!chunks.count(coordinatesStruct(i, j))){ //if the chunk hasn't been made yet
 						generationCoords.push_back(coordinatesStruct(i, j)); //flag this up for generation
 					}
 				}
 			}
 		}
-		/*
-		else{ //if there are no users in this, then potentially flag it up for deletion
-			bool usersPresentInSurroundingChunks = false; //any users present in how many surrounding chunks?
-			for(int i = chunk.first.coordinates.first-1; i <= chunk.first.coordinates.first+1;i++){
-				for(int j = chunk.first.coordinates.second-1; j <= chunk.first.coordinates.second+1;j++){
-					if(chunks.count(coordinatesStruct(i, j))){
-						usersPresentInSurroundingChunks = true;
-						break;
-					}
-				}
-				if(usersPresentInSurroundingChunks) { break; } //if users are present in surrounding chunk, no longer need to continue checking
-			}
-			if(!usersPresentInSurroundingChunks){
-				deletionCoords.push_back(chunk.first); //flag for deletion
-			}
-		}
-		*/
 	}
-
-	/*
-	for(auto &deletion : deletionCoords){ //deletes the ones flagged for deletion
-		std::cout << "DELETING CHUNK AT: " << deletion.coordinates.first << ", " << deletion.coordinates.second << "\n";
-		chunks.erase(deletion);
-	}
-	*/
 	
 	/*
 	Generation:
 	-Every power of 2 on the x-axis excluding the first 3 (so until the 8th chunk), generate a city there
 		-> their y vaues are always multiples of 5
 	*/
+
+	std::vector<coordinatesStruct> airCoords; //used for the stairs or whatever requires air above
+
+	bool generationFlag = false; //used to indicate if generation has happened or not (so to skip the semi random generation bit)
 	for(auto &generation : generationCoords){
-		if(generation.coordinates.first == 0 && std::floor((float)generation.coordinates.second/5) == generation.coordinates.second/5){
+		if(generation.coordinates.first == 0 && std::floor((float)generation.coordinates.second/5) == (float)generation.coordinates.second/5){
 			chunks[generation].first.settingID = 1; //ID: 1 is city
-		}else if(std::floor((float)log2(abs(generation.coordinates.first))) == (float)log2(abs(generation.coordinates.first)) && std::floor((float)generation.coordinates.second/5) == generation.coordinates.second/5){
-			int newChunkX = (int)log2(abs(generation.coordinates.first));
+			std::cout << "City: " << generation.coordinates.first << " -- " << generation.coordinates.second << "\n";
+			generationFlag = true;
+		}else if(std::floor((float)log2(abs(generation.coordinates.first))) == (float)log2(abs(generation.coordinates.first)) && std::floor((float)generation.coordinates.second/5) == (float) generation.coordinates.second/5){
+			int newChunkX = (int)log2(abs((float)generation.coordinates.first));
 			if(newChunkX >= 3){ //don't want to generate for the first 8*chunkWidth pixels
 				chunks[generation].first.settingID = 1; //ID: 1 is city
-			}else{
-				chunks[generation].first.settingID = 9;
+				std::cout << "City: " << generation.coordinates.first << " -- " << generation.coordinates.second << "\n";
+				generationFlag = true;
 			}
-		}else{
-			chunks[generation].first.settingID = 9; //ID: 1 is city
 		}
+		
+		if(!generationFlag){ //just remember up is negative, so chunk.y-1 is the y coordinate of chunks above it (which is used for checking if a city is above stairs below)
+			int chance = rand() % 100 + 1;
+			if(chance > 90 && chance < 95 && chunks[coordinatesStruct(generation.coordinates.first, generation.coordinates.second-1)].first.settingID != 1){ //so long as city isn't above
+				chunks[generation].first.settingID = 4; //ID: 4 is stairs right
+				airCoords.push_back(coordinatesStruct(generation.coordinates.first, generation.coordinates.second-1));
+				std::cout << "4 -- " << std::endl;
+			}else if(chance > 95 && chunks[coordinatesStruct(generation.coordinates.first, generation.coordinates.second-1)].first.settingID != 1){ //so long as city isn't above
+				chunks[generation].first.settingID = 5; //ID: 5 is stairs left
+				airCoords.push_back(coordinatesStruct(generation.coordinates.first, generation.coordinates.second-1));
+				std::cout << "5 -- " << std::endl;
+			}else{
+				chunks[generation].first.settingID = 9; //ID: 9 is cave
+			}
+		}
+	}
+
+	for(auto &generateAir : airCoords){
+		std::cout << generateAir.coordinates.first << " -- " << generateAir.coordinates.second << std::endl;
+		chunks[generateAir].first.settingID = 0; //ID: 0 is air
 	}
 }
 
@@ -783,7 +803,8 @@ void updateActiveChunkData::updateChunkData()
 
 			gameData[chunkEntityVector.first]["entities"][i]["username"] = users.compVec[users.entityToVectorMap(entityID)].username;
 			gameData[chunkEntityVector.first]["entities"][i]["id"] = users.compVec[users.entityToVectorMap(entityID)].userID;
-			gameData[chunkEntityVector.first]["entities"][i]["direction"] = drawables.compVec[drawables.entityToVectorMap(entityID)].direction;
+			gameData[chunkEntityVector.first]["entities"][i]["direction"]["x"] = drawables.compVec[drawables.entityToVectorMap(entityID)].direction.x;
+			gameData[chunkEntityVector.first]["entities"][i]["direction"]["y"] = drawables.compVec[drawables.entityToVectorMap(entityID)].direction.y;
 			gameData[chunkEntityVector.first]["entities"][i]["avatar"] = drawables.compVec[drawables.entityToVectorMap(entityID)].avatar;
 
 			gameData[chunkEntityVector.first]["entities"][i]["location"]["x"] = locationStructs.compVec[locationStructs.entityToVectorMap(entityID)].coordinates.x;

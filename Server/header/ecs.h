@@ -48,7 +48,7 @@ namespace ecs{
 
         struct drawable{
             std::string avatar;
-            int direction = 0;
+            sf::Vector2i direction = {0, 0};
         };
 
         struct physical{
