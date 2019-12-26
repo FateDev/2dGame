@@ -12,8 +12,8 @@
 
 //these are the definitions that the externs in ecs.h were referring to, this basically means that anywhere that ecs.h is included, the below variables are global
 ecs::component::ecsComponentStructure<ecs::component::user> ecs::component::users;
-ecs::component::ecsComponentStructure<ecs::component::location> ecs::component::locationStructs;
 ecs::component::ecsComponentStructure<ecs::component::drawable> ecs::component::drawables;
+ecs::component::ecsComponentStructure<ecs::component::physical> ecs::component::physicsObjects;
 ecs::entity::entityManager ecs::entity::superEntityManager;
 std::unordered_map<ecs::system::coordinatesStruct, std::pair<ecs::system::chunkData, std::vector<ecs::entity::entity>>, ecs::system::Hash> ecs::system::chunks;
 std::unordered_map<ecs::system::coordinatesStruct, json, ecs::system::Hash> ecs::system::gameData;

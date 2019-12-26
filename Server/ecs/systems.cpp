@@ -10,20 +10,7 @@
 using namespace ecs::system;
 using namespace ecs::component;
 
-int chunkCoordHelperX(int coord, int screenSize)
-{
-	if (coord >= 0)
-	{
-		return div(coord, screenSize).quot;
-	}
-	else
-	{
-		return div(coord, screenSize).quot - 1;
-	}
-}
-
-int chunkCoordHelperY(int coord, int screenSize)
-{
+int chunkCoordHelper(float coord, float screenSize){
 	return div(coord, screenSize).quot;
 }
 
@@ -43,6 +30,18 @@ void systemsManager::systemStart()
 
 	mainGame = new sf::Thread(&game::runGame, game::getInstance());
 	mainGame->launch();
+
+	coordinatesStruct startCoord(0, 0);
+	chunks[startCoord].first.settingID = 1; //sets the first chunk's setting ID to 1, which is a city
+	unsigned int entityID = ecs::entity::superEntityManager.create({components::DRAWABLE, components::PHYSICAL}); //a new object with those attributes is made
+	physicsObjects.compVec[physicsObjects.entityToVectorMap(entityID)].boxCorners = {
+		sf::Vector2f(startCoord.coordinates.first * chunkPixelSize_x, (startCoord.coordinates.second * chunkPixelSize_y) + chunkPixelSize_y - 5), 
+		sf::Vector2f((startCoord.coordinates.first * chunkPixelSize_x) + chunkPixelSize_x, (startCoord.coordinates.second * chunkPixelSize_y) + chunkPixelSize_y  - 5),
+		sf::Vector2f(startCoord.coordinates.first * chunkPixelSize_x, (startCoord.coordinates.second * chunkPixelSize_y) + chunkPixelSize_y ), 
+		sf::Vector2f((startCoord.coordinates.first * chunkPixelSize_x) + chunkPixelSize_x, (startCoord.coordinates.second * chunkPixelSize_y) + chunkPixelSize_y )
+	};  //sets the corners of these boxes
+	physicsObjects.compVec[physicsObjects.entityToVectorMap(entityID)].objType = COLLISION; //sets the object type
+	chunks[startCoord].second.push_back(entityID); //pushes the floor entity to the chunks object
 }
 
 void systemsManager::systemEnd()
@@ -65,8 +64,8 @@ void network::removeUser(unsigned int i)
 	std::lock_guard<std::mutex> mutex(mutexs::removeUserMutex);	//function to basically properly log out a user
 	
 	unsigned int entityID = users.vectorToEntityMap(i);	//get the user entityID
-	sf::Vector2f coordinates = locationStructs.compVec[locationStructs.entityToVectorMap(entityID)].coordinates; //get the user's coordinates
-	ecs::system::coordinatesStruct removeUserCoordinates(chunkCoordHelperX(int(coordinates.x), chunkPixelSize_x), chunkCoordHelperY(int(coordinates.y), chunkPixelSize_y)); //get what their coordinates would be in the world using simple mod math
+	sf::Vector2f coordinates = physicsObjects.compVec[physicsObjects.entityToVectorMap(entityID)].coordinates; //get the user's coordinates
+	ecs::system::coordinatesStruct removeUserCoordinates(chunkCoordHelper(int(coordinates.x), chunkPixelSize_x), chunkCoordHelper(int(coordinates.y), chunkPixelSize_y)); //get what their coordinates would be in the world using simple mod math
 
 	int counter = 0;
 	for(int i = 0; i < chunks[removeUserCoordinates].second.size(); i++){
@@ -115,7 +114,7 @@ void network::forwardToAllUsers(std::string msg, int userNum)
 
 void network::broadcastToLocal(std::string msg, int userNum)
 { //this broadcasts to users within 100 units of the player (hence the 100 in the if statement below)
-	auto userChunk = coordinatesStruct(locationStructs.compVec[locationStructs.entityToVectorMap(users.vectorToEntityMap(userNum))].coordinates.x, locationStructs.compVec[locationStructs.entityToVectorMap(users.vectorToEntityMap(userNum))].coordinates.y);
+	auto userChunk = coordinatesStruct(physicsObjects.compVec[physicsObjects.entityToVectorMap(users.vectorToEntityMap(userNum))].coordinates.x, physicsObjects.compVec[physicsObjects.entityToVectorMap(users.vectorToEntityMap(userNum))].coordinates.y);
 	for(int x = userChunk.coordinates.first-1; x <= userChunk.coordinates.first+1; x++){
 		for(int y = userChunk.coordinates.second-1; y <= userChunk.coordinates.second+1; y++){
 			auto currentChunk = coordinatesStruct(x, y);
@@ -367,25 +366,25 @@ void network::server(unsigned short PORT)
 
 				outputString = "SERVER: NEW CONNECTION @ " + socket->getRemoteAddress().toString() + "\n"; //make a string which includes their IP address...
 
-				unsigned int entityID = ecs::entity::superEntityManager.create({components::USER, components::LOCATION, components::DRAWABLE}); //a new object with those attributes is made
+				unsigned int entityID = ecs::entity::superEntityManager.create({components::USER, components::DRAWABLE, components::PHYSICAL}); //a new object with those attributes is made
 
 				tempEntity.id = entityID; //sets the temp entity to have the correct ID
 				//tempEntity.type = ecs::entity::USER; //sets the temp entity to have the correct ID
 				ecs::system::chunks[startCoord].second.push_back(tempEntity); //pushes users to the (0, 0) chunk
 				chunks[startCoord].first.userCount++; //increments the number of users in this chunk
-				chunks[startCoord].first.settingID = 1; //sets the first chunk's setting ID to 1, which is a city
 
 				updateActiveChunkData::getInstance()->updateActiveChunks(); //updates the active chunks
 				
 				unsigned int componentVectorIndex = users.entityToVectorMap(entityID);	//gets the component vector index of this entity
-				unsigned int drawableVectorIndex = drawables.entityToVectorMap(entityID); //gets the component vector index of this entity
+				unsigned int physicsCompVecIndex = physicsObjects.entityToVectorMap(entityID);
 
-				//drawables.compVec[drawableVectorIndex].type = ecs::entity::USER;
-				drawables.compVec[drawableVectorIndex].avatar = response; //sets the avatar to the one retrieved from the server
+				physicsObjects.compVec[physicsCompVecIndex].boxCorners = {sf::Vector2f(0, -7.5), sf::Vector2f(6, -7.5), sf::Vector2f(0, 0), sf::Vector2f(6, 0)}; //the bounding box for a user character
+				physicsObjects.compVec[physicsCompVecIndex].coordinates.y = -5; //they start off at this height (floor is below them)
 
 				userPtr->socket = socket;														   //make the new user object contain their socket
 				userPtr->timeOfExpiry = sf::seconds(expiryTimer.getElapsedTime().asSeconds() + 5); //set the expiry time for their socket
 				userPtr->loggedIn = true;
+				userPtr->avatar = response;
 
 				users.compVec[componentVectorIndex] = *userPtr;									 //add this user to the users vector
 				sessionIDToEntityID.insert({userPtr->sessionID, entityID}); //will add a map entry, mapping their unique session ID to some index in the component vector
@@ -401,7 +400,7 @@ void network::server(unsigned short PORT)
 			delete socket;  //and delete the socket
 		}
 
-		sf::sleep(sf::milliseconds(50)); //slows down the listener loop so less intensive on my poor laptop
+		sf::sleep(sf::milliseconds(150)); //slows down the listener loop so less intensive on my poor laptop
 	}
 }
 
@@ -422,13 +421,11 @@ void physics::userInput(json keysAndID)
 	std::lock_guard<std::mutex> lock(mutexs::userLocationsMutex); //will block attempts to lock this mutex again, thereby allowing us to prevent accidentally accessing shared data at the wrong time, released at the end of scope
 
 	unsigned short entityID = sessionIDToEntityID[keysAndID["sessionID"]];
-	unsigned short locationVectorIndex = locationStructs.entityToVectorMap(entityID);
+	unsigned short physicsVectorIndex = physicsObjects.entityToVectorMap(entityID);
 	unsigned short drawablesVectorIndex = drawables.entityToVectorMap(entityID);
 
-	//std::cout << entityID << " :: " << locationVectorIndex << "\n";
-
-	sf::Vector2f *userVelocity = &ecs::component::locationStructs.compVec[locationVectorIndex].velocity;
-	bool *onFloor = &ecs::component::locationStructs.compVec[locationVectorIndex].onFloor;
+	sf::Vector2f *userVelocity = &ecs::component::physicsObjects.compVec[physicsVectorIndex].velocity;
+	bool *onFloor = &ecs::component::physicsObjects.compVec[physicsVectorIndex].onFloor;
 	sf::Vector2i *direction = &ecs::component::drawables.compVec[drawablesVectorIndex].direction;
 
 	if ((keysAndID["left"] && keysAndID["right"]) || (!keysAndID["left"] && !keysAndID["right"]))
@@ -466,26 +463,7 @@ void physics::userInput(json keysAndID)
 		direction->y = -1;
 	}else{
 		direction->y = 0;
-	}
-	
-	//std::cout << ecs::component::locationStructs.compVec[userVectorIndex].velocity.x << " -- " << ecs::component::locationStructs.compVec[userVectorIndex].velocity.y << " -- " << ecs::component::locationStructs.compVec[userVectorIndex].onFloor << std::endl;
-}
-
-void physics::userIndependentPhysics()
-{
-	//make gravity effects here
-}
-
-physics::collisionType physics::checkCollision(sf::Vector2f coordinates, sf::Vector2f velocity)
-{
-	//checks collision detection, uses mod math to find current chunk, then does collision detection
-	sf::Vector2f currentChunkCoords(chunkCoordHelperX(int(coordinates.x), chunkPixelSize_x), chunkCoordHelperY(int(coordinates.y), chunkPixelSize_y));
-
-	for (auto &locationStruct : ecs::component::locationStructs.compVec)
-	{ //loops through location structs, by reference
-	}
-
-	return NONE; //temporarily return this
+	}	
 }
 
 void physics::moveEntities()
@@ -494,55 +472,28 @@ void physics::moveEntities()
 	
 	int componentIndex = 0;
 	ecs::entity::entity tempEntity; //used to put the users entity inside some chunk
-	for (int j = 0; j < ecs::component::locationStructs.compVec.size(); j++)
-	{ //loops through location structs, by reference
+	for (int j = 0; j < ecs::component::physicsObjects.compVec.size(); j++)
+	{ //loops through physical structs, by reference
 		tempEntity.id = 0;
-		auto locationStruct = &ecs::component::locationStructs.compVec[j];
+		auto physicsalStruct = &ecs::component::physicsObjects.compVec[j];
 		componentIndex = j;
-		if (!locationStruct->onFloor)
-		{
-			locationStruct->velocity.y += deceleration.y; //if it's not on ground it should accelerate downwards
 
-			collisionType collision = checkCollision(locationStruct->coordinates, locationStruct->velocity);
-			if (collision != NONE)
-			{
-				switch (collision)
-				{
-				case FLOOR:
-					locationStruct->onFloor = true;
-					/*bounce off floor, and change velocity obviously*/
-					break;
-				case ENTITY:
-					/*bounce off entity, and change velocity obviously*/
-					break;
-				case WALL:
-					/*bounce off wall, and change velocity obviously*/
-					break;
-				case CEILING:
-					/*bounce off ceiling, and change velocity obviously*/
-					break;
-				default:
-					break;
-				}
-			}
+		if(physicsalStruct->objType == COLLISION){
+			continue; //we don't really care about floors/stairs colliding
 		}
 
-		if (locationStruct->coordinates.y + locationStruct->velocity.y > 0)
-		{ //this means below ground level, so manually set to ground
-			locationStruct->velocity.y = 0;
-			locationStruct->coordinates.y = 0;
-			locationStruct->onFloor = true;
+		if (!physicsalStruct->onFloor){
+			physicsalStruct->velocity.y += deceleration.y; //if it's not on ground it should accelerate downwards
 		}
 
-		sf::Vector2f newCoordinates(locationStruct->coordinates.x + locationStruct->velocity.x, locationStruct->coordinates.y + locationStruct->velocity.y);
+		sf::Vector2f newCoordinates(physicsalStruct->coordinates.x + physicsalStruct->velocity.x, physicsalStruct->coordinates.y + physicsalStruct->velocity.y);
 
-		coordinatesStruct newChunkCoords(chunkCoordHelperX(int(newCoordinates.x), chunkPixelSize_x), chunkCoordHelperY(int(newCoordinates.y), chunkPixelSize_y));
-		coordinatesStruct currentChunkCoords(chunkCoordHelperX(int(locationStruct->coordinates.x), chunkPixelSize_x), chunkCoordHelperY(int(locationStruct->coordinates.y), chunkPixelSize_y)); //get what their coordinates would be in the world using simple mod math
+		coordinatesStruct newChunkCoords(chunkCoordHelper(int(newCoordinates.x), chunkPixelSize_x), chunkCoordHelper(int(newCoordinates.y), chunkPixelSize_y));
+		coordinatesStruct currentChunkCoords(chunkCoordHelper(int(physicsalStruct->coordinates.x), chunkPixelSize_x), chunkCoordHelper(int(physicsalStruct->coordinates.y), chunkPixelSize_y)); //get what their coordinates would be in the world using simple mod math
 
 		//the below moves an entity out of its old chunk and into the one it is now in
-		if (newChunkCoords.coordinates.first != currentChunkCoords.coordinates.first || newChunkCoords.coordinates.second != currentChunkCoords.coordinates.second)
-		{
-			unsigned int entityID = locationStructs.vectorToEntityMap(componentIndex);
+		if (newChunkCoords.coordinates.first != currentChunkCoords.coordinates.first || newChunkCoords.coordinates.second != currentChunkCoords.coordinates.second){
+			unsigned int entityID = physicsObjects.vectorToEntityMap(componentIndex);
 
 			for (int i = 0; i < chunks[currentChunkCoords].second.size(); i++)
 			{ //get the coordinate retrieved above, and get the chunk at that coordinate, and loop through the vector storing all the entities at that coordinate
@@ -558,15 +509,22 @@ void physics::moveEntities()
 				}
 			}
 			//std::cout << chunks[newChunkCoords].size() << " -- " << chunks[currentChunkCoords].size() << std::endl;
-			updateActiveChunkData::getInstance()->updateActiveChunks(); //updates the active chunks
 
-			//std::cout << "moved " << users.compVec[users.entityToVectorMap(entityID)].username << " to chunk: " << newChunkCoords.coordinates.first << ", " << newChunkCoords.coordinates.second << std::endl;
+			std::cout << "moved " << users.compVec[users.entityToVectorMap(entityID)].username << " to chunk: " << newChunkCoords.coordinates.first << ", " << newChunkCoords.coordinates.second << std::endl;
+				
+			updateActiveChunkData::getInstance()->updateActiveChunks(); //updates the active chunks
 		}
 
-		locationStruct->coordinates.x += locationStruct->velocity.x;
-		locationStruct->coordinates.y += locationStruct->velocity.y;
 
-		//std::cout << locationStruct.coordinates.x << " -- " << locationStruct.coordinates.y << std::endl;
+		if (physicsalStruct->coordinates.y + physicsalStruct->velocity.y > -5)
+		{ //this means below ground level, so manually set to ground
+			physicsalStruct->velocity.y = 0;
+			physicsalStruct->coordinates.y = -5;
+			physicsalStruct->onFloor = true;
+		}
+
+		physicsalStruct->coordinates.x += physicsalStruct->velocity.x;
+		physicsalStruct->coordinates.y += physicsalStruct->velocity.y;
 	}
 }
 
@@ -603,13 +561,17 @@ void gameBroadcast::broadcastGameState()
 		{
 			json jsonObj = json::object();
 			int userCompVecIndex = users.entityToVectorMap(user.id);			   //user ID in this case is the entity ID
-			int locationCompVecIndex = locationStructs.entityToVectorMap(user.id); //user ID in this case is the entity ID
+			int physicsCompVecIndex = physicsObjects.entityToVectorMap(user.id); //user ID in this case is the entity ID
+			
+			if(userCompVecIndex == -1){ //-1 indicates that it wasn't found
+				continue;
+			}
 
 			if (users.compVec[userCompVecIndex].gameConnected == true)
 			{
 				if (selector.isReady(*(users.compVec[userCompVecIndex].gameSocket)))
 				{
-					sf::Vector2f currentChunk = {chunkCoordHelperX(int(locationStructs.compVec[locationCompVecIndex].coordinates.x), chunkPixelSize_x), chunkCoordHelperY(int(locationStructs.compVec[locationCompVecIndex].coordinates.y), chunkPixelSize_y)};
+					sf::Vector2f currentChunk = {chunkCoordHelper(int(physicsObjects.compVec[physicsCompVecIndex].coordinates.x), chunkPixelSize_x), chunkCoordHelper(int(physicsObjects.compVec[physicsCompVecIndex].coordinates.y), chunkPixelSize_y)};
 					sf::IpAddress userIP = users.compVec[userCompVecIndex].socket->getRemoteAddress();
 					double size = gameData.size();
 					jsonObj["chunks"][0] = gameData[coordinatesStruct(currentChunk.x - 1, currentChunk.y - 1)].dump();
@@ -745,6 +707,7 @@ void updateActiveChunkData::updateActiveChunks()
 		}
 	}
 	
+	std::cout << generationCoords.size() << "\n";
 	/*
 	Generation:
 	-Every power of 2 on the x-axis excluding the first 3 (so until the 8th chunk), generate a city there
@@ -755,6 +718,8 @@ void updateActiveChunkData::updateActiveChunks()
 
 	bool generationFlag = false; //used to indicate if generation has happened or not (so to skip the semi random generation bit)
 	for(auto &generation : generationCoords){
+		unsigned int entityID = ecs::entity::superEntityManager.create({components::DRAWABLE, components::PHYSICAL}); //a new object with those attributes is made
+		
 		if(generation.coordinates.first == 0 && std::floor((float)generation.coordinates.second/5) == (float)generation.coordinates.second/5){
 			chunks[generation].first.settingID = 1; //ID: 1 is city
 			generationFlag = true;
@@ -779,6 +744,18 @@ void updateActiveChunkData::updateActiveChunks()
 				chunks[generation].first.settingID = 9; //ID: 9 is cave
 			}
 		}
+		
+		physicsObjects.compVec[physicsObjects.entityToVectorMap(entityID)].boxCorners = {
+			sf::Vector2f(generation.coordinates.first * chunkPixelSize_x, (generation.coordinates.second * chunkPixelSize_y) + chunkPixelSize_y - 5), 
+			sf::Vector2f((generation.coordinates.first * chunkPixelSize_x) + chunkPixelSize_x, (generation.coordinates.second * chunkPixelSize_y) + chunkPixelSize_y - 5),
+			sf::Vector2f(generation.coordinates.first * chunkPixelSize_x, (generation.coordinates.second * chunkPixelSize_y) + chunkPixelSize_y), 
+			sf::Vector2f((generation.coordinates.first * chunkPixelSize_x) + chunkPixelSize_x, (generation.coordinates.second * chunkPixelSize_y) + chunkPixelSize_y)
+		}; //sets the corners of these boxes, remember negative is up
+		physicsObjects.compVec[physicsObjects.entityToVectorMap(entityID)].objType = COLLISION; //sets the object type
+
+		if(chunks[generation].first.settingID != 4 && chunks[generation].first.settingID != 5){ //just for testing
+			chunks[generation].second.push_back(entityID); //pushes the floor entity to the chunks object
+		}
 	}
 
 	for(auto &generateAir : airCoords){
@@ -789,28 +766,57 @@ void updateActiveChunkData::updateActiveChunks()
 void updateActiveChunkData::updateChunkData()
 {					  //this is for updating the gameData object
 	gameData.clear(); //empties the gameData object
-	for (auto &chunkEntityVector : chunks)
-	{
+	for (auto &chunkEntityVector : chunks){
 		gameData[chunkEntityVector.first] = json::object();
 		for (int i = 0; i < chunkEntityVector.second.second.size(); i++)
 		{
 			std::lock_guard<std::mutex> mutex(mutexs::removeUserMutex);	//locks the mutex so user can't logout while this is being updated or vice versa
 			int entityID = chunkEntityVector.second.second[i].id;
 
-			gameData[chunkEntityVector.first]["entities"][i]["username"] = users.compVec[users.entityToVectorMap(entityID)].username;
-			gameData[chunkEntityVector.first]["entities"][i]["id"] = users.compVec[users.entityToVectorMap(entityID)].userID;
-			gameData[chunkEntityVector.first]["entities"][i]["direction"]["x"] = drawables.compVec[drawables.entityToVectorMap(entityID)].direction.x;
-			gameData[chunkEntityVector.first]["entities"][i]["direction"]["y"] = drawables.compVec[drawables.entityToVectorMap(entityID)].direction.y;
-			gameData[chunkEntityVector.first]["entities"][i]["avatar"] = drawables.compVec[drawables.entityToVectorMap(entityID)].avatar;
+			
 
-			gameData[chunkEntityVector.first]["entities"][i]["location"]["x"] = locationStructs.compVec[locationStructs.entityToVectorMap(entityID)].coordinates.x;
-			gameData[chunkEntityVector.first]["entities"][i]["location"]["y"] = locationStructs.compVec[locationStructs.entityToVectorMap(entityID)].coordinates.y;
+			if(users.entityToVectorMap(entityID) != -1){ //it must be a user
+				gameData[chunkEntityVector.first]["entities"][i]["type"] = "USER"; //its type is user, use these sort of capital letter words to describe the entity 'type'
+			}else if(drawables.entityToVectorMap(entityID) != -1 && physicsObjects.entityToVectorMap(entityID) != -1){ //its probably floor or wall or something
+				gameData[chunkEntityVector.first]["entities"][i]["type"] = "COLLISION";
+			}else{
+				gameData[chunkEntityVector.first]["entities"][i]["type"] = "OTHER"; //this should never be here, but just to be safe
+			}
+			//add in other conditions like these for mobs, items, or other things
+			
+			//the below are the generic information stuff
+
+			if(users.entityToVectorMap(entityID) != -1){ //entityToVectorMap returns -1 if the entityID is not found in its bimap, so we just use that to find
+				unsigned int usersIndex = users.entityToVectorMap(entityID);
+				gameData[chunkEntityVector.first]["entities"][i]["username"] = users.compVec[usersIndex].username;
+				gameData[chunkEntityVector.first]["entities"][i]["avatar"] = users.compVec[usersIndex].avatar;
+				gameData[chunkEntityVector.first]["entities"][i]["id"] = users.compVec[usersIndex].userID;
+			}
+			
+			if(drawables.entityToVectorMap(entityID) != -1){
+				unsigned int drawablesIndex = drawables.entityToVectorMap(entityID);
+				gameData[chunkEntityVector.first]["entities"][i]["direction"]["x"] = drawables.compVec[drawablesIndex].direction.x;
+				gameData[chunkEntityVector.first]["entities"][i]["direction"]["y"] = drawables.compVec[drawablesIndex].direction.y;
+			}
+
+			if(physicsObjects.entityToVectorMap(entityID) != -1){
+				unsigned int physicsIndex = physicsObjects.entityToVectorMap(entityID);
+				gameData[chunkEntityVector.first]["entities"][i]["location"]["x"] = physicsObjects.compVec[physicsIndex].coordinates.x;
+				gameData[chunkEntityVector.first]["entities"][i]["location"]["y"] = physicsObjects.compVec[physicsIndex].coordinates.y;
+				//the hit box stuff
+				gameData[chunkEntityVector.first]["entities"][i]["hitBox"]["top-left"]["x"] = physicsObjects.compVec[physicsIndex].boxCorners[0].x;
+				gameData[chunkEntityVector.first]["entities"][i]["hitBox"]["top-left"]["y"] = physicsObjects.compVec[physicsIndex].boxCorners[0].y;
+				gameData[chunkEntityVector.first]["entities"][i]["hitBox"]["bottom-right"]["x"] = physicsObjects.compVec[physicsIndex].boxCorners[3].x;
+				gameData[chunkEntityVector.first]["entities"][i]["hitBox"]["bottom-right"]["y"] = physicsObjects.compVec[physicsIndex].boxCorners[3].y;
+			}
+
 		}
 		gameData[chunkEntityVector.first]["data"]["x"] = chunkEntityVector.first.coordinates.first * chunkPixelSize_x;
 		gameData[chunkEntityVector.first]["data"]["y"] = chunkEntityVector.first.coordinates.second * chunkPixelSize_y;
 		gameData[chunkEntityVector.first]["data"]["width"] = chunkPixelSize_x;
 		gameData[chunkEntityVector.first]["data"]["height"] = chunkPixelSize_y;
 		gameData[chunkEntityVector.first]["data"]["userCount"] = chunkEntityVector.second.first.userCount;
+		gameData[chunkEntityVector.first]["data"]["entityCount"] = chunkEntityVector.second.second.size();
 		gameData[chunkEntityVector.first]["data"]["setting_id"] = chunkEntityVector.second.first.settingID;
 	}
 }

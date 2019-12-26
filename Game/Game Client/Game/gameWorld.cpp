@@ -145,14 +145,19 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 
 			int scaleFactor = 10; //rather than changing server side stuff, just change this to make everything appear correctly
 
+			if (chunkToDraw.is_null()) {
+				std::cout << "Null" << "\n";
+			}
 			if (chunkToDraw.is_null()) { //if the data is null skip it (it only happens for the edge of what can be seen for cities, not a huge issue but should fix it (it's a server side issue)
 				continue;
 			}
 
-			std::cout << chunkToDraw.dump() << std::endl;
+			//std::cout << chunkToDraw.dump() << std::endl;
 			sf::Vector2i chunkOrigin(chunkToDraw["data"]["x"].get<int>(), chunkToDraw["data"]["y"].get<int>()); //the origin of the chunk
 			sf::Vector2i chunkDimensions(chunkToDraw["data"]["width"].get<int>(), chunkToDraw["data"]["height"].get<int>()); //the size of the chunk
+			//std::cout << chunkToDraw.dump() << std::endl;
 			if (!chunkToDraw.is_null()) {
+				std::cout << chunkOrigin.x << " -- " << chunkOrigin.y << " # " << chunkToDraw["data"]["setting_id"].get<int>() << std::endl;
 				sf::RectangleShape rectangle(sf::Vector2f(chunkDimensions.x * scaleFactor, chunkDimensions.y * scaleFactor));
 				rectangle.setPosition(sf::Vector2f(chunkOrigin.x * scaleFactor, chunkOrigin.y * scaleFactor));
 				
@@ -176,47 +181,61 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 
 				rectanglesToDraw.push_back(rectangle);; //simply add a RectangleShape to the container for it to be drawn
 				//std::cout << chunkToDraw["entityCount"].dump() << std::endl;
-				//std::cout << chunkToDraw.dump() << std::endl;
-				for (int i = 0; i < chunkToDraw["data"]["userCount"]; i++) {
+				for (int i = 0; i < chunkToDraw["data"]["entityCount"]; i++) {
 					if (!chunkToDraw["entities"][i].is_null()) { //if the entity is actually null, just skip it
-						sf::Sprite player;
-						player.setOrigin(sf::Vector2f(-10, 72));
-
-						if (chunkToDraw["entities"][i]["direction"]["x"].get<int>() == 0) {
-							chunkToDraw["entities"][i]["direction"]["x"] = xDirectionLast;
-						}
-
-						if (chunkToDraw["entities"][i]["direction"]["x"].get<int>() == 1) {
+						if (chunkToDraw["entities"][i]["type"].get<std::string>() == "USER") {
+							sf::Sprite player;
 							player.setOrigin(sf::Vector2f(-10, 72));
-							player.setScale(1.0, 1.0);
-							xDirectionLast = 1;
-						}
-						else if(chunkToDraw["entities"][i]["direction"]["x"].get<int>() == -1) {
-							player.setOrigin(sf::Vector2f(70, 72));
-							player.setScale(-1.0, 1.0);
-							xDirectionLast = -1;
-						}
 
-						if (chunkToDraw["entities"][i]["id"].get<int>() == networkObj->userID) { //do some operations meant for only this client
-							//player.setFillColor(sf::Color::Blue);
-							player.setTexture(playerTexture);
-							gameView->setCenter(chunkToDraw["entities"][i]["location"]["x"].get<float>() * scaleFactor, (chunkToDraw["entities"][i]["location"]["y"].get<float>() + chunkDimensions.y) * scaleFactor);
+							if (chunkToDraw["entities"][i]["direction"]["x"].get<int>() == 0) {
+								chunkToDraw["entities"][i]["direction"]["x"] = xDirectionLast;
+							}
+
+							if (chunkToDraw["entities"][i]["direction"]["x"].get<int>() == 1) {
+								player.setOrigin(sf::Vector2f(-10, 72));
+								player.setScale(1.0, 1.0);
+								xDirectionLast = 1;
+							}
+							else if (chunkToDraw["entities"][i]["direction"]["x"].get<int>() == -1) {
+								player.setOrigin(sf::Vector2f(70, 72));
+								player.setScale(-1.0, 1.0);
+								xDirectionLast = -1;
+							}
+
+							if (chunkToDraw["entities"][i]["id"].get<int>() == networkObj->userID) { //do some operations meant for only this client
+								//player.setFillColor(sf::Color::Blue);
+								player.setTexture(playerTexture);
+								gameView->setCenter(chunkToDraw["entities"][i]["location"]["x"].get<float>() * scaleFactor, (chunkToDraw["entities"][i]["location"]["y"].get<float>() + chunkDimensions.y) * scaleFactor);
+							}
+							else {
+								//player.setFillColor(sf::Color::Red);
+								player.setTexture(opponentTexture);
+							}
+
+							player.setPosition(chunkToDraw["entities"][i]["location"]["x"].get<float>() * scaleFactor, (chunkToDraw["entities"][i]["location"]["y"].get<float>() + chunkDimensions.y) * scaleFactor);
+							//std::cout << chunkToDraw["entities"][i]["location"]["x"].get<float>() << " -- " << chunkToDraw["entities"][i]["location"]["y"].get<float>() << "aa \n";
+							sf::Text text;
+							text.setFont(font);
+							text.setString(chunkToDraw["entities"][i]["username"].get<std::string>());
+							text.setCharacterSize(24);
+							text.setPosition(chunkToDraw["entities"][i]["location"]["x"].get<float>() * scaleFactor + 20, (chunkToDraw["entities"][i]["location"]["y"].get<float>() + chunkDimensions.y) * scaleFactor - 103);
+
+							textToDraw.push_back(text);
+							spritesToDraw.push_back(player);
 						}
-						else {
-							//player.setFillColor(sf::Color::Red);
-							player.setTexture(opponentTexture);
+						else if (chunkToDraw["entities"][i]["type"].get<std::string>() == "COLLISION") {
+							//continue;
+
+							float width = abs(chunkToDraw["entities"][i]["hitBox"]["top-left"]["x"].get<float>() - chunkToDraw["entities"][i]["hitBox"]["bottom-right"]["x"].get<float>());
+							float height = abs(chunkToDraw["entities"][i]["hitBox"]["top-left"]["y"].get<float>() - chunkToDraw["entities"][i]["hitBox"]["bottom-right"]["y"].get<float>());
+
+							//std::cout << chunkToDraw["entities"][i]["hitBox"]["top-left"].dump() << " -- " << chunkToDraw["entities"][i]["hitBox"]["bottom-right"].dump() << " -- " << width << " -- " << height << " # " << chunkToDraw["data"]["setting_id"].get<int>() << std::endl;
+							sf::RectangleShape rectangle(sf::Vector2f(width * scaleFactor, height * scaleFactor));
+							
+							rectangle.setPosition(sf::Vector2f(chunkToDraw["entities"][i]["hitBox"]["top-left"]["x"].get<float>() * scaleFactor, chunkToDraw["entities"][i]["hitBox"]["top-left"]["y"].get<float>() * scaleFactor));
+							rectangle.setFillColor(sf::Color(26, 188, 156)); //turqouise floor
+							rectanglesToDraw.push_back(rectangle);; //simply add a RectangleShape to the container for it to be drawn
 						}
-
-						player.setPosition(chunkToDraw["entities"][i]["location"]["x"].get<float>() * scaleFactor, (chunkToDraw["entities"][i]["location"]["y"].get<float>() + chunkDimensions.y) * scaleFactor);
-
-						sf::Text text;
-						text.setFont(font);
-						text.setString(chunkToDraw["entities"][i]["username"].get<std::string>());
-						text.setCharacterSize(24);
-						text.setPosition(chunkToDraw["entities"][i]["location"]["x"].get<float>() * scaleFactor + 20, (chunkToDraw["entities"][i]["location"]["y"].get<float>() + chunkDimensions.y) * scaleFactor - 103);
-
-						textToDraw.push_back(text);
-						spritesToDraw.push_back(player);
 					}
 				}
 			}

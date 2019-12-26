@@ -31,15 +31,23 @@ void ecsComponentStructure<T>::removeComponent(unsigned int entityID){
 
 template <class T>
 unsigned int ecsComponentStructure<T>::entityToVectorMap(unsigned int entityID){ //returns the component vector index associated with some entity ID
-    return entityVectorMap.getBfromA(entityID);
+    if(entityVectorMap.countInA(entityID)){
+        return entityVectorMap.getBfromA(entityID); //uses my custom bimap thing
+    }else{
+        return -1;
+    }
 }
 
 template <class T>
 unsigned int ecsComponentStructure<T>::vectorToEntityMap(unsigned int componentIndex){ //returns the entity ID that is associated with this component vector index
-    return entityVectorMap.getAfromB(componentIndex); //uses my custom bimap class
+    if(entityVectorMap.countInB(componentIndex)){
+        return entityVectorMap.getAfromB(componentIndex); //uses my custom bimap thing
+    }else{
+        return -1;
+    }
 }
 
 //these are explicit instantiations for every type that this object will be used for, so it needs to be updated for any new components
-template class ecsComponentStructure<ecs::component::location>;
 template class ecsComponentStructure<ecs::component::drawable>;
 template class ecsComponentStructure<ecs::component::user>;
+template class ecsComponentStructure<ecs::component::physical>;

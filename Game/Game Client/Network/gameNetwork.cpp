@@ -15,7 +15,7 @@ void gameNetwork::listenData() {
 			break;
 		}
 
-		if (gameReference != 0 && output.size() > 0) {
+		if (gameReference != 0 && gameReference != nullptr && output.size() > 0) {
 			exitMutex.lock();
 			//std::cout << jsonObj["chunks"][4].get<std::string>() << std::endl;
 			gameReference->gameData = json::parse(output);

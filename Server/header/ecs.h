@@ -25,12 +25,15 @@ using json = nlohmann::json;
 
 namespace ecs{
     namespace entity{
-        enum entityType {USER, MOB, OTHER}; //enum for the types of entities, only used for deleting them though
+        enum entityType {USER, MOB, COLLISION_OBJECT, OTHER}; //enum for the types of entities, only used for deleting them though
     }
 }
 
 namespace ecs{
     namespace component{
+        enum objectType {COLLIDER, COLLISION, COLLIDER_COLLISION}; //enum for the object types, collider is like users/mobs, collision is like floors/walls (so don't move), collider-collision is both
+        enum components {USER, DRAWABLE, PHYSICAL}; //enum for all of the components
+
         //the structs below are the components so far
         struct user{ 
             int userID = -1; //the user ID from the database
@@ -44,25 +47,20 @@ namespace ecs{
             sf::TcpSocket* gameSocket = NULL; //the socket connection for sending game data
             sf::Time timeOfExpiry; //the time till the socket should be removed, this is updated every time the client pings the server
             bool leave = false; //this will be used to flag when the user leaves
+            std::string avatar = "";
         };
 
         struct drawable{
-            std::string avatar;
-            sf::Vector2i direction = {0, 0};
+            sf::Vector2i direction = {0, 0}; //this is only used for drawing moving items, for accurate direction use the velocity
         };
 
         struct physical{
-            sf::Vector2f hitBoxOffset = { 0, 0}; //the offset from the location of the entity, of the hit box
-            float hitBoxRadius = 1; //the radius of the hit box
-        };
-
-        struct location{
             sf::Vector2f coordinates = { 0, 0 }; //the in game location of the player
+            std::vector<sf::Vector2f> boxCorners = {}; //the hit box corners, they are specified [0] is top left, [1] is top right, [2] is bottom left, [3] is bottom right
             sf::Vector2f velocity = { 0, 0 }; //this is the velocity of the player
-            bool onFloor = true;
+            bool onFloor = true; //initialised to being on the floor
+            objectType objType = COLLIDER; //initialised to being a collider object (users/mobs etc)
         };
-
-        enum components {USER, LOCATION, DRAWABLE, PHYSICAL}; //enum for all of the components
 
         //it's using a template because it could be used for any of the components above
         template <class T>
@@ -80,10 +78,10 @@ namespace ecs{
         //each new component added to the game should be made exactly as they have been below, and obviously should have the components enum updated, and the explicit instantiation
         //stuff at the bottom of components.h should be updated, and the code for removing entities should be updated, and the code for adding new ones should also be updated
         extern ecsComponentStructure<user> users; //this basically tells the compiler that the variable declared is defined somewhere else in the program (main.cpp in this case)
-        extern ecsComponentStructure<drawable> drawables; //this basically tells the compiler that the variable declared is defined somewhere else in the program (main.cpp in this case)
-        extern ecsComponentStructure<location> locationStructs; //this basically tells the compiler that the variable declared is defined somewhere else in the program (main.cpp in this case)
+        extern ecsComponentStructure<drawable> drawables;
+        extern ecsComponentStructure<physical> physicsObjects;
 
-        //to make a new componenent, (1) make an enum in ecs::component::components, and (1.5) optionally if it needs to be like a mob or something, also in entity::entityType
+        //to make a new componenent, (1) make an enum in ecs::component::components, and (2) optionally if it needs to be like a mob or something, also in entity::entityType
         //then (3) you need to put the extern bit here and put the (4) definitions of it in main.cpp
         //then you need to (5) put the explicit instantiations of the component structures at the bottom of components.cpp,
         //and (6) then add a way to initialise it in entityManager::create(...) (using the if statements) in entities.cpp,
@@ -174,12 +172,11 @@ namespace ecs{
                 static physics* instance;
                 physics();
            public:
-                enum collisionType { FLOOR, ENTITY, WALL, CEILING, NONE };
                 static physics* getInstance();
                 void userInput(json keysAndID);
                 void moveEntities();
-                collisionType checkCollision(sf::Vector2f coordinates, sf::Vector2f velocity);
-                void userIndependentPhysics();
+                bool checkCollision(entity::entity colliderEntity, sf::Vector2f coordinates);
+                bool AABB_collision(int collisionEntityID, int colliderEntityID);
        };
 
         class gameBroadcast{

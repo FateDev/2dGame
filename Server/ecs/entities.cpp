@@ -14,12 +14,12 @@ unsigned int entityManager::create(std::initializer_list<ecs::component::compone
         if(*(initialiseWithStructs.begin()+i) == ecs::component::components::USER){ //uses the *(struct.begin()+i) rather than struct[i] notation because that notation doesn't work here
             ecs::component::user userTemp;
             ecs::component::users.addComponent(userTemp, nextEntity.id); //appropriate component added to the appropriate structure
-        } else if(*(initialiseWithStructs.begin()+i) == ecs::component::components::LOCATION){
-            ecs::component::location location;
-            ecs::component::locationStructs.addComponent(location, nextEntity.id); //appropriate component added to the appropriate structure
         }else if(*(initialiseWithStructs.begin()+i) == ecs::component::components::DRAWABLE){
             ecs::component::drawable drawableStruct;
             ecs::component::drawables.addComponent(drawableStruct, nextEntity.id); //appropriate component added to the appropriate structure
+        }else if(*(initialiseWithStructs.begin()+i) == ecs::component::components::PHYSICAL){
+            ecs::component::physical physicalStruct;
+            ecs::component::physicsObjects.addComponent(physicalStruct, nextEntity.id); //appropriate component added to the appropriate structure
         }
     }
     
@@ -37,9 +37,12 @@ bool entityManager::alive(entity entityStruct){ //returns whether or not the ent
 void entityManager::destroy(entity entityStruct, ecs::entity::entityType type){ //removes entities and all of the associated components
     if(type == ecs::entity::USER){
         ecs::component::users.removeComponent(entityStruct.id);
-        ecs::component::locationStructs.removeComponent(entityStruct.id);
         ecs::component::drawables.removeComponent(entityStruct.id);
+        ecs::component::physicsObjects.removeComponent(entityStruct.id);
         //add in any other component objects
+    }else if(type == ecs::entity::COLLISION_OBJECT){
+        ecs::component::drawables.removeComponent(entityStruct.id);
+        ecs::component::physicsObjects.removeComponent(entityStruct.id);
     }
 
     nextEntity.id = entityStruct.id; //uses the entity ID to basically make a temporary entity using nextEntity
