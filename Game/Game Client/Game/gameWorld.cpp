@@ -139,7 +139,6 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 	spritesToDraw.clear();
 
 	if (!gameData.is_null()) {	//it now moves it
-
 		for (int j = 0; j < 9; j++) { //the server sends 9 chunks of data
 			json chunkToDraw = json::parse(gameData["chunks"][j].get<std::string>());
 
@@ -157,7 +156,7 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 			sf::Vector2i chunkDimensions(chunkToDraw["data"]["width"].get<int>(), chunkToDraw["data"]["height"].get<int>()); //the size of the chunk
 			//std::cout << chunkToDraw.dump() << std::endl;
 			if (!chunkToDraw.is_null()) {
-				std::cout << chunkOrigin.x << " -- " << chunkOrigin.y << " # " << chunkToDraw["data"]["setting_id"].get<int>() << std::endl;
+				//std::cout << chunkOrigin.x << " -- " << chunkOrigin.y << " # " << chunkToDraw["data"]["setting_id"].get<int>() << std::endl;
 				sf::RectangleShape rectangle(sf::Vector2f(chunkDimensions.x * scaleFactor, chunkDimensions.y * scaleFactor));
 				rectangle.setPosition(sf::Vector2f(chunkOrigin.x * scaleFactor, chunkOrigin.y * scaleFactor));
 				
