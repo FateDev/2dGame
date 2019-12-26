@@ -38,3 +38,11 @@ bool extractInformation(std::string &msg){ //extracts username and the message
 		return true;
 	}
 }
+
+int chunkCoordHelperX(float coord, float screenSize){
+	return floor(coord/screenSize);
+}
+
+int chunkCoordHelperY(float coord, float screenSize){
+	return ceil(coord/screenSize);
+}

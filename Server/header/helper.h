@@ -3,7 +3,10 @@
 
 #include <unordered_map>
 #include <string>
+#include <cmath>
 
+int chunkCoordHelperX(float coord, float screenSize);
+int chunkCoordHelperY(float coord, float screenSize);
 bool extractInformation(std::string &msg);
 bool checkLeave(std::string &msg);
 bool processString(std::string msg);
