@@ -11,7 +11,7 @@ using namespace ecs::system;
 using namespace ecs::component;
 
 int chunkCoordHelper(float coord, float screenSize){
-	return div(coord, screenSize).quot;
+	return floor(coord/screenSize);
 }
 
 void systemsManager::systemStart()
