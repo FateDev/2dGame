@@ -34,11 +34,12 @@ void systemsManager::systemStart()
 	chunks[startCoord].first.settingID = 1; //sets the first chunk's setting ID to 1, which is a city
 	unsigned int entityID = ecs::entity::superEntityManager.create({components::DRAWABLE, components::PHYSICAL}); //a new object with those attributes is made
 	physicsObjects.compVec[physicsObjects.entityToVectorMap(entityID)].boxCorners = {
-		sf::Vector2f(startCoord.coordinates.first * chunkPixelSize_x, (startCoord.coordinates.second * chunkPixelSize_y) + chunkPixelSize_y - 5), 
-		sf::Vector2f((startCoord.coordinates.first * chunkPixelSize_x) + chunkPixelSize_x, (startCoord.coordinates.second * chunkPixelSize_y) + chunkPixelSize_y  - 5),
-		sf::Vector2f(startCoord.coordinates.first * chunkPixelSize_x, (startCoord.coordinates.second * chunkPixelSize_y) + chunkPixelSize_y ), 
-		sf::Vector2f((startCoord.coordinates.first * chunkPixelSize_x) + chunkPixelSize_x, (startCoord.coordinates.second * chunkPixelSize_y) + chunkPixelSize_y )
+		sf::Vector2f(startCoord.coordinates.first * chunkPixelSize_x, (startCoord.coordinates.second * chunkPixelSize_y) - 5), 
+		sf::Vector2f((startCoord.coordinates.first * chunkPixelSize_x) + chunkPixelSize_x, (startCoord.coordinates.second * chunkPixelSize_y)  - 5),
+		sf::Vector2f(startCoord.coordinates.first * chunkPixelSize_x, (startCoord.coordinates.second * chunkPixelSize_y)), 
+		sf::Vector2f((startCoord.coordinates.first * chunkPixelSize_x) + chunkPixelSize_x, (startCoord.coordinates.second * chunkPixelSize_y))
 	};  //sets the corners of these boxes
+	physicsObjects.compVec[physicsObjects.entityToVectorMap(entityID)].coordinates = sf::Vector2f(startCoord.coordinates.first * chunkPixelSize_x, startCoord.coordinates.second * chunkPixelSize_y);
 	physicsObjects.compVec[physicsObjects.entityToVectorMap(entityID)].objType = COLLISION; //sets the object type
 	chunks[startCoord].second.push_back(entityID); //pushes the floor entity to the chunks object
 }

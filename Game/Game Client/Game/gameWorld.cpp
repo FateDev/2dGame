@@ -142,7 +142,7 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 		for (int j = 0; j < 9; j++) { //the server sends 9 chunks of data
 			json chunkToDraw = json::parse(gameData["chunks"][j].get<std::string>());
 
-			int scaleFactor = 10; //rather than changing server side stuff, just change this to make everything appear correctly
+			int scaleFactor = 11; //rather than changing server side stuff, just change this to make everything appear correctly
 
 			if (chunkToDraw.is_null()) {
 				std::cout << "Null" << "\n";
@@ -152,8 +152,10 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 			}
 
 			//std::cout << chunkToDraw.dump() << std::endl;
-			sf::Vector2i chunkOrigin(chunkToDraw["data"]["x"].get<int>(), chunkToDraw["data"]["y"].get<int>()); //the origin of the chunk
 			sf::Vector2i chunkDimensions(chunkToDraw["data"]["width"].get<int>(), chunkToDraw["data"]["height"].get<int>()); //the size of the chunk
+			sf::Vector2i chunkOrigin(chunkToDraw["data"]["x"].get<int>(), chunkToDraw["data"]["y"].get<int>() - chunkDimensions.y); //the origin of the chunk
+			//I'm basically using a hack to make it appear correct, as for some reason the setting appears shifted down by 1 chunk, so we start above the city rather than in it
+			//This fixes it
 			//std::cout << chunkToDraw.dump() << std::endl;
 			if (!chunkToDraw.is_null()) {
 				//std::cout << chunkOrigin.x << " -- " << chunkOrigin.y << " # " << chunkToDraw["data"]["setting_id"].get<int>() << std::endl;
@@ -162,20 +164,27 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 				
 				switch (chunkToDraw["data"]["setting_id"].get<int>()) {
 				case 1:
-					rectangle.setFillColor(sf::Color(41, 128, 185)); //city blue
+					rectangle.setFillColor(sf::Color(29, 34, 39)); //city blue
 					break;
-				case 9:
+				default:
+					rectangle.setFillColor(sf::Color(17, 19, 22)); //everything else grey
+					break;
+				/*
 					rectangle.setFillColor(sf::Color(39, 174, 96)); //green cave
 					break;
 				case 4:
-					rectangle.setFillColor(sf::Color(231, 76, 60)); //red right stairs
+					rectangle.setFillColor(sf::Color(39, 174, 96)); //green cave colour, but it's actually right stairs
+					//rectangle.setFillColor(sf::Color(231, 76, 60)); //red right stairs
 					break;
 				case 5:
-					rectangle.setFillColor(sf::Color(241, 196, 15)); //yellow left stairs
+					rectangle.setFillColor(sf::Color(39, 174, 96)); //green cave colour, but it's actually left stairs
+					//rectangle.setFillColor(sf::Color(241, 196, 15)); //yellow left stairs
 					break;
 				case 0:
-					rectangle.setFillColor(sf::Color(211, 84, 0)); //orange air
+					rectangle.setFillColor(sf::Color(39, 174, 96)); //green cave colour, but it's actually air
+					//rectangle.setFillColor(sf::Color(211, 84, 0)); //orange air
 					break;
+				*/
 				}
 
 				rectanglesToDraw.push_back(rectangle);; //simply add a RectangleShape to the container for it to be drawn
@@ -204,20 +213,20 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 							if (chunkToDraw["entities"][i]["id"].get<int>() == networkObj->userID) { //do some operations meant for only this client
 								//player.setFillColor(sf::Color::Blue);
 								player.setTexture(playerTexture);
-								gameView->setCenter(chunkToDraw["entities"][i]["location"]["x"].get<float>() * scaleFactor, (chunkToDraw["entities"][i]["location"]["y"].get<float>() + chunkDimensions.y) * scaleFactor);
+								gameView->setCenter(chunkToDraw["entities"][i]["location"]["x"].get<float>() * scaleFactor, (chunkToDraw["entities"][i]["location"]["y"].get<float>()) * scaleFactor);
 							}
 							else {
 								//player.setFillColor(sf::Color::Red);
 								player.setTexture(opponentTexture);
 							}
 
-							player.setPosition(chunkToDraw["entities"][i]["location"]["x"].get<float>() * scaleFactor, (chunkToDraw["entities"][i]["location"]["y"].get<float>() + chunkDimensions.y) * scaleFactor);
+							player.setPosition(chunkToDraw["entities"][i]["location"]["x"].get<float>() * scaleFactor, (chunkToDraw["entities"][i]["location"]["y"].get<float>()) * scaleFactor);
 							//std::cout << chunkToDraw["entities"][i]["location"]["x"].get<float>() << " -- " << chunkToDraw["entities"][i]["location"]["y"].get<float>() << "aa \n";
 							sf::Text text;
 							text.setFont(font);
 							text.setString(chunkToDraw["entities"][i]["username"].get<std::string>());
 							text.setCharacterSize(24);
-							text.setPosition(chunkToDraw["entities"][i]["location"]["x"].get<float>() * scaleFactor + 20, (chunkToDraw["entities"][i]["location"]["y"].get<float>() + chunkDimensions.y) * scaleFactor - 103);
+							text.setPosition(chunkToDraw["entities"][i]["location"]["x"].get<float>() * scaleFactor + 20, (chunkToDraw["entities"][i]["location"]["y"].get<float>()) * scaleFactor - 103);
 
 							textToDraw.push_back(text);
 							spritesToDraw.push_back(player);
@@ -232,7 +241,7 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 							sf::RectangleShape rectangle(sf::Vector2f(width * scaleFactor, height * scaleFactor));
 							
 							rectangle.setPosition(sf::Vector2f(chunkToDraw["entities"][i]["hitBox"]["top-left"]["x"].get<float>() * scaleFactor, chunkToDraw["entities"][i]["hitBox"]["top-left"]["y"].get<float>() * scaleFactor));
-							rectangle.setFillColor(sf::Color(26, 188, 156)); //turqouise floor
+							rectangle.setFillColor(sf::Color(51, 56, 63)); //grey floor
 							rectanglesToDraw.push_back(rectangle);; //simply add a RectangleShape to the container for it to be drawn
 						}
 					}

@@ -14,7 +14,7 @@
 
 //the size of one chunk
 const int chunkPixelSize_x = 150;
-const int chunkPixelSize_y = 70;
+const int chunkPixelSize_y = 50;
 const int fps = 60;
 const sf::Vector2f deceleration = { 0, 0.1 }; //x = friction on surface deceleration, y = gravity
 const sf::Vector2f acceleration = { 0, 1 }; //x = acceleration by arrow keys (don't want to accelerate), y = acceleration when jumping up
@@ -175,7 +175,7 @@ namespace ecs{
                 static physics* getInstance();
                 void userInput(json keysAndID);
                 void moveEntities();
-                bool checkCollision(entity::entity colliderEntity, sf::Vector2f coordinates);
+                bool checkCollision(entity::entity colliderEntity);
                 bool AABB_collision(int collisionEntityID, int colliderEntityID);
        };
 
@@ -221,28 +221,11 @@ namespace ecs{
                 std::unordered_map<coordinatesStruct, bool, Hash> activeChunks; 
                 //can be used for selecting data to be extracted from the ECS and put into the gameData object, and for physics engine related stuff
 
-                //the map would contain the coordinates of chunks, and whether or not they are active, loops through the locations component vector to get the coordinates of users
-                //and using simple modulus math, it can find what chunk a user is in (using chunkPixelSize_x and chunkPixelSize_y), and insert or remove entries for active chunks
-                //as neccessary
                 void updateActiveChunks(); //this would update the activeChunks map, removing inactive ones, adding new ones which should be set to active
                 void updateChunkData(); //this would get the data associated with some chunk and store it in the gameData object
                 
                 std::vector<sf::Vector2f> retrievePlayerChunks(unsigned int entityID); 
-                //using the entityID of the user, this should return the coordinates of 9 chunks who's data the player should receive, again, using simple 
-                //mod math and chunkPixelSize_x/chunkPixelSize_y
-                //it should access the location component, run the mod math on it, then it can literally use the numbers to directly access gameData and retrieve all of the
-                //chunk data that a user needs
         };
-        
-        /*
-            Note that as updateChunkData() will run on its own thread, and so will broadcastGameState(), but they will both require access to gameData, you'll
-            need to use sf::Mutex to make sure that they don't simultaneously try to access resources
-
-            Also you need to implement broadcastGameState() using UDP, so loop through the users component vector, then get the user IP address from the socket
-            then get access to the associated location struct, then use simple modulus math on the coordinates to retrieve the 
-
-            All chunk data is stored in gameData, but for internal processing for physics and the such it should be in the chunks map
-        */
        
        class game{
            private:

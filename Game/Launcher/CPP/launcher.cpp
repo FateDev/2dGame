@@ -28,7 +28,7 @@ launcher::launcher(networking *networkObject, sf::RenderWindow* mainWindow, sf::
 	title->setRenderer(theme.getRenderer("Label.Label0"));
 	title->setPosition(30, 21.4);
 	title->setSize(738.4, 100);
-	title->setText("One More Time");
+	title->setText("Descend");
 	title->setTextSize(60);
 	title->setVerticalAlignment(tgui::Label::VerticalAlignment::Center);
 	title->setHorizontalAlignment(tgui::Label::HorizontalAlignment::Center);

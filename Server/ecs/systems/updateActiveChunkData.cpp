@@ -47,10 +47,10 @@ void updateActiveChunkData::updateActiveChunks()
 		
 		if(!generationFlag){ //just remember up is negative, so chunk.y-1 is the y coordinate of chunks above it (which is used for checking if a city is above stairs below)
 			int chance = rand() % 100 + 1;
-			if(chance > 90 && chance < 95 && chunks[coordinatesStruct(generation.coordinates.first, generation.coordinates.second-1)].first.settingID != 1){ //so long as city isn't above
+			if(chance > 80 && chance < 90 && chunks[coordinatesStruct(generation.coordinates.first, generation.coordinates.second-1)].first.settingID != 1){ //so long as city isn't above
 				chunks[generation].first.settingID = 4; //ID: 4 is stairs right
 				airCoords.push_back(coordinatesStruct(generation.coordinates.first, generation.coordinates.second-1)); //-1 is above it
-			}else if(chance > 95 && chunks[coordinatesStruct(generation.coordinates.first, generation.coordinates.second-1)].first.settingID != 1){ //so long as city isn't above
+			}else if(chance > 90 && chunks[coordinatesStruct(generation.coordinates.first, generation.coordinates.second-1)].first.settingID != 1){ //so long as city isn't above
 				chunks[generation].first.settingID = 5; //ID: 5 is stairs left
 				airCoords.push_back(coordinatesStruct(generation.coordinates.first, generation.coordinates.second-1)); //-1 is above it
 			}else{
@@ -59,14 +59,16 @@ void updateActiveChunkData::updateActiveChunks()
 		}
 		
 		physicsObjects.compVec[physicsObjects.entityToVectorMap(entityID)].boxCorners = {
-			sf::Vector2f(generation.coordinates.first * chunkPixelSize_x, (generation.coordinates.second * chunkPixelSize_y) + chunkPixelSize_y - 5), 
-			sf::Vector2f((generation.coordinates.first * chunkPixelSize_x) + chunkPixelSize_x, (generation.coordinates.second * chunkPixelSize_y) + chunkPixelSize_y - 5),
-			sf::Vector2f(generation.coordinates.first * chunkPixelSize_x, (generation.coordinates.second * chunkPixelSize_y) + chunkPixelSize_y), 
-			sf::Vector2f((generation.coordinates.first * chunkPixelSize_x) + chunkPixelSize_x, (generation.coordinates.second * chunkPixelSize_y) + chunkPixelSize_y)
+			sf::Vector2f(generation.coordinates.first * chunkPixelSize_x, (generation.coordinates.second * chunkPixelSize_y) - 5), 
+			sf::Vector2f((generation.coordinates.first * chunkPixelSize_x) + chunkPixelSize_x, (generation.coordinates.second * chunkPixelSize_y) - 5),
+			sf::Vector2f(generation.coordinates.first * chunkPixelSize_x, (generation.coordinates.second * chunkPixelSize_y)), 
+			sf::Vector2f((generation.coordinates.first * chunkPixelSize_x) + chunkPixelSize_x, (generation.coordinates.second * chunkPixelSize_y))
 		}; //sets the corners of these boxes, remember negative is up
 		physicsObjects.compVec[physicsObjects.entityToVectorMap(entityID)].objType = COLLISION; //sets the object type
-		
-		chunks[generation].second.push_back(entityID); //pushes the floor entity to the chunks object
+
+		if(chunks[generation].first.settingID != 4 && chunks[generation].first.settingID != 5){
+			chunks[generation].second.push_back(entityID); //pushes the floor entity to the chunks object
+		}
 	}
 
 	for(auto &generateAir : airCoords){ 
