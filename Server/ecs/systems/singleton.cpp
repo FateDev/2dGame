@@ -16,6 +16,7 @@ physics *physics::getInstance()
 
 std::mutex mutexs::userLocationsMutex; //defines the mutex
 std::mutex mutexs::removeUserMutex; //defines the mutex
+std::mutex mutexs::chunkLockMutex; //defines the mutex
 
 mutexs *mutexs::instance = 0;
 mutexs::mutexs() {}

@@ -15,16 +15,16 @@ void network::removeUser(unsigned int i)
 	sf::Vector2f coordinates = physicsObjects.compVec[physicsObjects.entityToVectorMap(entityID)].coordinates; //get the user's coordinates
 	ecs::system::coordinatesStruct removeUserCoordinates(chunkCoordHelperX(int(coordinates.x), chunkPixelSize_x), chunkCoordHelperY(int(coordinates.y), chunkPixelSize_y)); //get what their coordinates would be in the world using simple mod math
 
-	int counter = 0;
+	mutexs::getInstance()->chunkLockMutex.lock();
 	for(int i = 0; i < chunks[removeUserCoordinates].second.size(); i++){
 		if(chunks[removeUserCoordinates].second[i].id == entityID){
 			chunks[removeUserCoordinates].second.erase(chunks[removeUserCoordinates].second.begin() + i);
 			break;
 		}
 	}
-	
 	chunks[removeUserCoordinates].first.userCount--; //decrements the number of users in this chunk
-	//std::cout << "decrementing user count (removing) \n";
+	updateActiveChunkData::getInstance()->updateActiveChunks(); //updates the active chunks
+	mutexs::getInstance()->chunkLockMutex.unlock();
 
 	sf::Packet packet; //a packet to hold a string
 	packet << std::string("die").c_str(); //putting the c style string into the packet
@@ -34,8 +34,6 @@ void network::removeUser(unsigned int i)
 	sessionIDToEntityID.erase(users.compVec[i].sessionID); //will erase the mapping of the unique session ID to the index in the component vector for this user
 
 	ecs::entity::superEntityManager.destroy(entity::entity(entityID), ecs::entity::USER); //removes them from the array if it is
-
-	updateActiveChunkData::getInstance()->updateActiveChunks(); //updates the active chunks
 
 	std::string msgString = "SERVER: A USER HAS LEFT\nSERVER: CLIENTS ONLINE: " + std::to_string(users.compVec.size()); //outputs some server info to indicate that the user is gone
 	std::cout << msgString << "\n";	//outputs this string
@@ -62,19 +60,24 @@ void network::forwardToAllUsers(std::string msg, int userNum)
 
 void network::broadcastToLocal(std::string msg, int userNum)
 { //this broadcasts to users within 100 units of the player (hence the 100 in the if statement below)
-	auto userChunk = coordinatesStruct(physicsObjects.compVec[physicsObjects.entityToVectorMap(users.vectorToEntityMap(userNum))].coordinates.x, physicsObjects.compVec[physicsObjects.entityToVectorMap(users.vectorToEntityMap(userNum))].coordinates.y);
+	auto userChunk = coordinatesStruct(chunkCoordHelperX(physicsObjects.compVec[physicsObjects.entityToVectorMap(users.vectorToEntityMap(userNum))].coordinates.x, chunkPixelSize_x), chunkCoordHelperY(physicsObjects.compVec[physicsObjects.entityToVectorMap(users.vectorToEntityMap(userNum))].coordinates.y, chunkPixelSize_y));
 	for(int x = userChunk.coordinates.first-1; x <= userChunk.coordinates.first+1; x++){
 		for(int y = userChunk.coordinates.second-1; y <= userChunk.coordinates.second+1; y++){
 			auto currentChunk = coordinatesStruct(x, y);
+			
+			mutexs::getInstance()->chunkLockMutex.lock();
 			for(auto user : chunks[currentChunk].second){
-				if(users.compVec[users.entityToVectorMap(user.id)].roomGuild == users.compVec[userNum].roomGuild){
-					sf::Packet packet;	 //a packet to hold a string
-					packet << msg.c_str(); //putting the c style string into the packet
+				if(users.entityToVectorMap(user.id) != -1){
+					if(users.compVec[users.entityToVectorMap(user.id)].roomGuild == users.compVec[userNum].roomGuild){
+						sf::Packet packet;	 //a packet to hold a string
+						packet << msg.c_str(); //putting the c style string into the packet
 
-					users.compVec[users.entityToVectorMap(user.id)].socket->send(packet); //sends the packet to the user currently being looped over
-					std::cout << "sending" << std::endl;
+						users.compVec[users.entityToVectorMap(user.id)].socket->send(packet); //sends the packet to the user currently being looped over
+					}
 				}
 			}
+			mutexs::getInstance()->chunkLockMutex.unlock();
+
 		}
 	}
 }
@@ -318,10 +321,12 @@ void network::server(unsigned short PORT)
 
 				tempEntity.id = entityID; //sets the temp entity to have the correct ID
 				//tempEntity.type = ecs::entity::USER; //sets the temp entity to have the correct ID
+				
+				mutexs::getInstance()->chunkLockMutex.lock();
 				ecs::system::chunks[startCoord].second.push_back(tempEntity); //pushes users to the (0, 0) chunk
 				chunks[startCoord].first.userCount++; //increments the number of users in this chunk
-
 				updateActiveChunkData::getInstance()->updateActiveChunks(); //updates the active chunks
+				mutexs::getInstance()->chunkLockMutex.unlock();
 				
 				unsigned int componentVectorIndex = users.entityToVectorMap(entityID);	//gets the component vector index of this entity
 				unsigned int physicsCompVecIndex = physicsObjects.entityToVectorMap(entityID);

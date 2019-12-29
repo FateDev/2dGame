@@ -163,7 +163,8 @@ namespace ecs{
                 mutexs();
             public:
                 static std::mutex userLocationsMutex; //declares the mutex for reading to/from user location comp vec
-                static std::mutex removeUserMutex;
+                static std::mutex removeUserMutex; //used when sending data (gameBroadcast::broadcastGameState()), and logging the user out, and updating chunk data
+                static std::mutex chunkLockMutex; //to be used to lock chunks, so used when sending data to local chunks, adding/removing users from chunks and incrementing/decrementing user count of a chunk
                 static mutexs* getInstance();
         };
        

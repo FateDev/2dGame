@@ -22,20 +22,20 @@
 
 const unsigned short REMOTE_TCP_PORT = 5000;
 const unsigned short REMOTE_GAME_PORT = 5001;
-const std::string REMOTE_IP = "82.40.114.214"; //192.168.0.15
+const std::string REMOTE_IP = "192.168.0.15"; //82.40.114.214
 const std::string WEBSITE_URL = "http://erewhon.xyz";
 
 int main(int argc, char **argv) { //will accept parameters from command line, the launcher will send parameters using this
 	SetCurrentDirectory(L"Game"); //sets the current working directory, so it doesn't conflict with the stuff in the parent directory
 
 	//extracts the variables from the parameters passed from the launcher
+	/*
 	std::string launcherKey(argv[1]);
 	std::string username(argv[2]);
-	/*
+	*/
 	///>>>below are set temporarily for debugging and development
 	std::string launcherKey = "Hg+Lb9B6Q/zrMduYEvPmuQ==";
-	std::string username = "test";
-	*/
+	std::string username = "fate";
 
 	if (launcherKey == "Hg+Lb9B6Q/zrMduYEvPmuQ==") { //really weak check to verify that the launcher opened the program
 		sf::Clock* globalClock = new sf::Clock; //the clock which is used to check when to ping the server

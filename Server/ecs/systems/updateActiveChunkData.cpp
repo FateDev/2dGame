@@ -7,6 +7,7 @@ using namespace ecs::component;
 void updateActiveChunkData::updateActiveChunks()
 { //this is for updating which chunks are actually active
 	std::vector<coordinatesStruct> generationCoords = {}; //a vector containing all of the coordinates to generate a new chunk at
+	std::vector<coordinatesStruct> deletionCoords = {}; //a vector containing all of the coordinates to delete chunks from
 	for (auto &chunk : chunks)
 	{
 		if(chunk.second.first.userCount > 0){
@@ -17,7 +18,27 @@ void updateActiveChunkData::updateActiveChunks()
 					}
 				}
 			}
+		}else{ //if there are no users in this, then potentially flag it up for deletion
+			bool usersPresentInSurroundingChunks = false; //any users present in how many surrounding chunks?
+			for(int i = chunk.first.coordinates.first-1; i <= chunk.first.coordinates.first+1;i++){
+				for(int j = chunk.first.coordinates.second-1; j <= chunk.first.coordinates.second+1;j++){
+					if(chunks.count(coordinatesStruct(i, j))){
+						if(chunks[coordinatesStruct(i, j)].first.userCount > 0){
+							usersPresentInSurroundingChunks = true;
+							break;
+						}
+					}
+				}
+				if(usersPresentInSurroundingChunks) { break; } //if users are present in surrounding chunk, no longer need to continue checking
+			}
+			if(!usersPresentInSurroundingChunks){
+				deletionCoords.push_back(chunk.first); //flag for deletion
+			}
 		}
+	}
+	
+	for(auto &deletion : deletionCoords){ //deletes the ones flagged for deletion
+		chunks.erase(deletion);
 	}
 	
 	//std::cout << generationCoords.size() << "\n";
