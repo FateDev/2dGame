@@ -150,4 +150,9 @@ public:
 	//the above would be an invisible container from tgui which holds everything that gets drawn for the toolbar, it's public so we can set it visible/invisible
 };
 
+class inventory {
+private:
+	sf::RenderWindow* window = NULL;
+};
+
 #endif // !GUI_HEADER

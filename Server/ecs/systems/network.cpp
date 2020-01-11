@@ -8,14 +8,17 @@ using namespace ecs::system;
 using namespace ecs::component;
 
 void network::removeUser(unsigned int i)
-{											
-	std::lock_guard<std::mutex> mutex(mutexs::removeUserMutex);	//function to basically properly log out a user
+{										
+	//std::cout << "trying to get past main user mtuex...\n";
+	std::lock_guard<std::mutex> mutex(mutexs::mainUserLockMutex);	//function to basically properly log out a user
 	
 	unsigned int entityID = users.vectorToEntityMap(i);	//get the user entityID
 	sf::Vector2f coordinates = physicsObjects.compVec[physicsObjects.entityToVectorMap(entityID)].coordinates; //get the user's coordinates
 	ecs::system::coordinatesStruct removeUserCoordinates(chunkCoordHelperX(int(coordinates.x), chunkPixelSize_x), chunkCoordHelperY(int(coordinates.y), chunkPixelSize_y)); //get what their coordinates would be in the world using simple mod math
 
+	//std::cout << "trying to get past chunk lock mtuex...\n";
 	mutexs::getInstance()->chunkLockMutex.lock();
+	//std::cout << "removing user now\n";
 	for(int i = 0; i < chunks[removeUserCoordinates].second.size(); i++){
 		if(chunks[removeUserCoordinates].second[i].id == entityID){
 			chunks[removeUserCoordinates].second.erase(chunks[removeUserCoordinates].second.begin() + i);
@@ -101,98 +104,99 @@ void network::saveMsgDB(std::string msg, int userNum, int time)
 	users.compVec[userNum].tempNewestMsgID = readBuffer;
 }
 
-void network::process()
-{
+void network::messageProcessing(){
 	std::time_t t; //current time
 	std::tm *now;  //object which processes into year, month, day, etc
 
-	while (true)
-	{ //loop endlessly
-		if (selector.wait(sf::seconds(1)))
-		{ //waits 1 second for any activity from any of the sockets
-			for (int i = 0; i < users.compVec.size(); i++)
-			{ //loops through every connected socket
-				if (selector.isReady(*(users.compVec[i].socket)) && users.compVec[i].loggedIn)
-				{ //checks through every socket in the selector, checking if it is ready for action (all sockets are in the selector so this is valid)
-					sf::Packet receivePacket;		//packet for message to be received
-					std::string receiveString = ""; //the string for the packet
-					std::string currentTime;		//currentTime string
-					std::string sendString;			//string to send to users
+	for (int i = 0; i < users.compVec.size(); i++){ //loops through every connected socket
+		if (selector.isReady(*(users.compVec[i].socket)) && users.compVec[i].loggedIn) { 
+			//checks through every socket in the selector, checking if it is ready for action (all sockets are in the selector so this is valid)
+			sf::Packet receivePacket;		//packet for message to be received
+			std::string receiveString = ""; //the string for the packet
+			std::string currentTime;		//currentTime string
+			std::string sendString;			//string to send to users
 
-					t = std::time(0);		  //gets current time
-					now = std::localtime(&t); //makes it into an object which we can extract time from
+			users.compVec[i].socket->receive(receivePacket); //receives packet
 
-					users.compVec[i].socket->receive(receivePacket); //receives packet
+			if ((receivePacket >> receiveString) && receiveString != "")
+			{ //if the packet data can be extracted, and it is not empty
+				t = std::time(0);		  //gets current time
+				now = std::localtime(&t); //makes it into an object which we can extract time from, needed for saving messages in the database
 
-					if ((receivePacket >> receiveString) && receiveString != "")
-					{ //if the packet data can be extracted, and it is not empty
-						if (processString(receiveString))
-						{ //if this contains the ping flag which is to be received every few seconds, update the socket expiry time
-							users.compVec[i].timeOfExpiry = sf::seconds(expiryTimer.getElapsedTime().asSeconds() + 5); //updates the socket expiry time
-							continue; //then continue, to the next loop
-						}
-
-						if (checkLeave(receiveString))
-						{
-							users.compVec[i].leave = true;
-							break;
-							/*
-							removeUser(i);
-							break; //maybe causing issue (crashing other clients)*/
-						}
-
-						if (receiveString.find("USER::CHANGEROOMGUILD::") == 0)
-						{
-							receiveString.erase(receiveString.begin(), receiveString.begin() + (receiveString.find("USER::CHANGEROOMGUILD::") + std::string("USER::CHANGEROOMGUILD::").length()));
-
-							users.compVec[i].roomGuild = receiveString;
-
-							continue;
-						}
-
-						if (!extractInformation(receiveString))
-						{			  //if username and message could not be extracted...
-							continue; //then continue
-						}
-
-						//below is basically saying to set the local message id to 0 if LOCALCHAT, you'd only use it to make sure your messages aren't recorded whatsoever
-						if (users.compVec[i].roomGuild != "LOCALCHAT")
-						{
-							saveMsgDB(receiveString, i, t);
-						}
-						else
-						{
-							users.compVec[i].tempNewestMsgID = "-1"; //ID is not 0
-						}
-
-						std::string time = std::to_string(t);
-
-						sendString += "MSG::ID::" + users.compVec[i].tempNewestMsgID;
-						sendString += "USER::USERNAME::" + users.compVec[i].username;
-						sendString += "USER::TIME::" + time;
-						sendString += "USER::MSG::" + receiveString;
-
-						std::cout << sendString << "\n";
-
-						if (users.compVec[i].roomGuild != "LOCALCHAT")
-						{
-							forwardToAllUsers(sendString, i); //also sends to all users but the one which just sent this
-						}
-						else
-						{
-							broadcastToLocal(sendString, i);
-						}
-
-						currentTime = ""; //empties this string
-					}
+				if (processString(receiveString))
+				{ //if this contains the ping flag which is to be received every few seconds, update the socket expiry time
+					users.compVec[i].timeOfExpiry = sf::seconds(expiryTimer.getElapsedTime().asSeconds() + 5); //updates the socket expiry time
+					continue; //then continue, to the next loop
 				}
+
+				if (checkLeave(receiveString))
+				{
+					users.compVec[i].leave = true;
+					break;
+					/*
+					removeUser(i);
+					break; //maybe causing issue (crashing other clients)*/
+				}
+
+				if (receiveString.find("USER::CHANGEROOMGUILD::") == 0)
+				{
+					receiveString.erase(receiveString.begin(), receiveString.begin() + (receiveString.find("USER::CHANGEROOMGUILD::") + std::string("USER::CHANGEROOMGUILD::").length()));
+
+					users.compVec[i].roomGuild = receiveString;
+
+					continue;
+				}
+
+				if (!extractInformation(receiveString))
+				{			  //if username and message could not be extracted...
+					continue; //then continue
+				}
+
+				//below is basically saying to set the local message id to 0 if LOCALCHAT, you'd only use it to make sure your messages aren't recorded whatsoever
+				if (users.compVec[i].roomGuild != "LOCALCHAT")
+				{
+					saveMsgDB(receiveString, i, t);
+				}
+				else
+				{
+					users.compVec[i].tempNewestMsgID = "-1"; //ID is not 0
+				}
+
+				std::string time = std::to_string(t);
+
+				sendString += "MSG::ID::" + users.compVec[i].tempNewestMsgID;
+				sendString += "USER::USERNAME::" + users.compVec[i].username;
+				sendString += "USER::TIME::" + time;
+				sendString += "USER::MSG::" + receiveString;
+
+				std::cout << sendString << "\n";
+
+				if (users.compVec[i].roomGuild != "LOCALCHAT")
+				{
+					forwardToAllUsers(sendString, i); //also sends to all users but the one which just sent this
+				}
+				else
+				{
+					broadcastToLocal(sendString, i);
+				}
+
+				currentTime = ""; //empties this string
 			}
 		}
+	}
+}
 
-		for (int i = 0; i < users.compVec.size(); i++)
-		{ //loops through every user...
-			if (users.compVec[i].timeOfExpiry.asSeconds() <= expiryTimer.getElapsedTime().asSeconds())
-			{ //checks if their socket's time of expiry is now or passed...
+void network::process() {
+	while (true)
+	{ //loop endlessly
+		if (selector.wait(sf::milliseconds(250))){ //waits 0.25 seconds for any activity from any of the sockets
+			mutexs::getInstance()->mainUserLockMutex.lock();
+			network::getInstance()->messageProcessing(); //will do the entire messages thing
+			mutexs::getInstance()->mainUserLockMutex.unlock();
+		}
+
+		for (int i = 0; i < users.compVec.size(); i++){ //loops through every user...
+			if (users.compVec[i].timeOfExpiry.asSeconds() <= expiryTimer.getElapsedTime().asSeconds()){ //checks if their socket's time of expiry is now or passed...
 				//std::cout << "expiry timer issue, for user " << users.compVec[i].username << std::endl;
 				users.compVec[i].leave = true;
 			}
@@ -261,12 +265,8 @@ std::string network::login(std::string input, user *userPtr)
 	return "failed"; //otherwise return false
 }
 
-void network::server(unsigned short PORT)
+void network::server()
 {							  //the function for server initialisation
-	sf::TcpListener listener; //makes a tcpListener
-
-	listener.listen(PORT); //listens on the provided port
-
 	sf::TcpSocket *socket; //makes a socket pointer
 
 	user *userPtr; //makes a user pointer
@@ -274,8 +274,6 @@ void network::server(unsigned short PORT)
 	std::cout << "SERVER: SERVER STARTED" << std::endl; //outputs that the server has started
 	//unsigned int entityID2 = ecs::entity::superEntityManager.create({components::USER, components::LOCATION});
 	//std::cout << entityID2 << std::endl;
-
-	sf::Clock clock; //used to generate some 'unique' session ID
 
 	ecs::system::coordinatesStruct startCoord(0, 0); //the starting coordinates
 	ecs::entity::entity tempEntity;					 //used to put the users entity inside some chunk
@@ -310,7 +308,13 @@ void network::server(unsigned short PORT)
 			}
 			else
 			{
-				userPtr->sessionID = userPtr->username + std::to_string(clock.getElapsedTime().asMicroseconds());
+				//we are adding a user which could screw with all of the processing threads, so our hacky solution right now is to just use a mutex
+				mutexs::getInstance()->mainUserLockMutex.lock();
+				mutexs::getInstance()->chunkLockMutex.lock();
+
+				int randomNumber = rand() * 100000; //appended to the end of the username for a unique ID kind of thing
+				randomNumber = (randomNumber > 0 ? randomNumber : randomNumber*-1); //if it's negative, makes it positive
+				userPtr->sessionID = userPtr->username + std::to_string(randomNumber);
 
 				sendPacket << std::string("SERVER::LOGON::RESPONSE::trueUSER::SESSION_ID::" + userPtr->sessionID + "USER::ID::" + std::to_string(userPtr->userID)).c_str();
 				socket->send(sendPacket);
@@ -322,11 +326,9 @@ void network::server(unsigned short PORT)
 				tempEntity.id = entityID; //sets the temp entity to have the correct ID
 				//tempEntity.type = ecs::entity::USER; //sets the temp entity to have the correct ID
 				
-				mutexs::getInstance()->chunkLockMutex.lock();
 				ecs::system::chunks[startCoord].second.push_back(tempEntity); //pushes users to the (0, 0) chunk
 				chunks[startCoord].first.userCount++; //increments the number of users in this chunk
 				updateActiveChunkData::getInstance()->updateActiveChunks(); //updates the active chunks
-				mutexs::getInstance()->chunkLockMutex.unlock();
 				
 				unsigned int componentVectorIndex = users.entityToVectorMap(entityID);	//gets the component vector index of this entity
 				unsigned int physicsCompVecIndex = physicsObjects.entityToVectorMap(entityID);
@@ -343,8 +345,10 @@ void network::server(unsigned short PORT)
 				sessionIDToEntityID.insert({userPtr->sessionID, entityID}); //will add a map entry, mapping their unique session ID to some index in the component vector
 
 				selector.add(*socket); //add this vector to the selector
-
 				std::cout << outputString;
+				
+				mutexs::getInstance()->chunkLockMutex.unlock();
+				mutexs::getInstance()->mainUserLockMutex.unlock();
 			}
 		}
 		else

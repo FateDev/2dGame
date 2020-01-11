@@ -6,7 +6,7 @@ using namespace ecs::component;
 
 void gameBroadcast::broadcastGameState()
 { //this broadcasts stuff on port 5001
-	std::lock_guard<std::mutex> mutex(mutexs::removeUserMutex);	
+	std::lock_guard<std::mutex> mutex(mutexs::mainUserLockMutex);
 	for (auto &chunkEntityVector : chunks)
 	{
 		for (auto &user : chunkEntityVector.second.second)

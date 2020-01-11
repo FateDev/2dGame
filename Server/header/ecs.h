@@ -126,6 +126,7 @@ namespace ecs{
         struct chunkData{
             int settingID = 9; //1 is City, 9 is cave, have a look at that piece of paper is drew on
             int userCount = 0; //how many users are in this chunk
+            bool permanent = false; //just checks if this should ever be deleted or not
         };
         
         struct mapCleanup{
@@ -163,7 +164,7 @@ namespace ecs{
                 mutexs();
             public:
                 static std::mutex userLocationsMutex; //declares the mutex for reading to/from user location comp vec
-                static std::mutex removeUserMutex; //used when sending data (gameBroadcast::broadcastGameState()), and logging the user out, and updating chunk data
+                static std::mutex mainUserLockMutex; //used when sending data (gameBroadcast::broadcastGameState()), and logging the user out, and updating chunk data
                 static std::mutex chunkLockMutex; //to be used to lock chunks, so used when sending data to local chunks, adding/removing users from chunks and incrementing/decrementing user count of a chunk
                 static mutexs* getInstance();
         };
@@ -195,6 +196,7 @@ namespace ecs{
 
         class network{
             private:
+                static network* instance;
                 //sockets are normally in blocking mode, i.e, waits until a process is complete, so for say socket->receive(packet), it will wait until at least some data
                 //has been passed to it, so essentially freezes the program, so it'd be good if this blocking occurred, but for every single socket at the same time,
                 //i.e wait for any sort of activity and process it
@@ -202,14 +204,18 @@ namespace ecs{
                 sf::SocketSelector selector; //a selector, which, once a socket of any type is added to it, listens and waits for activity from any of them, and let's them proceed
                 sf::Clock expiryTimer; //this is the global clock against which long polling is employed
                 //basically is used to check how long it's been since the server was last pinged
+	            sf::TcpListener listener; //makes a tcp listener
             public:
                 //prototypes
+                static network* getInstance();
+                network() { listener.listen(5000); };
                 void removeUser(unsigned int i);
-                void server(unsigned short PORT);
+                void server();
                 void process();
                 void saveMsgDB(std::string msg, int userNum, int time);
                 void forwardToAllUsers(std::string msg, int userNum);
                 void broadcastToLocal(std::string msg, int userNum);
+                void messageProcessing(); //simply to simplyify the entire process thread
                 std::string login(std::string input, ecs::component::user *userPtr);
         };
 
@@ -241,8 +247,6 @@ namespace ecs{
             private:
                 unsigned int port;
             public:
-                network networkObj;
-
                 systemsManager(unsigned int PORT) : port(PORT) {};
                 void systemStart();
                 void systemEnd();

@@ -12,10 +12,10 @@ using namespace ecs::component;
 
 void systemsManager::systemStart()
 {
-	processNetwork = new sf::Thread(&network::process, &networkObj); //makes the thread
+	processNetwork = new sf::Thread(&network::process, network::getInstance()); //makes the thread
 	processNetwork->launch();										 //launches it
 
-	listenNetwork = new sf::Thread(std::bind(&network::server, &networkObj, port)); //launches the server to listen on that specific port
+	listenNetwork = new sf::Thread(&network::server, network::getInstance()); //launches the server to listen on that specific port
 	listenNetwork->launch();														//launches it
 
 	gameListen = new sf::Thread(&gameBroadcast::listenToUsers, gameBroadcast::getInstance());
@@ -32,6 +32,7 @@ void systemsManager::systemStart()
 	//this just makes the first chunk, if any updates are made in the chunk gen section make sure to add them here
 	coordinatesStruct startCoord(0, 0);
 	chunks[startCoord].first.settingID = 1; //sets the first chunk's setting ID to 1, which is a city
+	chunks[startCoord].first.permanent = true; //it should never be deleted
 	unsigned int entityID = ecs::entity::superEntityManager.create({components::DRAWABLE, components::PHYSICAL}); //a new object with those attributes is made
 	physicsObjects.compVec[physicsObjects.entityToVectorMap(entityID)].boxCorners = {
 		sf::Vector2f(startCoord.coordinates.first * chunkPixelSize_x, (startCoord.coordinates.second * chunkPixelSize_y) - 5), 

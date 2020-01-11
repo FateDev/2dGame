@@ -31,7 +31,7 @@ void updateActiveChunkData::updateActiveChunks()
 				}
 				if(usersPresentInSurroundingChunks) { break; } //if users are present in surrounding chunk, no longer need to continue checking
 			}
-			if(!usersPresentInSurroundingChunks){
+			if(!usersPresentInSurroundingChunks && !chunk.second.first.permanent){ //as long as there are no users in it, and it's not flagged as a permanent chunk, delete it
 				deletionCoords.push_back(chunk.first); //flag for deletion
 			}
 		}
@@ -105,7 +105,7 @@ void updateActiveChunkData::updateChunkData()
 		gameData[chunkEntityVector.first] = json::object();
 		for (int i = 0; i < chunkEntityVector.second.second.size(); i++)
 		{
-			std::lock_guard<std::mutex> mutex(mutexs::removeUserMutex);	//locks the mutex so user can't logout while this is being updated or vice versa
+			std::lock_guard<std::mutex> mutex(mutexs::mainUserLockMutex);	//locks the mutex so user can't logout while this is being updated or vice versa
 			int entityID = chunkEntityVector.second.second[i].id;
 
 			if(users.entityToVectorMap(entityID) != -1){ //it must be a user

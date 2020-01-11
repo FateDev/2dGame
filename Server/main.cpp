@@ -21,6 +21,7 @@ std::unordered_map<std::string, unsigned int>  ecs::system::sessionIDToEntityID;
 
 int main(){
 	curl_global_init(CURL_GLOBAL_ALL); //initialise libcurl functionality globally
+	srand(time(NULL)); //pseudo random number generator seed
 
 	ecs::system::systemsManager systems = ecs::system::systemsManager(5000); //will make a system manager object with the port set to be 5000
 	systems.systemStart(); //this will launch the threads for system processes

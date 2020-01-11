@@ -193,21 +193,15 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 					if (!chunkToDraw["entities"][i].is_null()) { //if the entity is actually null, just skip it
 						if (chunkToDraw["entities"][i]["type"].get<std::string>() == "USER") {
 							sf::Sprite player;
-							player.setOrigin(sf::Vector2f(-10, 72));
-
-							if (chunkToDraw["entities"][i]["direction"]["x"].get<int>() == 0) {
-								chunkToDraw["entities"][i]["direction"]["x"] = xDirectionLast;
-							}
+							player.setOrigin(sf::Vector2f(0, 72));
 
 							if (chunkToDraw["entities"][i]["direction"]["x"].get<int>() == 1) {
-								player.setOrigin(sf::Vector2f(-10, 72));
+								player.setOrigin(sf::Vector2f(0, 72));
 								player.setScale(1.0, 1.0);
-								xDirectionLast = 1;
 							}
 							else if (chunkToDraw["entities"][i]["direction"]["x"].get<int>() == -1) {
-								player.setOrigin(sf::Vector2f(70, 72));
+								player.setOrigin(sf::Vector2f(50, 72));
 								player.setScale(-1.0, 1.0);
-								xDirectionLast = -1;
 							}
 
 							if (chunkToDraw["entities"][i]["id"].get<int>() == networkObj->userID) { //do some operations meant for only this client
@@ -221,12 +215,12 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 							}
 
 							player.setPosition(chunkToDraw["entities"][i]["location"]["x"].get<float>() * scaleFactor, (chunkToDraw["entities"][i]["location"]["y"].get<float>()) * scaleFactor);
-							//std::cout << chunkToDraw["entities"][i]["location"]["x"].get<float>() << " -- " << chunkToDraw["entities"][i]["location"]["y"].get<float>() << "aa \n";
+							//std::cout << chunkToDraw["entities"][i]["direction"]["x"].get<float>() << " -- " << chunkToDraw["entities"][i]["direction"]["y"].get<float>() << "aa \n";
 							sf::Text text;
 							text.setFont(font);
 							text.setString(chunkToDraw["entities"][i]["username"].get<std::string>());
 							text.setCharacterSize(24);
-							text.setPosition(chunkToDraw["entities"][i]["location"]["x"].get<float>() * scaleFactor + 20, (chunkToDraw["entities"][i]["location"]["y"].get<float>()) * scaleFactor - 103);
+							text.setPosition(chunkToDraw["entities"][i]["location"]["x"].get<float>() * scaleFactor, (chunkToDraw["entities"][i]["location"]["y"].get<float>()) * scaleFactor - 103);
 
 							textToDraw.push_back(text);
 							spritesToDraw.push_back(player);

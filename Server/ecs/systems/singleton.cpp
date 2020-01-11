@@ -2,8 +2,19 @@
 
 using namespace ecs::system;
 
+network *network::instance = 0;
+
+network *network::getInstance()
+{
+	if (instance == 0)
+	{
+		instance = new network();
+	}
+	return instance;
+}
+
 physics *physics::instance = 0; //to make it singleton
-physics::physics() {}			//basically default constructor
+physics::physics() {};
 
 physics *physics::getInstance()
 {
@@ -15,7 +26,7 @@ physics *physics::getInstance()
 }
 
 std::mutex mutexs::userLocationsMutex; //defines the mutex
-std::mutex mutexs::removeUserMutex; //defines the mutex
+std::mutex mutexs::mainUserLockMutex; //defines the mutex
 std::mutex mutexs::chunkLockMutex; //defines the mutex
 
 mutexs *mutexs::instance = 0;

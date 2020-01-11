@@ -42,7 +42,7 @@ void physics::userInput(json keysAndID)
 	}else if(userVelocity->x < 0){
 		direction->x = -1;
 	}else{
-		direction->x = 0;
+		//direction->x = 0;
 	}
 	
 	if(userVelocity->y > 0){
