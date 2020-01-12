@@ -96,6 +96,7 @@ void gameBit(sf::Clock* globalClock, networking* networkObject, gameNetwork* gam
 	gameConnection->gameReference = &actualGame;
 
 	toolbar mainToolbar(&gameWindow, &mainGameScreen, &socialTabBit, gui);
+	inventory inventoryBit(gui, &gameWindow);
 
 	while (gameWindow.isOpen()) //so long as the window is open
 	{
@@ -105,7 +106,7 @@ void gameBit(sf::Clock* globalClock, networking* networkObject, gameNetwork* gam
 			if (event.type == sf::Event::Closed) 
 				gameWindow.close(); //close the window when you find the close event basically
 
-			gui.handleEvent(event); // Pass the event to the widgets
+			gui.handleEvent(event); //pass the event to the widgets
 			actualGame.listenForKeys(event); //pass the event on to the game to listen for keys
 		}
 
@@ -118,6 +119,7 @@ void gameBit(sf::Clock* globalClock, networking* networkObject, gameNetwork* gam
 			loadingBit = NULL;
 			mainGameScreen.setActive(true);
 			mainToolbar.toolbarGroup->setVisible(true); //sets the toolbar as visible too
+			inventoryBit.displayToolbar();
 		} else if (loadingBit != NULL) {
 			loadingBit->liveUpdate();
 		}
@@ -126,12 +128,21 @@ void gameBit(sf::Clock* globalClock, networking* networkObject, gameNetwork* gam
 		//which calls the chat's live update method (for sending messages and stuff)
 		if (mainGameScreen.active == true) {
 			gameWindow.setView(gameView);
-			actualGame.live(); //processes stuff like keys and sends it
+			actualGame.live(&inventoryBit); //processes stuff like keys and sends it
 
 			gameWindow.setView(gameWindow.getDefaultView());
 
-			mainGameScreen.liveUpdate(globalClock);
-
+			if (inventoryBit.isInventoryOpen()) {
+				//disable everything except GUI bit while gui is open
+				mainGameScreen.chatBox->chatBoxContainer->setEnabled(false);
+				mainToolbar.toolbarGroup->setEnabled(false);
+			}
+			else {
+				//re-enable everything if the gui is closed, and also process text and whatnot as normal
+				mainGameScreen.chatBox->chatBoxContainer->setEnabled(true);
+				mainToolbar.toolbarGroup->setEnabled(true);
+				mainGameScreen.liveUpdate(globalClock);
+			}
 		}
 		if (socialTabBit.active == true) {
 			socialTabBit.liveUpdate(globalClock);

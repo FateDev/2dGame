@@ -55,7 +55,7 @@ public:
 	game(networking* networkObject, gameNetwork* gameConnection, sf::RenderWindow* window, sf::View* view);
 	void listenForKeys(sf::Event event);
 	void draw(); //will draw to the game screen
-	void live(); //will do anything required in the main loop
+	void live(inventory* inventoryBit); //will do anything required in the main loop, takes inventory as a parameter because we need to stop detecting keypress while inventory is open
 };
 
 #endif

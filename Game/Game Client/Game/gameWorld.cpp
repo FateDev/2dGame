@@ -65,7 +65,7 @@ game::game(networking* networkObject, gameNetwork* gameConnection, sf::RenderWin
 
 void game::listenForKeys(sf::Event event) {
 	if (event.type == sf::Event::KeyPressed) { //keysObject[key] = true/false; true = key is pressed, false = key is not pressed/released
-		std::string key = sfKeyToAbstractKeyMap[event.key .code];
+		std::string key = sfKeyToAbstractKeyMap[event.key.code];
 		if (key==networkObj->settings["left"].get<std::string>() || key == networkObj->settings["right"].get<std::string>() || key == networkObj->settings["jump"].get<std::string>() || key == networkObj->settings["interactNPC"].get<std::string>() || key == networkObj->settings["switchTarget"].get<std::string>() || key == networkObj->settings["custom_binding1"]["key"].get<std::string>() || key == networkObj->settings["custom_binding2"]["key"].get<std::string>() || key == networkObj->settings["custom_binding3"]["key"].get<std::string>()) {
 			if (key == networkObj->settings["left"].get<std::string>() && keysObject["left"] != true) {
 				keysObject["left"] = true;
@@ -247,21 +247,23 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 	gameNetworkObj->drawMutex.unlock();
 }
 
-void game::live() { //this is called from the main thread
-	if (changeInButtonState && !networkObj->msgBoxFocused) {
-		gameNetworkObj->sendData(keysObject); //sends the object to the server
+void game::live(inventory* inventoryBit) { //this is called from the main thread
+	if (!inventoryBit->isInventoryOpen()) {
+		if (changeInButtonState && !networkObj->msgBoxFocused) {
+			gameNetworkObj->sendData(keysObject); //sends the object to the server
 
-		//we're resetting some of them here, as they just do a single action, rather than move or whatever
-		keysObject["interactNPC"] = false;
-		keysObject["switchTarget"] = false;
-		keysObject["jump"] = false; //we want to be able to jump repeatedly
+			//we're resetting some of them here, as they just do a single action, rather than move or whatever
+			keysObject["interactNPC"] = false;
+			keysObject["switchTarget"] = false;
+			keysObject["jump"] = false; //we want to be able to jump repeatedly
 
-		changeInButtonState = false; //reset this so that we don't repeatedly send the same data to the server
-	}
+			changeInButtonState = false; //reset this so that we don't repeatedly send the same data to the server
+		}
 
-	if (sf::Keyboard::isKeyPressed(abstractKeyTosfKeyMap[networkObj->settings["jump"].get<std::string>()])) { //this is just so the user can continuously jump if they so wish
-		keysObject["jump"] = true;
-		changeInButtonState = true; //used to indicate that some buttons have been pressed
+		if (sf::Keyboard::isKeyPressed(abstractKeyTosfKeyMap[networkObj->settings["jump"].get<std::string>()])) { //this is just so the user can continuously jump if they so wish
+			keysObject["jump"] = true;
+			changeInButtonState = true; //used to indicate that some buttons have been pressed
+		}
 	}
 
 	gameNetworkObj->drawMutex.lock(); //called from main thread, don't want access violations so use mutex

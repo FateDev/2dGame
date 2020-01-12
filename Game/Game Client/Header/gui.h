@@ -12,6 +12,7 @@ using json = nlohmann::json;
 
 class networking; //forward declaration of the networking class, so when we use it here, the compiler knows it exists
 //this is so we don't incude network.h in gui.h, and vice versa which would be recursively including files
+class inventory; //forward declaration, need to use inventory in a few classes
 
 class loadingScreen { //this is for the loading screen
 private:
@@ -57,8 +58,6 @@ public:
 
 class mainScreen { //this is the first screen to be displayed after the loading screen disappears
 private:
-	std::vector<tgui::BitmapButton::Ptr> smallInventoryButtons; //the buttons on the top left for the small inventory task bar thing or whatever
-
 	tgui::Group::Ptr mainScreenGroup = tgui::Group::create({ sf::VideoMode::getDesktopMode().width , sf::VideoMode::getDesktopMode().height });
 	//the above would be an invisible container from tgui which holds everything that gets drawn for this screen
 
@@ -133,7 +132,7 @@ public:
 class toolbar { //this contains the buttons in the top left of the screen
 private:
 	sf::RenderWindow *window = NULL; //would hold the window object
-	mainScreen* main_screen = NULL; //holds the main screen (for switching using buttons
+	mainScreen* main_screen = NULL; //holds the main screen (for switching using buttons)
 	socialTabClass* socialTabBit = NULL; //holds the social tab bit
 
 	std::vector<tgui::BitmapButton::Ptr> buttons; //will contain all of the buttons needed
@@ -153,6 +152,21 @@ public:
 class inventory {
 private:
 	sf::RenderWindow* window = NULL;
+
+	std::vector<tgui::BitmapButton::Ptr> smallInventoryButtons; //the buttons on the top left for the small inventory task bar thing or whatever
+	std::vector<std::vector<tgui::BitmapButton::Ptr>> guiInventoryButtons; //buttons in the gui inventory
+	tgui::Group::Ptr inventoryBar = tgui::Group::create({ sf::VideoMode::getDesktopMode().width , sf::VideoMode::getDesktopMode().height });
+	tgui::Group::Ptr inventoryBox = tgui::Group::create({ sf::VideoMode::getDesktopMode().width , sf::VideoMode::getDesktopMode().height });
+	tgui::Panel::Ptr inventoryGUIBackground = tgui::Panel::create({ "100%", "100%" }); //used as background for the inventory GUI
+	//the above would be an invisible container from tgui which holds everything that gets drawn for this screen
+
+	bool isOpen = false; //is the main inventory GUI open
+public:
+	void openInventory(); //open the inventory
+	void closeInventory(); //close the inventory
+	void displayToolbar(); //display the toolbar bit of the inventory
+	bool isInventoryOpen() { return isOpen; }; //is the inventory open
+	inventory(tgui::Gui& gui, sf::RenderWindow* window);
 };
 
 #endif // !GUI_HEADER

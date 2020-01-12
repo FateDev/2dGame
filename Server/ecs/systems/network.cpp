@@ -310,7 +310,6 @@ void network::server()
 			{
 				//we are adding a user which could screw with all of the processing threads, so our hacky solution right now is to just use a mutex
 				mutexs::getInstance()->mainUserLockMutex.lock();
-				mutexs::getInstance()->chunkLockMutex.lock();
 
 				int randomNumber = rand() * 100000; //appended to the end of the username for a unique ID kind of thing
 				randomNumber = (randomNumber > 0 ? randomNumber : randomNumber*-1); //if it's negative, makes it positive
@@ -320,16 +319,9 @@ void network::server()
 				socket->send(sendPacket);
 
 				outputString = "SERVER: NEW CONNECTION @ " + socket->getRemoteAddress().toString() + "\n"; //make a string which includes their IP address...
-
+				
 				unsigned int entityID = ecs::entity::superEntityManager.create({components::USER, components::DRAWABLE, components::PHYSICAL}); //a new object with those attributes is made
 
-				tempEntity.id = entityID; //sets the temp entity to have the correct ID
-				//tempEntity.type = ecs::entity::USER; //sets the temp entity to have the correct ID
-				
-				ecs::system::chunks[startCoord].second.push_back(tempEntity); //pushes users to the (0, 0) chunk
-				chunks[startCoord].first.userCount++; //increments the number of users in this chunk
-				updateActiveChunkData::getInstance()->updateActiveChunks(); //updates the active chunks
-				
 				unsigned int componentVectorIndex = users.entityToVectorMap(entityID);	//gets the component vector index of this entity
 				unsigned int physicsCompVecIndex = physicsObjects.entityToVectorMap(entityID);
 
@@ -347,8 +339,16 @@ void network::server()
 				selector.add(*socket); //add this vector to the selector
 				std::cout << outputString;
 				
-				mutexs::getInstance()->chunkLockMutex.unlock();
 				mutexs::getInstance()->mainUserLockMutex.unlock();
+
+				mutexs::getInstance()->chunkLockMutex.lock();
+				tempEntity.id = entityID; //sets the temp entity to have the correct ID
+				//tempEntity.type = ecs::entity::USER; //sets the temp entity to have the correct ID
+				
+				ecs::system::chunks[startCoord].second.push_back(tempEntity); //pushes users to the (0, 0) chunk
+				chunks[startCoord].first.userCount++; //increments the number of users in this chunk
+				updateActiveChunkData::getInstance()->updateActiveChunks(); //updates the active chunks
+				mutexs::getInstance()->chunkLockMutex.unlock();
 			}
 		}
 		else

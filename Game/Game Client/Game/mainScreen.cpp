@@ -2,24 +2,6 @@
 #include <gui.h>
 
 mainScreen::mainScreen(tgui::Gui &gui, networking* networkObject) : window(window), networkObject(networkObject) {
-	tgui::Theme theme("Game.txt");
-	//the above loads the colours and stuff for the widgets from the file "Game.txt"
-
-	//below makes the inventory items buttons
-	for (int i = 0; i < 7; i++) {
-		smallInventoryButtons.push_back(tgui::BitmapButton::create());
-		smallInventoryButtons[i]->setRenderer(theme.getRenderer("Button2"));
-		smallInventoryButtons[i]->setSize("5%", "8%");
-		smallInventoryButtons[i]->setPosition(std::to_string(65 + 5 * i) + "%", 0);
-
-		mainScreenGroup->add(smallInventoryButtons[i]); //adds current one to the main group
-	}
-
-	smallInventoryButtons[0]->setRenderer(theme.getRenderer("Button3"));
-	smallInventoryButtons[6]->setRenderer(theme.getRenderer("Button4"));
-	smallInventoryButtons[6]->setImage("resources/more.png");
-	smallInventoryButtons[6]->setImageScaling(0.7);
-	//the above set some special cases which aren't possible through the loops
 
 	/////////////////////////////
 	////////ADD GROUP STUFF
