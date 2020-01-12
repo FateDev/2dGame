@@ -144,9 +144,10 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 
 			int scaleFactor = 11; //rather than changing server side stuff, just change this to make everything appear correctly
 
-			if (chunkToDraw.is_null()) {
+			/*if (chunkToDraw.is_null()) {
 				std::cout << "Null" << "\n";
-			}
+			}*/
+
 			if (chunkToDraw.is_null()) { //if the data is null skip it (it only happens for the edge of what can be seen for cities, not a huge issue but should fix it (it's a server side issue)
 				continue;
 			}

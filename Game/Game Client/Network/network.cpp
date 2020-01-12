@@ -9,7 +9,13 @@
 #include <gui.h>
 #include <SFML/Network.hpp>
 #include <header.h>
-#include "../xorFunction.h"
+#include "../cryptic.h"
+
+void networking::getUserInventory() { //sends a request to get the user's inventory
+	sf::Packet packet;
+	packet << "GET_INV";
+	socket->send(packet);
+}
 
 void networking::getMessagesFromDB() {
 	//the code below gets a json object from my website of the last 50 messages and parses them into a c++ json object from the json library
@@ -176,6 +182,10 @@ void networking::getResponses() { //retrieves incoming message
 			time = std::stoi(receiveString);
 
 			msgContent.erase(msgContent.begin(), msgContent.begin() + msgContent.find("USER::MSG::") + std::string("USER::MSG::").length());
+		}
+		else if (receiveString.find("USER::INVENTORY::") == 0) {
+			receiveString.erase(receiveString.begin(), receiveString.begin() + std::string("USER::INVENTORY::").length()); //will erase the flag
+			inventoryObject->setInventoryJSON(json::parse(receiveString));
 		}
 
 		if (chatBoxActive == true) { //checks if the chatbox has been set to active, in which case decode received messages and add them to the chatbox

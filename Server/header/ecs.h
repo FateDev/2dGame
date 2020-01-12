@@ -216,6 +216,8 @@ namespace ecs{
                 void forwardToAllUsers(std::string msg, int userNum);
                 void broadcastToLocal(std::string msg, int userNum);
                 void messageProcessing(); //simply to simplyify the entire process thread
+                void getUserInventory(int userID, json* jsonObj); //will get the user's inventory
+                void saveUserInventory(int userID, json jsonObj); //saves the user's inventory
                 std::string login(std::string input, ecs::component::user *userPtr);
         };
 
@@ -260,6 +262,7 @@ namespace ecs{
                 sf::Thread* mainGame = 0;
         };
         
+        extern std::unordered_map<int, json> userInventories; //will contain json objects of user's inventories (user ID -> user inventory JSON)
         extern std::unordered_map<coordinatesStruct, std::pair<chunkData, std::vector<ecs::entity::entity>>, Hash> chunks; //will contain a list of all the entities in each chunk, useful for physics + read below
         extern std::unordered_map<coordinatesStruct, json, Hash> gameData; //this basically tells the compiler that the variable declared is defined somewhere else in the program (main.cpp in this case)
         //the pair in the chunk structure is used, so that I can store the entityID in the first value, and the entities of the scene in the second bit

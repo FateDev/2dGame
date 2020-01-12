@@ -36,11 +36,11 @@ class game {
 private:
 	sf::RenderWindow* gameWindow = NULL;
 	sf::View* gameView = NULL;
-	std::unordered_map<sf::Keyboard::Key, std::string> sfKeyToAbstractKeyMap;
-	std::unordered_map<std::string, sf::Keyboard::Key> abstractKeyTosfKeyMap;
 	bool changeInButtonState = false; //used to indicate whether or not any buttons have been pressed or released
 	sf::Font font;
 public:
+	std::unordered_map<sf::Keyboard::Key, std::string> sfKeyToAbstractKeyMap;
+	std::unordered_map<std::string, sf::Keyboard::Key> abstractKeyTosfKeyMap;
 	sf::Texture playerTexture; //temp
 	sf::Texture opponentTexture; //temp
 	int xDirectionLast = 0; //will hold the direction of the user temporarily, needed to avoid it jumping unnatrually between orientations

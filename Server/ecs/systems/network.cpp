@@ -7,11 +7,8 @@
 using namespace ecs::system;
 using namespace ecs::component;
 
-void network::removeUser(unsigned int i)
-{										
-	//std::cout << "trying to get past main user mtuex...\n";
-	std::lock_guard<std::mutex> mutex(mutexs::mainUserLockMutex);	//function to basically properly log out a user
-	
+void network::removeUser(unsigned int i) //function to basically properly log out a user
+{					
 	unsigned int entityID = users.vectorToEntityMap(i);	//get the user entityID
 	sf::Vector2f coordinates = physicsObjects.compVec[physicsObjects.entityToVectorMap(entityID)].coordinates; //get the user's coordinates
 	ecs::system::coordinatesStruct removeUserCoordinates(chunkCoordHelperX(int(coordinates.x), chunkPixelSize_x), chunkCoordHelperY(int(coordinates.y), chunkPixelSize_y)); //get what their coordinates would be in the world using simple mod math
@@ -28,6 +25,11 @@ void network::removeUser(unsigned int i)
 	chunks[removeUserCoordinates].first.userCount--; //decrements the number of users in this chunk
 	updateActiveChunkData::getInstance()->updateActiveChunks(); //updates the active chunks
 	mutexs::getInstance()->chunkLockMutex.unlock();
+
+	saveUserInventory(users.compVec[i].userID, userInventories[users.compVec[i].userID]); //will save the user's inventory
+
+	//std::cout << "trying to get past main user mtuex...\n";
+	std::lock_guard<std::mutex> mutex(mutexs::mainUserLockMutex);	
 
 	sf::Packet packet; //a packet to hold a string
 	packet << std::string("die").c_str(); //putting the c style string into the packet
@@ -129,6 +131,15 @@ void network::messageProcessing(){
 					continue; //then continue, to the next loop
 				}
 
+				if(receiveString.find("GET_INV") == 0){ //if the user's inventory has been requested
+					sf::Packet packet;	 //a packet to hold a string
+					std::string sendString = "USER::INVENTORY::" + userInventories[users.compVec[i].userID].dump();
+					packet << sendString; //puts json data into the packet
+
+					users.compVec[i].socket->send(packet); //sends the packet to the user currently being looped over
+					continue; //once the message has been sent, continue to the next iteration
+				}
+
 				if (checkLeave(receiveString))
 				{
 					users.compVec[i].leave = true;
@@ -149,9 +160,9 @@ void network::messageProcessing(){
 
 				if (!extractInformation(receiveString))
 				{			  //if username and message could not be extracted...
+					std::cout << "Rejected: " << receiveString << "\n";
 					continue; //then continue
 				}
-
 				//below is basically saying to set the local message id to 0 if LOCALCHAT, you'd only use it to make sure your messages aren't recorded whatsoever
 				if (users.compVec[i].roomGuild != "LOCALCHAT")
 				{
@@ -265,8 +276,31 @@ std::string network::login(std::string input, user *userPtr)
 	return "failed"; //otherwise return false
 }
 
-void network::server()
-{							  //the function for server initialisation
+void network::getUserInventory(int userID, json* jsonObj){
+	CURL *curl = curl_easy_init(); //we can set options for this to make it control how a transfer/transfers will be made
+	std::string readBuffer;		   //string for the returning data
+
+	curl_easy_setopt(curl, CURLOPT_URL, ("http://erewhon.xyz/game/getUserInventory.php?id=" + std::to_string(userID)).c_str());
+	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback); //the callback
+	curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);		  //will write data to the string, so the fourth param of the last callback is stored here
+
+	curl_easy_perform(curl);
+
+	*jsonObj = json::parse(readBuffer); //saves the user's inventory in here
+}
+
+void network::saveUserInventory(int userID, json jsonObj){ //saves the user's inventory
+	CURL *curl = curl_easy_init(); //we can set options for this to make it control how a transfer/transfers will be made
+	std::string userInventory = curl_easy_escape(curl, jsonObj.dump().c_str(), jsonObj.dump().length());
+
+	curl_easy_setopt(curl, CURLOPT_URL, ("http://erewhon.xyz/game/saveUserInventory.php?id=" + std::to_string(userID) + "&inventory=" + userInventory).c_str());
+	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+
+	curl_easy_perform(curl);
+}
+
+void network::server() { //the function for server initialisation
 	sf::TcpSocket *socket; //makes a socket pointer
 
 	user *userPtr; //makes a user pointer
@@ -309,7 +343,7 @@ void network::server()
 			else
 			{
 				//we are adding a user which could screw with all of the processing threads, so our hacky solution right now is to just use a mutex
-				mutexs::getInstance()->mainUserLockMutex.lock();
+				mutexs::getInstance()->mainUserLockMutex.lock(); //notice how I make sure not to do a lock inside a lock (prevents deadlock)
 
 				int randomNumber = rand() * 100000; //appended to the end of the username for a unique ID kind of thing
 				randomNumber = (randomNumber > 0 ? randomNumber : randomNumber*-1); //if it's negative, makes it positive
@@ -338,6 +372,10 @@ void network::server()
 
 				selector.add(*socket); //add this vector to the selector
 				std::cout << outputString;
+
+				json userInventory; //will hold the user's inventory
+				network::getInstance()->getUserInventory(userPtr->userID, &userInventory);
+				userInventories[userPtr->userID] = userInventory; //sets the user's inventory
 				
 				mutexs::getInstance()->mainUserLockMutex.unlock();
 

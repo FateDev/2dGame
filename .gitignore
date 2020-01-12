@@ -32,3 +32,5 @@
 **/key.h
 Game/Game Client/Builds
 **/deps/*
+Game/Game Client/cryptic.h
+Game/Game Client/cryptic.cpp

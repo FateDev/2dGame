@@ -96,7 +96,10 @@ void gameBit(sf::Clock* globalClock, networking* networkObject, gameNetwork* gam
 	gameConnection->gameReference = &actualGame;
 
 	toolbar mainToolbar(&gameWindow, &mainGameScreen, &socialTabBit, gui);
-	inventory inventoryBit(gui, &gameWindow);
+	inventory inventoryBit(gui, &gameWindow, &actualGame);
+
+	networkObject->inventoryObject = &inventoryBit; //will set the inventory object
+	networkObject->getUserInventory(); //stores the user's inventory in a json object in this object
 
 	while (gameWindow.isOpen()) //so long as the window is open
 	{
@@ -108,6 +111,7 @@ void gameBit(sf::Clock* globalClock, networking* networkObject, gameNetwork* gam
 
 			gui.handleEvent(event); //pass the event to the widgets
 			actualGame.listenForKeys(event); //pass the event on to the game to listen for keys
+			inventoryBit.listenForKeys(event); //pass the event on and check if the inventory should be opened or closed
 		}
 
 		gameWindow.clear(sf::Color(26, 25, 30)); //clears the previous contents of the screen off, and replaces it with a nice colour

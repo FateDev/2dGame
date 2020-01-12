@@ -13,6 +13,7 @@ using json = nlohmann::json;
 class networking; //forward declaration of the networking class, so when we use it here, the compiler knows it exists
 //this is so we don't incude network.h in gui.h, and vice versa which would be recursively including files
 class inventory; //forward declaration, need to use inventory in a few classes
+class game; //forward declaration, need it for the inventory bit
 
 class loadingScreen { //this is for the loading screen
 private:
@@ -152,6 +153,8 @@ public:
 class inventory {
 private:
 	sf::RenderWindow* window = NULL;
+	game* gameObj = NULL;
+	json inventoryJSON;
 
 	std::vector<tgui::BitmapButton::Ptr> smallInventoryButtons; //the buttons on the top left for the small inventory task bar thing or whatever
 	std::vector<std::vector<tgui::BitmapButton::Ptr>> guiInventoryButtons; //buttons in the gui inventory
@@ -162,11 +165,15 @@ private:
 
 	bool isOpen = false; //is the main inventory GUI open
 public:
+	void setInventoryJSON(json obj) { inventoryJSON = obj; drawToolbarInventoryItems(); /*and draw the toolbar items*/ }; //sets the JSON object for the inventory
+	void drawToolbarInventoryItems(); //will draw the minimised inventory items
+	void drawGUIInventoryItems(); //will draw the maximised inventory items
 	void openInventory(); //open the inventory
 	void closeInventory(); //close the inventory
 	void displayToolbar(); //display the toolbar bit of the inventory
 	bool isInventoryOpen() { return isOpen; }; //is the inventory open
-	inventory(tgui::Gui& gui, sf::RenderWindow* window);
+	void listenForKeys(sf::Event event); //this will implement the basic shortcuts for the inventory system
+	inventory(tgui::Gui& gui, sf::RenderWindow* window, game* gameObj);
 };
 
 #endif // !GUI_HEADER

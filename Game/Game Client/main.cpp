@@ -11,6 +11,7 @@
 #include <gui.h>
 #include <header.h>
 #include <game.h>
+#include "cryptic.h"
 
 //tgui lib selection, and libcurl lib selection
 #ifdef _DEBUG
@@ -34,10 +35,10 @@ int main(int argc, char **argv) { //will accept parameters from command line, th
 	std::string username(argv[2]);
 	*/
 	///>>>below are set temporarily for debugging and development
-	std::string launcherKey = "Hg+Lb9B6Q/zrMduYEvPmuQ==";
+	std::string launcherKey = authString;
 	std::string username = "fate";
 
-	if (launcherKey == "Hg+Lb9B6Q/zrMduYEvPmuQ==") { //really weak check to verify that the launcher opened the program
+	if (launcherKey == authString) { //really weak check to verify that the launcher opened the program
 		sf::Clock* globalClock = new sf::Clock; //the clock which is used to check when to ping the server
 		networking* networkObject = new networking(REMOTE_IP, REMOTE_TCP_PORT, WEBSITE_URL, globalClock); //initialises the network object
 
