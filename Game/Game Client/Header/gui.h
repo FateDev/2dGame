@@ -169,6 +169,14 @@ private:
 	sf::Texture dragDropItemTexture;
 	bool dragDropActive = false; //is a drag drop event thing happening or not
 	sf::Vector2i dragDropItemIndexes; //stores the i and j indexes for the item
+
+	/*
+	sf::RectangleShape userItem = sf::RectangleShape(sf::Vector2f(100, 100)); //the item the user is currently carrying
+	sf::Texture userItemTexture; //the texture of the item above
+	bool currentUserItemChanged = true; //if the user item has changed, refresh the above 2 variables, start it off as true to initialise it
+	sf::Vector2i lastClickedOnBox; //the box that was last clicked on, lets us decided if we need to redraw
+	int currentUserSelectionSmallInventory = 0; //a number from 0 to 5 indicating what index the user has currently selected, defaults to the first item
+	*/
 public:
 	void setInventoryJSON(json obj) { inventoryJSON = obj; drawInventoryItems(); /*and draw the toolbar items*/ }; //sets the JSON object for the inventory
 	void drawInventoryItems(); //will draw the inventory items
@@ -177,7 +185,7 @@ public:
 	void displayToolbar(); //display the toolbar bit of the inventory
 	bool isInventoryOpen() { return isOpen; }; //is the inventory open
 	void listenForKeys(sf::Event event); //this will implement the basic shortcuts for the inventory system
-	void dragDropItemLive(); //this would be called in the main game loop for the entire drag drop functionality
+	void InventoryLive(sf::View* gameView); //this would be called in the main game loop for the entire drag drop functionality
 	void inventoryItemClickRegister(std::string buttonText); //called when an item is clicked on
 	inventory(tgui::Gui& gui, sf::RenderWindow* window, game* gameObj);
 };

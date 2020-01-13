@@ -2,6 +2,7 @@
 #define GAME_HEADER
 
 #include <iostream>
+#include <atomic>
 #include <string>
 #include <thread>
 #include <unordered_map>
@@ -39,6 +40,8 @@ private:
 	bool changeInButtonState = false; //used to indicate whether or not any buttons have been pressed or released
 	sf::Font font;
 public:
+	/*std::atomic<float> currentPosition_x; //atomic pair as the current position may be writed and read from different threads
+	std::atomic<float> currentPosition_y; //atomic pair as the current position may be writed and read from different threads*/
 	std::unordered_map<sf::Keyboard::Key, std::string> sfKeyToAbstractKeyMap;
 	std::unordered_map<std::string, sf::Keyboard::Key> abstractKeyTosfKeyMap;
 	sf::Texture playerTexture; //temp

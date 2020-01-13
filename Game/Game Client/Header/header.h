@@ -25,4 +25,8 @@ void chatBoxBulkAdd(networking* networkObject, chat* chatBox);
 size_t WriteCallback(char *contents, size_t size, size_t nmemb, void *userp);
 //this will be a friend function to the network and social tab classes
 
+long cantorPairingFunction(long x, long y);
+void inverseCantorPairingFunction(long z, long* x, long* y);
+//cantor and inverse cantor pairing function (maps one int to 2 ints, and reverses that operation)
+
 #endif

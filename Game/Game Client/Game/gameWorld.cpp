@@ -1,4 +1,5 @@
 #include <game.h>
+#include <header.h>
 
 game::game(networking* networkObject, gameNetwork* gameConnection, sf::RenderWindow* gameWindow, sf::View* gameView) : networkObj(networkObject), gameNetworkObj(gameConnection), gameWindow(gameWindow), gameView(gameView) { 
 	//I added in a map the opposite way round just in case
@@ -209,6 +210,9 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 								//player.setFillColor(sf::Color::Blue);
 								player.setTexture(playerTexture);
 								gameView->setCenter(chunkToDraw["entities"][i]["location"]["x"].get<float>() * scaleFactor, (chunkToDraw["entities"][i]["location"]["y"].get<float>()) * scaleFactor);
+
+								/*currentPosition_x = chunkToDraw["entities"][i]["location"]["x"].get<float>() * scaleFactor;
+								currentPosition_y = chunkToDraw["entities"][i]["location"]["y"].get<float>() * scaleFactor;*/
 							}
 							else {
 								//player.setFillColor(sf::Color::Red);

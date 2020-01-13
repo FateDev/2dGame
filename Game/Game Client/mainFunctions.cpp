@@ -18,6 +18,17 @@ void helpFunction() { //the function to make the help button open the help setti
 	//6th is how to show the application once opened, so it shows it
 }
 
+long cantorPairingFunction(long x, long y) {
+	return 0.5 * (x + y) * (x + y + 1) + y;
+}
+
+void inverseCantorPairingFunction(long z, long* x, long* y) {
+	float w = floor(0.5 * (sqrt(8 * z + 1) - 1));
+	float t = 0.5 * (pow(w, 2) + w);
+	*y = z - t;
+	*x = w - *y;
+}
+
 size_t WriteCallback(char *contents, size_t size, size_t nmemb, void *userp) //first one is pointer to data, second is to the size of one data item,
 { //third is how many there are, so size * nmemb is data size, and fourth is pointer to the data you get back, which you actually access using CURLOPT_WRITEDATA and a reference
 	((std::string*)userp)->append((char*)contents, size * nmemb);
@@ -125,14 +136,14 @@ void gameBit(sf::Clock* globalClock, networking* networkObject, gameNetwork* gam
 			mainToolbar.toolbarGroup->setVisible(true); //sets the toolbar as visible too
 			inventoryBit.displayToolbar();
 		} else if (loadingBit != NULL) {
+			gameWindow.setView(gameWindow.getDefaultView());
 			loadingBit->liveUpdate();
 		}
 
 		//the below would check if the main game screen has been made active, and to then call the live update method, 
 		//which calls the chat's live update method (for sending messages and stuff)
 		if (mainGameScreen.active == true) {
-			gameWindow.setView(gameView);
-			actualGame.live(&inventoryBit); //processes stuff like keys and sends it
+			actualGame.live(&inventoryBit); //processes stuff like keys and sends it, and drawing stuff for the game
 
 			gameWindow.setView(gameWindow.getDefaultView());
 
@@ -166,8 +177,8 @@ void gameBit(sf::Clock* globalClock, networking* networkObject, gameNetwork* gam
 			std::cout << "something went wrong, but we'll pretend it didn't, for drawing the gui (from tgui)" << std::endl;
 		}
 
-		if (inventoryBit.isInventoryOpen()) { //do this here because the drag drop bit takes priority over basically everything
-			inventoryBit.dragDropItemLive(); //does the drag drop bit
+		if (mainGameScreen.active) {
+			inventoryBit.InventoryLive(&gameView); //does the drag drop bit and user item bit, do this here because the drag drop bit takes priority over basically everything
 		}
 
 		try {

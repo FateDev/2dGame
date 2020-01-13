@@ -1,5 +1,5 @@
 #include <gui.h>
-#include <game.h>
+#include <header.h>
 
 inventory::inventory(tgui::Gui& gui, sf::RenderWindow* window, game* gameObj) : window(window), gameObj(gameObj) {
 	tgui::Theme theme("Game.txt");
@@ -118,22 +118,44 @@ void inventory::drawInventoryItems() { //will draw items, where the number (ID) 
 	}
 }
 
-void inventory::InventoryLive() { //makes the drag and drop item follow the user's cursor
+void inventory::InventoryLive(sf::View *gameView) { //makes the drag and drop item follow the user's cursor
 	if (dragDropActive) {
 		dragDropItem.setPosition(sf::Vector2f(sf::Mouse::getPosition().x-50, sf::Mouse::getPosition().y-50)); //items are 100x100 so this kinda centers them around the cursor
+		window->setView(window->getDefaultView());
 		window->draw(dragDropItem);
 	}
 
+	/*
+	if (currentUserItemChanged) {
+		if (lastClickedOnBox.x == 0) { //I'm using i and j rather than x and y, and it turns out that x is i, which is the row number
+			if (lastClickedOnBox.y == currentUserSelectionSmallInventory) {
+				userItem = sf::RectangleShape(sf::Vector2f(100, 100));
+				userItemTexture = sf::Texture();
+				int item = inventoryJSON[lastClickedOnBox.x][lastClickedOnBox.y].get<int>(); //get the item which is now in the user's current selection
+				userItemTexture.loadFromFile("resources/items/" + std::to_string(item) + ".png");
+				userItem.setTexture(&userItemTexture);
+				currentUserItemChanged = false; //reset the flag
+			}
+		}
+	}
+
+	if (!isInventoryOpen()) { //only draw the item if the inventory isn't open
+		long x = gameObj->currentPosition_x;
+		long y = gameObj->currentPosition_y;
+		userItem.setPosition(x, y);
+		window->setView(*gameView);
+		window->draw(userItem);
+	}
+	*/
 }
 
 void inventory::inventoryItemClickRegister(std::string buttonText) {
 	//the number stored in the text there is transparent so invisible, and the number is the ith row and jth column of the 2d button grid representing items, paired using the cantor pairing function
 	//so we invert the pairing below and get the ith row and jth column back
+	long i = 0;
+	long j = 0;
 	float z = std::stoi(buttonText);
-	float w = floor(0.5 * (sqrt(8 * z + 1) - 1));
-	float t = 0.5 * (pow(w, 2) + w);
-	int j = z - t;
-	int i = w - j;
+	inverseCantorPairingFunction(z, &i, &j);
 
 	dragDropItemTexture = sf::Texture(); //resets the texture
 	dragDropItem = sf::RectangleShape(sf::Vector2f(100, 100)); //resets the drag and drop item
@@ -148,6 +170,9 @@ void inventory::inventoryItemClickRegister(std::string buttonText) {
 		if (i == 0) { //if it's the first row...
 			smallInventoryButtons[j]->setImage(NULL); //...then replicate this change in the toolbar inventory thing
 		}
+		/*
+		lastClickedOnBox = sf::Vector2i(i, j); //the last box which was clicked on (needed to draw the current item)
+		currentUserItemChanged = true; //the user's current item may have changed*/
 	}
 	else if(dragDropActive == true){
 		if (item == 0 || (dragDropItemIndexes.x == i && dragDropItemIndexes.y == j)) { //if there is no item there or if we're trying to put an item back where it was
@@ -160,6 +185,7 @@ void inventory::inventoryItemClickRegister(std::string buttonText) {
 			if (i == 0) { //if it's the first row...
 				smallInventoryButtons[j]->setImage("resources/items/" + std::to_string(item) + ".png"); //...then replicate this change in the toolbar inventory thing
 			}
+			/*currentUserItemChanged = true; //the user's current item may have changed*/
 		}
 		else if (item != 0) { //if the item in the current box isn't 0 and the drag and drop operation is active, then we do a swap operation
 			int itemDragDrop = inventoryJSON[dragDropItemIndexes.x][dragDropItemIndexes.y].get<int>(); //we get the item at the origin of the drag and drop operation
@@ -171,11 +197,13 @@ void inventory::inventoryItemClickRegister(std::string buttonText) {
 			if (i == 0) { //if it's the first row...
 				smallInventoryButtons[j]->setImage("resources/items/" + std::to_string(itemDragDrop) + ".png"); //...then replicate this change in the toolbar inventory thing
 			}
+			/*currentUserItemChanged = true; //the user's current item may have changed*/
 		}
-		else {
+		else { //catch all that sets the texture of the drag and drop item as that of the item which was at the operation's origin
 			int item = inventoryJSON[dragDropItemIndexes.x][dragDropItemIndexes.y].get<int>(); //get the item at the origin of the operation
 			dragDropItemTexture.loadFromFile("resources/items/" + std::to_string(item) + ".png"); //set the drag and drop texture's texture as the one of this box
 			dragDropItem.setTexture(&dragDropItemTexture); //set the item's texture as the above
 		}
+		/*lastClickedOnBox = sf::Vector2i(i, j); //the last box which was clicked on (needed to draw the current item)*/
 	}
 }
