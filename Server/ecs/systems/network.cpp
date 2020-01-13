@@ -158,8 +158,7 @@ void network::messageProcessing(){
 					continue;
 				}
 
-				if (!extractInformation(receiveString))
-				{			  //if username and message could not be extracted...
+				if (!extractInformation(receiveString)) {//if username and message could not be extracted then do this, basically a catch all kinda thing
 					std::cout << "Rejected: " << receiveString << "\n";
 					continue; //then continue
 				}
