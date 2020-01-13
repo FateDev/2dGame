@@ -170,6 +170,7 @@ void inventory::inventoryItemClickRegister(std::string buttonText) {
 		if (i == 0) { //if it's the first row...
 			smallInventoryButtons[j]->setImage(NULL); //...then replicate this change in the toolbar inventory thing
 		}
+		updateServerSide();
 		/*
 		lastClickedOnBox = sf::Vector2i(i, j); //the last box which was clicked on (needed to draw the current item)
 		currentUserItemChanged = true; //the user's current item may have changed*/
@@ -185,6 +186,7 @@ void inventory::inventoryItemClickRegister(std::string buttonText) {
 			if (i == 0) { //if it's the first row...
 				smallInventoryButtons[j]->setImage("resources/items/" + std::to_string(item) + ".png"); //...then replicate this change in the toolbar inventory thing
 			}
+			updateServerSide();
 			/*currentUserItemChanged = true; //the user's current item may have changed*/
 		}
 		else if (item != 0) { //if the item in the current box isn't 0 and the drag and drop operation is active, then we do a swap operation
@@ -197,6 +199,7 @@ void inventory::inventoryItemClickRegister(std::string buttonText) {
 			if (i == 0) { //if it's the first row...
 				smallInventoryButtons[j]->setImage("resources/items/" + std::to_string(itemDragDrop) + ".png"); //...then replicate this change in the toolbar inventory thing
 			}
+			updateServerSide();
 			/*currentUserItemChanged = true; //the user's current item may have changed*/
 		}
 		else { //catch all that sets the texture of the drag and drop item as that of the item which was at the operation's origin
@@ -206,4 +209,11 @@ void inventory::inventoryItemClickRegister(std::string buttonText) {
 		}
 		/*lastClickedOnBox = sf::Vector2i(i, j); //the last box which was clicked on (needed to draw the current item)*/
 	}
+}
+
+void inventory::updateServerSide() {
+	std::string inventoryJSONString = "UPDATE::INVENTORY::" + inventoryJSON.dump();
+	sf::Packet sendPacket;
+	sendPacket << inventoryJSONString;
+	gameObj->networkObj->socket->send(sendPacket); //will send the current state of the inventory
 }

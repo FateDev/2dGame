@@ -13,7 +13,7 @@
 
 void networking::getUserInventory() { //sends a request to get the user's inventory
 	sf::Packet packet;
-	packet << "GET_INV";
+	packet << "GET::INV";
 	socket->send(packet);
 }
 

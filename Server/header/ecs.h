@@ -48,9 +48,12 @@ namespace ecs{
             sf::Time timeOfExpiry; //the time till the socket should be removed, this is updated every time the client pings the server
             bool leave = false; //this will be used to flag when the user leaves
             std::string avatar = "";
+            int currentItem = 0; //the ID and texture of the item they're holding - 0 indicates no item
+            int currentItemSelection = 0; //index of the small inventory from 0 to 5 of the item they're currently holding
         };
 
         struct drawable{
+            std::string texture = ""; //not necessarily used but useful at times (like for throwing inventory items)
             sf::Vector2i direction = {0, 0}; //this is only used for drawing moving items, for accurate direction use the velocity
         };
 

@@ -48,10 +48,12 @@ public:
 	sf::Texture opponentTexture; //temp
 	int xDirectionLast = 0; //will hold the direction of the user temporarily, needed to avoid it jumping unnatrually between orientations
 	networking* networkObj = NULL;
+	std::vector<sf::RectangleShape> backgroundRectanglesToDraw;
 	std::vector<sf::RectangleShape> rectanglesToDraw;
 	std::vector<sf::CircleShape> circlesToDraw;
 	std::vector<sf::Text> textToDraw;
 	std::vector<sf::Sprite> spritesToDraw;
+	std::vector<sf::Texture> texturesToUse;
 	gameNetwork* gameNetworkObj = NULL;
 	json keysObject;
 	json gameData;

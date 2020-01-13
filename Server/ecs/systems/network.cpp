@@ -131,13 +131,20 @@ void network::messageProcessing(){
 					continue; //then continue, to the next loop
 				}
 
-				if(receiveString.find("GET_INV") == 0){ //if the user's inventory has been requested
+				if(receiveString.find("GET::INV") == 0){ //if the user's inventory has been requested
 					sf::Packet packet;	 //a packet to hold a string
 					std::string sendString = "USER::INVENTORY::" + userInventories[users.compVec[i].userID].dump();
 					packet << sendString; //puts json data into the packet
 
 					users.compVec[i].socket->send(packet); //sends the packet to the user currently being looped over
 					continue; //once the message has been sent, continue to the next iteration
+				}
+
+				if(receiveString.find("UPDATE::INVENTORY::") == 0){ //if a request to update the user's inventory has been sent, update it
+					json inventoryJSONString = json::parse(receiveString.erase(0, std::string("UPDATE::INVENTORY::").size()));
+					userInventories[users.compVec[i].userID] = inventoryJSONString;
+					users.compVec[i].currentItem =inventoryJSONString[0][users.compVec[i].currentItemSelection].get<int>(); //gets the item the user has currently selected and sets it as the current item
+					continue;
 				}
 
 				if (checkLeave(receiveString))
@@ -375,6 +382,8 @@ void network::server() { //the function for server initialisation
 				json userInventory; //will hold the user's inventory
 				network::getInstance()->getUserInventory(userPtr->userID, &userInventory);
 				userInventories[userPtr->userID] = userInventory; //sets the user's inventory
+
+				users.compVec[componentVectorIndex].currentItem = userInventory[0][0].get<int>(); //initialises the current item they're holding to the one at the top left of the inventory
 				
 				mutexs::getInstance()->mainUserLockMutex.unlock();
 

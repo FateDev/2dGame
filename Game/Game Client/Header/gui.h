@@ -187,6 +187,7 @@ public:
 	void listenForKeys(sf::Event event); //this will implement the basic shortcuts for the inventory system
 	void InventoryLive(sf::View* gameView); //this would be called in the main game loop for the entire drag drop functionality
 	void inventoryItemClickRegister(std::string buttonText); //called when an item is clicked on
+	void updateServerSide(); //will send the server the state of the inventory
 	inventory(tgui::Gui& gui, sf::RenderWindow* window, game* gameObj);
 };
 

@@ -138,6 +138,8 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 	circlesToDraw.clear();
 	textToDraw.clear();
 	spritesToDraw.clear();
+	texturesToUse.clear();
+	backgroundRectanglesToDraw.clear();
 
 	if (!gameData.is_null()) {	//it now moves it
 		for (int j = 0; j < 9; j++) { //the server sends 9 chunks of data
@@ -189,7 +191,7 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 				*/
 				}
 
-				rectanglesToDraw.push_back(rectangle);; //simply add a RectangleShape to the container for it to be drawn
+				backgroundRectanglesToDraw.push_back(rectangle);; //simply add a RectangleShape to the container for it to be drawn
 				//std::cout << chunkToDraw["entityCount"].dump() << std::endl;
 				for (int i = 0; i < chunkToDraw["data"]["entityCount"]; i++) {
 					if (!chunkToDraw["entities"][i].is_null()) { //if the entity is actually null, just skip it
@@ -197,14 +199,30 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 							sf::Sprite player;
 							player.setOrigin(sf::Vector2f(0, 72));
 
+							//std::cout << "Carrying: resources/items/" << chunkToDraw["entities"][i]["itemID"].get<int>() << ".png" << "\n";
+							sf::RectangleShape carryingItem({ 30, 30 });
+							carryingItem.setPosition(chunkToDraw["entities"][i]["location"]["x"].get<float>() * scaleFactor, (chunkToDraw["entities"][i]["location"]["y"].get<float>()) * scaleFactor - 50);
+							sf::Texture carryingItemTexture;
+							carryingItemTexture.loadFromFile("resources/items/" + std::to_string(chunkToDraw["entities"][i]["itemID"].get<int>()) + ".png");
+							texturesToUse.push_back(carryingItemTexture); //we need to push it now for the below
+							carryingItem.setTexture(&texturesToUse[texturesToUse.size()-1]); //will use the final element of the textures vector
+
 							if (chunkToDraw["entities"][i]["direction"]["x"].get<int>() == 1) {
 								player.setOrigin(sf::Vector2f(0, 72));
 								player.setScale(1.0, 1.0);
+								carryingItem.move({ 5, 0 });
+								carryingItem.setScale(1.0, 1.0);
 							}
 							else if (chunkToDraw["entities"][i]["direction"]["x"].get<int>() == -1) {
 								player.setOrigin(sf::Vector2f(50, 72));
 								player.setScale(-1.0, 1.0);
+								carryingItem.move({ 17, 0 });
 							}
+							else {
+								carryingItem.move({ 5, 0 });
+							}
+
+							//carryingItem.rotate(45); //rotate it by 45 degrees
 
 							if (chunkToDraw["entities"][i]["id"].get<int>() == networkObj->userID) { //do some operations meant for only this client
 								//player.setFillColor(sf::Color::Blue);
@@ -229,6 +247,7 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 
 							textToDraw.push_back(text);
 							spritesToDraw.push_back(player);
+							rectanglesToDraw.push_back(carryingItem);
 						}
 						else if (chunkToDraw["entities"][i]["type"].get<std::string>() == "COLLISION") {
 							//continue;
@@ -241,7 +260,7 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 							
 							rectangle.setPosition(sf::Vector2f(chunkToDraw["entities"][i]["hitBox"]["top-left"]["x"].get<float>() * scaleFactor, chunkToDraw["entities"][i]["hitBox"]["top-left"]["y"].get<float>() * scaleFactor));
 							rectangle.setFillColor(sf::Color(51, 56, 63)); //grey floor
-							rectanglesToDraw.push_back(rectangle);; //simply add a RectangleShape to the container for it to be drawn
+							backgroundRectanglesToDraw.push_back(rectangle);; //simply add a RectangleShape to the container for it to be drawn
 						}
 					}
 				}
@@ -273,7 +292,7 @@ void game::live(inventory* inventoryBit) { //this is called from the main thread
 
 	gameNetworkObj->drawMutex.lock(); //called from main thread, don't want access violations so use mutex
 	gameWindow->setView(*gameView);
-	for (auto& x : rectanglesToDraw) {
+	for (auto& x : backgroundRectanglesToDraw) {
 		gameWindow->draw(x);
 	}
 	for (auto& x : textToDraw) {
@@ -283,6 +302,9 @@ void game::live(inventory* inventoryBit) { //this is called from the main thread
 		gameWindow->draw(x);
 	}
 	for (auto& x : spritesToDraw) {
+		gameWindow->draw(x);
+	}
+	for (auto& x : rectanglesToDraw) {
 		gameWindow->draw(x);
 	}
 	gameNetworkObj->drawMutex.unlock();

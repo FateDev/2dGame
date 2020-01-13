@@ -113,7 +113,7 @@ void updateActiveChunkData::updateChunkData()
 			}else if(drawables.entityToVectorMap(entityID) != -1 && physicsObjects.entityToVectorMap(entityID) != -1){ //its probably floor or wall or something
 				gameData[chunkEntityVector.first]["entities"][i]["type"] = "COLLISION";
 			}else{
-				gameData[chunkEntityVector.first]["entities"][i]["type"] = "OTHER"; //this should never be here, but just to be safe
+				gameData[chunkEntityVector.first]["entities"][i]["type"] = "OTHER"; //this should never be true, but just to be safe
 			}
 			//add in other conditions like these for mobs, items, or other things
 			
@@ -124,6 +124,7 @@ void updateActiveChunkData::updateChunkData()
 				gameData[chunkEntityVector.first]["entities"][i]["username"] = users.compVec[usersIndex].username;
 				gameData[chunkEntityVector.first]["entities"][i]["avatar"] = users.compVec[usersIndex].avatar;
 				gameData[chunkEntityVector.first]["entities"][i]["id"] = users.compVec[usersIndex].userID;
+				gameData[chunkEntityVector.first]["entities"][i]["itemID"] =  users.compVec[usersIndex].currentItem;
 			}
 			
 			if(drawables.entityToVectorMap(entityID) != -1){
