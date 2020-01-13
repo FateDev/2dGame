@@ -40,8 +40,12 @@ inventory::inventory(tgui::Gui& gui, sf::RenderWindow* window, game* gameObj) : 
 			else {
 				guiInventoryButtons[i][j]->setRenderer(theme.getRenderer("ExpandedInventoryButton"));
 			}
+			unsigned int cantorPairedValues = 0.5 * (i+j) * (i+j+1) + j;
+			guiInventoryButtons[i][j]->setText(std::to_string(cantorPairedValues)); //uses cantor pairing function to make i and j into 1 number
+			guiInventoryButtons[i][j]->setTextSize(1);
 			guiInventoryButtons[i][j]->setSize("10%", "15%");
 			guiInventoryButtons[i][j]->setPosition(std::to_string(20 + 10 * j) + "%", std::to_string(3 + 15 * i) + "%");
+			guiInventoryButtons[i][j]->connect("pressed", &inventory::inventoryItemClickRegister, this, guiInventoryButtons[i][j]->getText());
 
 			inventoryBox->add(guiInventoryButtons[i][j]); //adds current one to the main group
 		}
@@ -93,11 +97,11 @@ void inventory::listenForKeys(sf::Event event) {
 	}
 }
 
-void inventory::drawToolbarInventoryItems() { //will draw items, where the number (ID) of the item corresponds directly to the texture
+void inventory::drawInventoryItems() { //will draw items, where the number (ID) of the item corresponds directly to the texture
 	for (int i = 0; i < 6; i++) {
 		for (int j = 0; j < 6; j++) {
 			int item = inventoryJSON[i][j].get<int>();
-			std::cout << "resources/items/" + std::to_string(item) + ".jpg" << "\n";
+			//std::cout << "resources/items/" + std::to_string(item) + ".jpg" << "\n";
 			if (item != 0) {
 
 				guiInventoryButtons[i][j]->setImage("resources/items/" + std::to_string(item) + ".png");
@@ -114,6 +118,56 @@ void inventory::drawToolbarInventoryItems() { //will draw items, where the numbe
 	}
 }
 
-void inventory::drawGUIInventoryItems() {
+void inventory::dragDropItemLive() { //makes the drag and drop item follow the user's cursor
+	if (dragDropActive) {
+		dragDropItem.setPosition(sf::Vector2f(sf::Mouse::getPosition().x-50, sf::Mouse::getPosition().y-50)); //items are 100x100 so this kinda centers them around the cursor
+		window->draw(dragDropItem);
+	}
+}
 
+void inventory::inventoryItemClickRegister(std::string buttonText) {
+	//the number stored in the text there is transparent so invisible, and the number is the ith row and jth column of the 2d button grid representing items, paired using the cantor pairing function
+	//so we invert the pairing below and get the ith row and jth column back
+	float z = std::stoi(buttonText);
+	float w = floor(0.5 * (sqrt(8 * z + 1) - 1));
+	float t = 0.5 * (pow(w, 2) + w);
+	int j = z - t;
+	int i = w - j;
+
+	dragDropItemTexture = sf::Texture(); //resets the texture
+	dragDropItem = sf::RectangleShape(sf::Vector2f(100, 100)); //resets the drag and drop item
+
+	int item = inventoryJSON[i][j].get<int>(); //gets the item in the box that was just clicked on
+	if (item != 0 && dragDropActive != true) { //if the item isn't 0
+		dragDropActive = true; //commence a drag and drop operation
+		dragDropItemTexture.loadFromFile("resources/items/" + std::to_string(item) + ".png"); //set the drag and drop texture's texture as the one of this box
+		dragDropItem.setTexture(&dragDropItemTexture); //set the item's texture as the above
+		dragDropItemIndexes = sf::Vector2i(i, j); //the origin of the drag and drop operation is from this box's index
+		guiInventoryButtons[i][j]->setImage(NULL); //and delete the image in this box
+		if (i == 0) { //if it's the first row...
+			smallInventoryButtons[j]->setImage(NULL); //...then replicate this change in the toolbar inventory thing
+		}
+	}
+	else if(item == 0 || (i == dragDropItemIndexes.x && j == dragDropItemIndexes.y)) { //if there is no item there or if we're trying to put an item back where it was
+		int item = inventoryJSON[dragDropItemIndexes.x][dragDropItemIndexes.y].get<int>(); //get the item at the origin of the operation
+		inventoryJSON[dragDropItemIndexes.x][dragDropItemIndexes.y] = 0; //set the item at the origin as 0 now, as we're moving it
+		inventoryJSON[i][j] = item; //set the current box's item as the one which was at the origin (so it's moved now)
+		guiInventoryButtons[i][j]->setImage("resources/items/" + std::to_string(item) + ".png"); //set the image in the GUI
+		guiInventoryButtons[i][j]->setImageScaling(0.7); //scale the image
+		dragDropActive = false; //the drag and drop operation is complete
+		if (i == 0) { //if it's the first row...
+			smallInventoryButtons[j]->setImage("resources/items/" + std::to_string(item) + ".png"); //...then replicate this change in the toolbar inventory thing
+		}
+	}
+	else if (item != 0 && dragDropActive == true) { //if the item in the current box isn't 0 and the drag and drop operation is active, then we do a swap operation
+		int itemDragDrop = inventoryJSON[dragDropItemIndexes.x][dragDropItemIndexes.y].get<int>(); //we get the item at the origin of the drag and drop operation
+		inventoryJSON[dragDropItemIndexes.x][dragDropItemIndexes.y] = item; //we set the item at the origin as the item we just clicked on (so a swap has basically occurred)
+		inventoryJSON[i][j] = itemDragDrop; //and set the item of this box to be the one which was at the origin (finishes up the swap operation - the non graphical bit at least)
+		dragDropItemTexture.loadFromFile("resources/items/" + std::to_string(item) + ".png"); //sets the new texture of the drag and drop texture
+		dragDropItem.setTexture(&dragDropItemTexture); //sets the above texture for the drag and drop item
+		guiInventoryButtons[i][j]->setImage("resources/items/" + std::to_string(itemDragDrop) + ".png"); //sets the texture for the box we clicked on as the image which was originally at the origin of the drag and drop operation
+		if (i == 0) { //if it's the first row...
+			smallInventoryButtons[j]->setImage("resources/items/" + std::to_string(itemDragDrop) + ".png"); //...then replicate this change in the toolbar inventory thing
+		}
+	}
 }

@@ -166,6 +166,10 @@ void gameBit(sf::Clock* globalClock, networking* networkObject, gameNetwork* gam
 			std::cout << "something went wrong, but we'll pretend it didn't, for drawing the gui (from tgui)" << std::endl;
 		}
 
+		if (inventoryBit.isInventoryOpen()) { //do this here because the drag drop bit takes priority over basically everything
+			inventoryBit.dragDropItemLive(); //does the drag drop bit
+		}
+
 		try {
 			gameWindow.display(); //the contents of the screen are shown
 		}

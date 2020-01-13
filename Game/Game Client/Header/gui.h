@@ -164,15 +164,21 @@ private:
 	//the above would be an invisible container from tgui which holds everything that gets drawn for this screen
 
 	bool isOpen = false; //is the main inventory GUI open
+
+	sf::RectangleShape dragDropItem;
+	sf::Texture dragDropItemTexture;
+	bool dragDropActive = false; //is a drag drop event thing happening or not
+	sf::Vector2i dragDropItemIndexes; //stores the i and j indexes for the item
 public:
-	void setInventoryJSON(json obj) { inventoryJSON = obj; drawToolbarInventoryItems(); /*and draw the toolbar items*/ }; //sets the JSON object for the inventory
-	void drawToolbarInventoryItems(); //will draw the minimised inventory items
-	void drawGUIInventoryItems(); //will draw the maximised inventory items
+	void setInventoryJSON(json obj) { inventoryJSON = obj; drawInventoryItems(); /*and draw the toolbar items*/ }; //sets the JSON object for the inventory
+	void drawInventoryItems(); //will draw the inventory items
 	void openInventory(); //open the inventory
 	void closeInventory(); //close the inventory
 	void displayToolbar(); //display the toolbar bit of the inventory
 	bool isInventoryOpen() { return isOpen; }; //is the inventory open
 	void listenForKeys(sf::Event event); //this will implement the basic shortcuts for the inventory system
+	void dragDropItemLive(); //this would be called in the main game loop for the entire drag drop functionality
+	void inventoryItemClickRegister(std::string buttonText); //called when an item is clicked on
 	inventory(tgui::Gui& gui, sf::RenderWindow* window, game* gameObj);
 };
 

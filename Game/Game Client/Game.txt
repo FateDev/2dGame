@@ -100,7 +100,7 @@ InventoryToolbarButton {
         backgroundcolordisabled = #E6E6E6;
 	backgroundcolordown = #403f52;
         backgroundcolorhover = #2b2a38;
-        textcolor = white;
+        textcolor = rgba(0,0,0,0);
         textcolordisabled = #7D7D7D;
         bordercolor = #2b2a38;
         borders = (2, 0, 2, 0);
@@ -116,7 +116,7 @@ ExpandedInventoryButton {
         backgroundcolordisabled = #E6E6E6;
 	backgroundcolordown = #383745;
         backgroundcolorhover = #2b2b34;
-        textcolor = white;
+        textcolor = rgba(0,0,0,0);
         textcolordisabled = #7D7D7D;
         bordercolor = #2c2b30;
         borders = (2, 0, 2, 0);
