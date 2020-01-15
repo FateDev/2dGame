@@ -52,6 +52,7 @@ game::game(networking* networkObject, gameNetwork* gameConnection, sf::RenderWin
 	keysObject["jump"] = false;
 	keysObject["interactNPC"] = false;
 	keysObject["switchTarget"] = false;
+	keysObject["throwItem"] = false;
 	keysObject["custom_binding1"] = false;
 	keysObject["custom_binding2"] = false;
 	keysObject["custom_binding3"] = false;
@@ -67,7 +68,7 @@ game::game(networking* networkObject, gameNetwork* gameConnection, sf::RenderWin
 void game::listenForKeys(sf::Event event) {
 	if (event.type == sf::Event::KeyPressed) { //keysObject[key] = true/false; true = key is pressed, false = key is not pressed/released
 		std::string key = sfKeyToAbstractKeyMap[event.key.code];
-		if (key==networkObj->settings["left"].get<std::string>() || key == networkObj->settings["right"].get<std::string>() || key == networkObj->settings["jump"].get<std::string>() || key == networkObj->settings["interactNPC"].get<std::string>() || key == networkObj->settings["switchTarget"].get<std::string>() || key == networkObj->settings["custom_binding1"]["key"].get<std::string>() || key == networkObj->settings["custom_binding2"]["key"].get<std::string>() || key == networkObj->settings["custom_binding3"]["key"].get<std::string>()) {
+		if (key==networkObj->settings["left"].get<std::string>() || key == networkObj->settings["right"].get<std::string>() || key == networkObj->settings["jump"].get<std::string>() || key == networkObj->settings["interactNPC"].get<std::string>() || key == networkObj->settings["throwItem"].get<std::string>() || key == networkObj->settings["switchTarget"].get<std::string>() || key == networkObj->settings["custom_binding1"]["key"].get<std::string>() || key == networkObj->settings["custom_binding2"]["key"].get<std::string>() || key == networkObj->settings["custom_binding3"]["key"].get<std::string>()) {
 			if (key == networkObj->settings["left"].get<std::string>() && keysObject["left"] != true) {
 				keysObject["left"] = true;
 				changeInButtonState = true; //used to indicate that s  ome buttons have been pressed
@@ -82,6 +83,9 @@ void game::listenForKeys(sf::Event event) {
 				changeInButtonState = true; //used to indicate that some buttons have been pressed
 			}else if (key == networkObj->settings["switchTarget"].get<std::string>() && keysObject["switchTarget"] != true) {
 				keysObject["switchTarget"] = true;
+				changeInButtonState = true; //used to indicate that some buttons have been pressed
+			}else if (key == networkObj->settings["throwItem"].get<std::string>() && keysObject["throwItem"] != true) {
+				keysObject["throwItem"] = true;
 				changeInButtonState = true; //used to indicate that some buttons have been pressed
 			}else if (key == networkObj->settings["custom_binding1"]["key"].get<std::string>() && keysObject["custom_binding1"] != true) {
 				keysObject["custom_binding1"] = true;
@@ -101,7 +105,7 @@ void game::listenForKeys(sf::Event event) {
 
 	if (event.type == sf::Event::KeyReleased) { //this would be used to stop moving for example
 		std::string key = sfKeyToAbstractKeyMap[event.key.code];
-		if (key == networkObj->settings["left"].get<std::string>() || key == networkObj->settings["right"].get<std::string>() || key == networkObj->settings["jump"].get<std::string>() || key == networkObj->settings["custom_binding1"]["key"].get<std::string>() || key == networkObj->settings["custom_binding2"]["key"].get<std::string>() || key == networkObj->settings["custom_binding3"]["key"].get<std::string>()) {
+		if (key == networkObj->settings["left"].get<std::string>() || key == networkObj->settings["right"].get<std::string>() || key == networkObj->settings["jump"].get<std::string>() || key == networkObj->settings["throwItem"].get<std::string>() || key == networkObj->settings["custom_binding1"]["key"].get<std::string>() || key == networkObj->settings["custom_binding2"]["key"].get<std::string>() || key == networkObj->settings["custom_binding3"]["key"].get<std::string>()) {
 			if (key == networkObj->settings["left"].get<std::string>() && keysObject["left"] != false) {
 				keysObject["left"] = false;
 				changeInButtonState = true; //used to indicate that some buttons have been pressed
@@ -116,6 +120,9 @@ void game::listenForKeys(sf::Event event) {
 				changeInButtonState = true; //used to indicate that some buttons have been pressed
 			}else if (key == networkObj->settings["switchTarget"].get<std::string>() && keysObject["switchTarget"] != false) {
 				keysObject["switchTarget"] = false;
+				changeInButtonState = true; //used to indicate that some buttons have been pressed
+			}else if (key == networkObj->settings["throwItem"].get<std::string>() && keysObject["throwItem"] != false) {
+				keysObject["throwItem"] = false;
 				changeInButtonState = true; //used to indicate that some buttons have been pressed
 			}else if (key == networkObj->settings["custom_binding1"]["key"].get<std::string>() && keysObject["custom_binding1"] != false) {
 				keysObject["custom_binding1"] = false;
@@ -202,10 +209,13 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 							//std::cout << "Carrying: resources/items/" << chunkToDraw["entities"][i]["itemID"].get<int>() << ".png" << "\n";
 							sf::RectangleShape carryingItem({ 30, 30 });
 							carryingItem.setPosition(chunkToDraw["entities"][i]["location"]["x"].get<float>() * scaleFactor, (chunkToDraw["entities"][i]["location"]["y"].get<float>()) * scaleFactor - 50);
-							sf::Texture carryingItemTexture;
-							carryingItemTexture.loadFromFile("resources/items/" + std::to_string(chunkToDraw["entities"][i]["itemID"].get<int>()) + ".png");
-							texturesToUse.push_back(carryingItemTexture); //we need to push it now for the below
-							carryingItem.setTexture(&texturesToUse[texturesToUse.size()-1]); //will use the final element of the textures vector
+
+							if (chunkToDraw["entities"][i]["itemID"].get<int>() != 0) { //if it's not zero it means there is a texture to draw
+								sf::Texture carryingItemTexture;
+								carryingItemTexture.loadFromFile("resources/items/" + std::to_string(chunkToDraw["entities"][i]["itemID"].get<int>()) + ".png");
+								texturesToUse.push_back(carryingItemTexture); //we need to push it now for the below
+								carryingItem.setTexture(&texturesToUse[texturesToUse.size() - 1]); //will use the final element of the textures vector
+							}
 
 							if (chunkToDraw["entities"][i]["direction"]["x"].get<int>() == 1) {
 								player.setOrigin(sf::Vector2f(0, 72));
@@ -245,9 +255,12 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 							text.setCharacterSize(24);
 							text.setPosition(chunkToDraw["entities"][i]["location"]["x"].get<float>() * scaleFactor, (chunkToDraw["entities"][i]["location"]["y"].get<float>()) * scaleFactor - 103);
 
+							if (chunkToDraw["entities"][i]["itemID"].get<int>() != 0) {
+								rectanglesToDraw.push_back(carryingItem); //draw the player's item's texture if it's non zero, so there is a texture for it
+							}
+
 							textToDraw.push_back(text);
 							spritesToDraw.push_back(player);
-							rectanglesToDraw.push_back(carryingItem);
 						}
 						else if (chunkToDraw["entities"][i]["type"].get<std::string>() == "COLLISION") {
 							//continue;
@@ -257,11 +270,23 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 
 							//std::cout << chunkToDraw["entities"][i]["hitBox"]["top-left"].dump() << " -- " << chunkToDraw["entities"][i]["hitBox"]["bottom-right"].dump() << " -- " << width << " -- " << height << " # " << chunkToDraw["data"]["setting_id"].get<int>() << std::endl;
 							sf::RectangleShape rectangle(sf::Vector2f(width * scaleFactor, height * scaleFactor));
-							
+
 							rectangle.setPosition(sf::Vector2f(chunkToDraw["entities"][i]["hitBox"]["top-left"]["x"].get<float>() * scaleFactor, chunkToDraw["entities"][i]["hitBox"]["top-left"]["y"].get<float>() * scaleFactor));
 							rectangle.setFillColor(sf::Color(51, 56, 63)); //grey floor
 							backgroundRectanglesToDraw.push_back(rectangle);; //simply add a RectangleShape to the container for it to be drawn
 						}
+						else if (chunkToDraw["entities"][i]["type"].get<std::string>() == "ITEM") {
+							sf::RectangleShape carryingItem({ 20, 20 });
+							carryingItem.setOrigin(0, 20);
+							carryingItem.setPosition(chunkToDraw["entities"][i]["location"]["x"].get<float>() * scaleFactor, (chunkToDraw["entities"][i]["location"]["y"].get<float>()) * scaleFactor);
+
+							sf::Texture carryingItemTexture;
+							carryingItemTexture.loadFromFile(chunkToDraw["entities"][i]["texture"].get<std::string>());
+							texturesToUse.push_back(carryingItemTexture); //we need to push it now for the below
+							carryingItem.setTexture(&texturesToUse[texturesToUse.size() - 1]); //will use the final element of the textures vector
+							rectanglesToDraw.push_back(carryingItem); //draw the player's item's texture if it's non zero, so there is a texture for it
+						}
+
 					}
 				}
 			}

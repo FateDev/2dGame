@@ -387,6 +387,7 @@ void network::server() { //the function for server initialisation
 				
 				mutexs::getInstance()->mainUserLockMutex.unlock();
 
+				//notice the order of locks here, unlock then lock next one, this is to prevent deadlocking
 				mutexs::getInstance()->chunkLockMutex.lock();
 				tempEntity.id = entityID; //sets the temp entity to have the correct ID
 				//tempEntity.type = ecs::entity::USER; //sets the temp entity to have the correct ID

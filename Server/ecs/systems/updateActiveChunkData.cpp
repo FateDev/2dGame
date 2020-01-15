@@ -112,6 +112,9 @@ void updateActiveChunkData::updateChunkData()
 				gameData[chunkEntityVector.first]["entities"][i]["type"] = "USER"; //its type is user, use these sort of capital letter words to describe the entity 'type'
 			}else if(drawables.entityToVectorMap(entityID) != -1 && physicsObjects.entityToVectorMap(entityID) != -1){ //its probably floor or wall or something
 				gameData[chunkEntityVector.first]["entities"][i]["type"] = "COLLISION";
+				if(physicsObjects.compVec[physicsObjects.entityToVectorMap(entityID)].objType == ITEM){ //if the object type is an item then of course we'd want to register it as such
+					gameData[chunkEntityVector.first]["entities"][i]["type"] = "ITEM";
+				}
 			}else{
 				gameData[chunkEntityVector.first]["entities"][i]["type"] = "OTHER"; //this should never be true, but just to be safe
 			}
@@ -131,6 +134,7 @@ void updateActiveChunkData::updateChunkData()
 				unsigned int drawablesIndex = drawables.entityToVectorMap(entityID);
 				gameData[chunkEntityVector.first]["entities"][i]["direction"]["x"] = drawables.compVec[drawablesIndex].direction.x;
 				gameData[chunkEntityVector.first]["entities"][i]["direction"]["y"] = drawables.compVec[drawablesIndex].direction.y;
+				gameData[chunkEntityVector.first]["entities"][i]["texture"] = drawables.compVec[drawablesIndex].texture;
 			}
 
 			if(physicsObjects.entityToVectorMap(entityID) != -1){

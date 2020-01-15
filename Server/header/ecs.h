@@ -31,7 +31,8 @@ namespace ecs{
 
 namespace ecs{
     namespace component{
-        enum objectType {COLLIDER, COLLISION, COLLIDER_COLLISION}; //enum for the object types, collider is like users/mobs, collision is like floors/walls (so don't move), collider-collision is both
+        enum objectType {COLLIDER, COLLISION, COLLIDER_COLLISION, ITEM}; //enum for the object types, collider is like users/mobs, collision is like floors/walls (so don't move), collider-collision is both
+        //ITEM is a special type, it falls like a normal collider, but then it becomes a collision and detects for a collision to indicate it must be picked up
         enum components {USER, DRAWABLE, PHYSICAL}; //enum for all of the components
 
         //the structs below are the components so far
@@ -54,12 +55,13 @@ namespace ecs{
 
         struct drawable{
             std::string texture = ""; //not necessarily used but useful at times (like for throwing inventory items)
-            sf::Vector2i direction = {0, 0}; //this is only used for drawing moving items, for accurate direction use the velocity
+            sf::Vector2i direction = {1, 0}; //this is only used for drawing moving items, for accurate direction use the velocity, initialises direction to 1 especially for throwing items
         };
 
         struct physical{
             sf::Vector2f coordinates = { 0, 0 }; //the in game location of the player
-            std::vector<sf::Vector2f> boxCorners = {}; //the hit box corners, they are specified [0] is top left, [1] is top right, [2] is bottom left, [3] is bottom right
+            std::vector<sf::Vector2f> boxCorners = {{0,-5}, {5,-5}, {0,0}, {5,0}}; //the hit box corners, they are specified [0] is top left, [1] is top right, [2] is bottom left, [3] is bottom right
+            //starts off with default hit box so to not cause random crashes during testing or whatever
             sf::Vector2f velocity = { 0, 0 }; //this is the velocity of the player
             bool onFloor = true; //initialised to being on the floor
             objectType objType = COLLIDER; //initialised to being a collider object (users/mobs etc)

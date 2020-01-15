@@ -86,7 +86,7 @@ void inventory::closeInventory() {
 void inventory::listenForKeys(sf::Event event) {
 	if (event.type == sf::Event::KeyPressed) {
 		std::string key = gameObj->sfKeyToAbstractKeyMap[event.key.code];
-		if (gameObj->networkObj->settings["inventory"].get<std::string>() == key) { //did they press the key to open or close the inventory
+		if (gameObj->networkObj->settings["inventory"].get<std::string>() == key && !gameObj->networkObj->msgBoxFocused) { //did they press the key to open or close the inventory, as long as the message box isn't focused
 			if (this->isInventoryOpen()) {
 				this->closeInventory();
 			}
@@ -102,17 +102,12 @@ void inventory::drawInventoryItems() { //will draw items, where the number (ID) 
 		for (int j = 0; j < 6; j++) {
 			int item = inventoryJSON[i][j].get<int>();
 			//std::cout << "resources/items/" + std::to_string(item) + ".jpg" << "\n";
-			if (item != 0) {
+			guiInventoryButtons[i][j]->setImage("resources/items/" + std::to_string(item) + ".png");
+			guiInventoryButtons[i][j]->setImageScaling(0.7);
 
-				guiInventoryButtons[i][j]->setImage("resources/items/" + std::to_string(item) + ".png");
-				guiInventoryButtons[i][j]->setImageScaling(0.7);
-			}
 			if (i == 0) {
-				if (item != 0) {
-					smallInventoryButtons[j]->setImage("resources/items/" + std::to_string(item) + ".png");
-					smallInventoryButtons[j]->setImageScaling(0.7);
-
-				}
+				smallInventoryButtons[j]->setImage("resources/items/" + std::to_string(item) + ".png");
+				smallInventoryButtons[j]->setImageScaling(0.7);
 			}
 		}
 	}
