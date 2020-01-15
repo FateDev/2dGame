@@ -51,3 +51,8 @@ unsigned int ecsComponentStructure<T>::vectorToEntityMap(unsigned int componentI
 template class ecsComponentStructure<ecs::component::drawable>;
 template class ecsComponentStructure<ecs::component::user>;
 template class ecsComponentStructure<ecs::component::physical>;
+template class ecsComponentStructure<ecs::component::mob>;
+template class ecsComponentStructure<ecs::component::mp_hp>;
+template class ecsComponentStructure<ecs::component::npc>;
+template class ecsComponentStructure<ecs::component::mission>;
+template class ecsComponentStructure<ecs::component::thrown_item>;

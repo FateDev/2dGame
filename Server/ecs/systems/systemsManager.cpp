@@ -6,6 +6,8 @@
 #include <SFML/Network.hpp>
 #include <curl/curl.h>
 #include <chrono>
+#include <fstream>
+#include <sstream>
 
 using namespace ecs::system;
 using namespace ecs::component;
@@ -28,6 +30,10 @@ void systemsManager::systemStart()
 	mainGame->launch();
 
 	//below is just initialisation stuff
+	std::ifstream itemsJSONFile("items.json");
+	std::stringstream jsonContents;
+	jsonContents << itemsJSONFile.rdbuf(); //reads into read buffer
+	itemsFromFile = json::parse(jsonContents.str()); //puts into object
 
 	//this just makes the first chunk, if any updates are made in the chunk gen section make sure to add them here
 	coordinatesStruct startCoord(0, 0);

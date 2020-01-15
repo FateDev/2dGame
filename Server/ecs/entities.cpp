@@ -20,6 +20,21 @@ unsigned int entityManager::create(std::initializer_list<ecs::component::compone
         }else if(*(initialiseWithStructs.begin()+i) == ecs::component::components::PHYSICAL){
             ecs::component::physical physicalStruct;
             ecs::component::physicsObjects.addComponent(physicalStruct, nextEntity.id); //appropriate component added to the appropriate structure
+        }else if(*(initialiseWithStructs.begin()+i) == ecs::component::components::THROWN_ITEM){
+            ecs::component::thrown_item thrownItem;
+            ecs::component::thrown_items.addComponent(thrownItem, nextEntity.id); //appropriate component added to the appropriate structure
+        }else if(*(initialiseWithStructs.begin()+i) == ecs::component::components::MISSION){
+            ecs::component::mission missionStruct;
+            ecs::component::missions.addComponent(missionStruct, nextEntity.id); //appropriate component added to the appropriate structure
+        }else if(*(initialiseWithStructs.begin()+i) == ecs::component::components::NPC){
+            ecs::component::npc npcStruct;
+            ecs::component::npcs.addComponent(npcStruct, nextEntity.id); //appropriate component added to the appropriate structure
+        }else if(*(initialiseWithStructs.begin()+i) == ecs::component::components::MOB){
+            ecs::component::mob mobStruct;
+            ecs::component::mobs.addComponent(mobStruct, nextEntity.id); //appropriate component added to the appropriate structure
+        }else if(*(initialiseWithStructs.begin()+i) == ecs::component::components::MP_HP){
+            ecs::component::mp_hp mpHpStruct;
+            ecs::component::mpHpObjects.addComponent(mpHpStruct, nextEntity.id); //appropriate component added to the appropriate structure
         }
     }
     
@@ -39,10 +54,26 @@ void entityManager::destroy(entity entityStruct, ecs::entity::entityType type){ 
         ecs::component::users.removeComponent(entityStruct.id);
         ecs::component::drawables.removeComponent(entityStruct.id);
         ecs::component::physicsObjects.removeComponent(entityStruct.id);
+        ecs::component::mpHpObjects.removeComponent(entityStruct.id);
         //add in any other component objects
     }else if(type == ecs::entity::COLLISION_OBJECT){
         ecs::component::drawables.removeComponent(entityStruct.id);
         ecs::component::physicsObjects.removeComponent(entityStruct.id);
+    }else if(type == ecs::entity::ITEM_THROWN){
+        ecs::component::thrown_items.removeComponent(entityStruct.id);
+        ecs::component::drawables.removeComponent(entityStruct.id);
+        ecs::component::physicsObjects.removeComponent(entityStruct.id);
+    }else if(type == ecs::entity::MOB){
+        ecs::component::drawables.removeComponent(entityStruct.id);
+        ecs::component::physicsObjects.removeComponent(entityStruct.id);
+        ecs::component::mpHpObjects.removeComponent(entityStruct.id);
+        ecs::component::mobs.removeComponent(entityStruct.id);
+    }else if(type == ecs::entity::NPC){
+        ecs::component::drawables.removeComponent(entityStruct.id);
+        ecs::component::physicsObjects.removeComponent(entityStruct.id);
+        ecs::component::npcs.removeComponent(entityStruct.id);
+    }else if(type == ecs::entity::MISSION){
+        ecs::component::missions.removeComponent(entityStruct.id);
     }
 
     nextEntity.id = entityStruct.id; //uses the entity ID to basically make a temporary entity using nextEntity

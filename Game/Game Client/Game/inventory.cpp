@@ -102,11 +102,11 @@ void inventory::drawInventoryItems() { //will draw items, where the number (ID) 
 		for (int j = 0; j < 6; j++) {
 			int item = inventoryJSON[i][j].get<int>();
 			//std::cout << "resources/items/" + std::to_string(item) + ".jpg" << "\n";
-			guiInventoryButtons[i][j]->setImage("resources/items/" + std::to_string(item) + ".png");
+			guiInventoryButtons[i][j]->setImage(gameObj->itemsFromFile[item]["resourceLocation"].get<std::string>());
 			guiInventoryButtons[i][j]->setImageScaling(0.7);
 
 			if (i == 0) {
-				smallInventoryButtons[j]->setImage("resources/items/" + std::to_string(item) + ".png");
+				smallInventoryButtons[j]->setImage(gameObj->itemsFromFile[item]["resourceLocation"].get<std::string>());
 				smallInventoryButtons[j]->setImageScaling(0.7);
 			}
 		}
@@ -154,11 +154,11 @@ void inventory::inventoryItemClickRegister(std::string buttonText) {
 
 	dragDropItemTexture = sf::Texture(); //resets the texture
 	dragDropItem = sf::RectangleShape(sf::Vector2f(100, 100)); //resets the drag and drop item
-
+	//gameObj->itemsFromFile[item]["resourceLocation"].get<std::string>()
 	int item = inventoryJSON[i][j].get<int>(); //gets the item in the box that was just clicked on
 	if (item != 0 && dragDropActive != true) { //if the item isn't 0
 		dragDropActive = true; //commence a drag and drop operation
-		dragDropItemTexture.loadFromFile("resources/items/" + std::to_string(item) + ".png"); //set the drag and drop texture's texture as the one of this box
+		dragDropItemTexture.loadFromFile(gameObj->itemsFromFile[item]["resourceLocation"].get<std::string>()); //set the drag and drop texture's texture as the one of this box
 		dragDropItem.setTexture(&dragDropItemTexture); //set the item's texture as the above
 		dragDropItemIndexes = sf::Vector2i(i, j); //the origin of the drag and drop operation is from this box's index
 		guiInventoryButtons[i][j]->setImage(NULL); //and delete the image in this box
@@ -175,11 +175,11 @@ void inventory::inventoryItemClickRegister(std::string buttonText) {
 			int item = inventoryJSON[dragDropItemIndexes.x][dragDropItemIndexes.y].get<int>(); //get the item at the origin of the operation
 			inventoryJSON[dragDropItemIndexes.x][dragDropItemIndexes.y] = 0; //set the item at the origin as 0 now, as we're moving it
 			inventoryJSON[i][j] = item; //set the current box's item as the one which was at the origin (so it's moved now)
-			guiInventoryButtons[i][j]->setImage("resources/items/" + std::to_string(item) + ".png"); //set the image in the GUI
+			guiInventoryButtons[i][j]->setImage(gameObj->itemsFromFile[item]["resourceLocation"].get<std::string>()); //set the image in the GUI
 			guiInventoryButtons[i][j]->setImageScaling(0.7); //scale the image
 			dragDropActive = false; //the drag and drop operation is complete
 			if (i == 0) { //if it's the first row...
-				smallInventoryButtons[j]->setImage("resources/items/" + std::to_string(item) + ".png"); //...then replicate this change in the toolbar inventory thing
+				smallInventoryButtons[j]->setImage(gameObj->itemsFromFile[item]["resourceLocation"].get<std::string>()); //...then replicate this change in the toolbar inventory thing
 			}
 			updateServerSide();
 			/*currentUserItemChanged = true; //the user's current item may have changed*/
@@ -188,18 +188,18 @@ void inventory::inventoryItemClickRegister(std::string buttonText) {
 			int itemDragDrop = inventoryJSON[dragDropItemIndexes.x][dragDropItemIndexes.y].get<int>(); //we get the item at the origin of the drag and drop operation
 			inventoryJSON[dragDropItemIndexes.x][dragDropItemIndexes.y] = item; //we set the item at the origin as the item we just clicked on (so a swap has basically occurred)
 			inventoryJSON[i][j] = itemDragDrop; //and set the item of this box to be the one which was at the origin (finishes up the swap operation - the non graphical bit at least)
-			dragDropItemTexture.loadFromFile("resources/items/" + std::to_string(item) + ".png"); //sets the new texture of the drag and drop texture
+			dragDropItemTexture.loadFromFile(gameObj->itemsFromFile[item]["resourceLocation"].get<std::string>()); //sets the new texture of the drag and drop texture
 			dragDropItem.setTexture(&dragDropItemTexture); //sets the above texture for the drag and drop item
-			guiInventoryButtons[i][j]->setImage("resources/items/" + std::to_string(itemDragDrop) + ".png"); //sets the texture for the box we clicked on as the image which was originally at the origin of the drag and drop operation
+			guiInventoryButtons[i][j]->setImage(gameObj->itemsFromFile[itemDragDrop]["resourceLocation"].get<std::string>()); //sets the texture for the box we clicked on as the image which was originally at the origin of the drag and drop operation
 			if (i == 0) { //if it's the first row...
-				smallInventoryButtons[j]->setImage("resources/items/" + std::to_string(itemDragDrop) + ".png"); //...then replicate this change in the toolbar inventory thing
+				smallInventoryButtons[j]->setImage(gameObj->itemsFromFile[itemDragDrop]["resourceLocation"].get<std::string>()); //...then replicate this change in the toolbar inventory thing
 			}
 			updateServerSide();
 			/*currentUserItemChanged = true; //the user's current item may have changed*/
 		}
 		else { //catch all that sets the texture of the drag and drop item as that of the item which was at the operation's origin
 			int item = inventoryJSON[dragDropItemIndexes.x][dragDropItemIndexes.y].get<int>(); //get the item at the origin of the operation
-			dragDropItemTexture.loadFromFile("resources/items/" + std::to_string(item) + ".png"); //set the drag and drop texture's texture as the one of this box
+			dragDropItemTexture.loadFromFile(gameObj->itemsFromFile[item]["resourceLocation"].get<std::string>()); //set the drag and drop texture's texture as the one of this box
 			dragDropItem.setTexture(&dragDropItemTexture); //set the item's texture as the above
 		}
 		/*lastClickedOnBox = sf::Vector2i(i, j); //the last box which was clicked on (needed to draw the current item)*/

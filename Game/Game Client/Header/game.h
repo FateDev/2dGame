@@ -40,8 +40,10 @@ private:
 	bool changeInButtonState = false; //used to indicate whether or not any buttons have been pressed or released
 	sf::Font font;
 public:
+	json itemsFromFile; //items loaded from file
 	/*std::atomic<float> currentPosition_x; //atomic pair as the current position may be writed and read from different threads
 	std::atomic<float> currentPosition_y; //atomic pair as the current position may be writed and read from different threads*/
+	std::unordered_map<std::string, sf::Texture> textures; //to avoid having to repeatedly load in textures
 	std::unordered_map<sf::Keyboard::Key, std::string> sfKeyToAbstractKeyMap;
 	std::unordered_map<std::string, sf::Keyboard::Key> abstractKeyTosfKeyMap;
 	sf::Texture playerTexture; //temp

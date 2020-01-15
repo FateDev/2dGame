@@ -14,6 +14,12 @@
 ecs::component::ecsComponentStructure<ecs::component::user> ecs::component::users;
 ecs::component::ecsComponentStructure<ecs::component::drawable> ecs::component::drawables;
 ecs::component::ecsComponentStructure<ecs::component::physical> ecs::component::physicsObjects;
+ecs::component::ecsComponentStructure<ecs::component::mp_hp> ecs::component::mpHpObjects;
+ecs::component::ecsComponentStructure<ecs::component::mob> ecs::component::mobs;
+ecs::component::ecsComponentStructure<ecs::component::npc> ecs::component::npcs;
+ecs::component::ecsComponentStructure<ecs::component::mission> ecs::component::missions;
+ecs::component::ecsComponentStructure<ecs::component::thrown_item> ecs::component::thrown_items;
+json ecs::system::itemsFromFile; //items loaded in from items.json
 ecs::entity::entityManager ecs::entity::superEntityManager;
 std::unordered_map<ecs::system::coordinatesStruct, std::pair<ecs::system::chunkData, std::vector<ecs::entity::entity>>, ecs::system::Hash> ecs::system::chunks;
 std::unordered_map<ecs::system::coordinatesStruct, json, ecs::system::Hash> ecs::system::gameData;

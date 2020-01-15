@@ -1,0 +1,101 @@
+[
+  {
+    "itemID": 0,
+    "type": "nothing",
+    "subtype": "nothing",
+    "damage": 0,
+    "hits": 0,
+    "resourceLocation": "resources/items/0.png"
+  },
+  {
+    "itemID": 1,
+    "type": "weapon",
+    "subtype": "meelee",
+    "damage": 1000,
+    "hits": 10,
+    "resourceLocation": "resources/items/weapon1.png"
+  },
+  {
+    "itemID": 2,
+    "type": "weapon",
+    "subtype": "meelee",
+    "damage": 100,
+    "hits": 100,
+    "resourceLocation": "resources/items/weapon2.png"
+  },
+  {
+    "itemID": 3,
+    "type": "weapon",
+    "subtype": "meelee",
+    "damage": 50,
+    "hits": 1000,
+    "resourceLocation": "resources/items/weapon3.png"
+  },
+  {
+    "itemID": 4,
+    "type": "weapon",
+    "subtype": "meelee",
+    "damage": 80,
+    "hits": 300,
+    "resourceLocation": "resources/items/weapon4.png"
+  },
+  {
+    "itemID": 5,
+    "type": "weapon",
+    "subtype": "meelee",
+    "damage": 90,
+    "hits": 150,
+    "resourceLocation": "resources/items/weapon5.png"
+  },
+  {
+    "itemID": 6,
+    "type": "weapon",
+    "subtype": "meelee",
+    "damage": 1000,
+    "hits": 1000,
+    "resourceLocation": "resources/items/weapon6.png"
+  },
+  {
+    "itemID": 7,
+    "type": "weapon",
+    "subtype": "meelee",
+    "damage": 5,
+    "hits": 1000,
+    "resourceLocation": "resources/items/weapon7.png"
+  },
+  {
+    "itemID": 8,
+    "type": "potion",
+    "subtype": "mana_boost",
+    "magnitude": 100,
+    "resourceLocation": "resources/items/mana_boost1.png"
+  },
+  {
+    "itemID": 9,
+    "type": "potion",
+    "subtype": "hp_boost",
+    "magnitude": 100,
+    "resourceLocation": "resources/items/hp_boost1.png"
+  },
+  {
+    "itemID": 10,
+    "type": "potion",
+    "subtype": "mana",
+    "magnitude": 100,
+    "resourceLocation": "resources/items/mana1.png"
+  },
+  {
+    "itemID": 11,
+    "type": "potion",
+    "subtype": "hp",
+    "magnitude": 100,
+    "resourceLocation": "resources/items/hp1.png"
+  },
+  {
+    "itemID": 12,
+    "type": "potion",
+    "subtype": "damange_boost",
+    "magnitude": 100,
+    "resourceLocation": "resources/items/damage_boost1.png"
+  }
+]

@@ -187,7 +187,7 @@ void networking::getResponses() { //retrieves incoming message
 			receiveString.erase(receiveString.begin(), receiveString.begin() + std::string("USER::INVENTORY::").length()); //will erase the flag
 			inventoryObject->setInventoryJSON(json::parse(receiveString));
 			inventoryObject->drawInventoryItems();
-			std::cout << "redrawing inventory" << "\n";
+			//std::cout << "redrawing inventory" << "\n";
 		}
 
 		if (chatBoxActive == true) { //checks if the chatbox has been set to active, in which case decode received messages and add them to the chatbox

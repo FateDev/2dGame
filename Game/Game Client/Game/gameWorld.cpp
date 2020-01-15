@@ -1,5 +1,7 @@
 #include <game.h>
 #include <header.h>
+#include <sstream>
+#include <fstream>
 
 game::game(networking* networkObject, gameNetwork* gameConnection, sf::RenderWindow* gameWindow, sf::View* gameView) : networkObj(networkObject), gameNetworkObj(gameConnection), gameWindow(gameWindow), gameView(gameView) { 
 	//I added in a map the opposite way round just in case
@@ -63,6 +65,21 @@ game::game(networking* networkObject, gameNetwork* gameConnection, sf::RenderWin
 
 	playerTexture.loadFromFile("resources/default_character.png");
 	opponentTexture.loadFromFile("resources/default_character.png");
+
+	sf::Texture texture;
+	texture.loadFromFile("resources/default_character.png");
+	textures["default"] = texture;
+
+	std::ifstream itemsJSONFile("items.json");
+	std::stringstream jsonContents;
+	jsonContents << itemsJSONFile.rdbuf(); //reads into read buffer
+	itemsFromFile = json::parse(jsonContents.str()); //puts into object
+
+	for (int i = 0; i < itemsFromFile.size(); i++) {
+		texture = sf::Texture();
+		texture.loadFromFile(itemsFromFile[i]["resourceLocation"].get<std::string>());
+		textures[std::to_string(itemsFromFile[i]["itemID"].get<int>())] = texture;
+	}
 }
 
 void game::listenForKeys(sf::Event event) {
@@ -211,10 +228,7 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 							carryingItem.setPosition(chunkToDraw["entities"][i]["location"]["x"].get<float>() * scaleFactor, (chunkToDraw["entities"][i]["location"]["y"].get<float>()) * scaleFactor - 50);
 
 							if (chunkToDraw["entities"][i]["itemID"].get<int>() != 0) { //if it's not zero it means there is a texture to draw
-								sf::Texture carryingItemTexture;
-								carryingItemTexture.loadFromFile("resources/items/" + std::to_string(chunkToDraw["entities"][i]["itemID"].get<int>()) + ".png");
-								texturesToUse.push_back(carryingItemTexture); //we need to push it now for the below
-								carryingItem.setTexture(&texturesToUse[texturesToUse.size() - 1]); //will use the final element of the textures vector
+								carryingItem.setTexture(&textures[std::to_string(chunkToDraw["entities"][i]["itemID"].get<int>())]); //will use the correct texture which was loaded from the items.json file and image files
 							}
 
 							if (chunkToDraw["entities"][i]["direction"]["x"].get<int>() == 1) {
@@ -280,10 +294,7 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 							carryingItem.setOrigin(0, 20);
 							carryingItem.setPosition(chunkToDraw["entities"][i]["location"]["x"].get<float>() * scaleFactor, (chunkToDraw["entities"][i]["location"]["y"].get<float>()) * scaleFactor);
 
-							sf::Texture carryingItemTexture;
-							carryingItemTexture.loadFromFile(chunkToDraw["entities"][i]["texture"].get<std::string>());
-							texturesToUse.push_back(carryingItemTexture); //we need to push it now for the below
-							carryingItem.setTexture(&texturesToUse[texturesToUse.size() - 1]); //will use the final element of the textures vector
+							carryingItem.setTexture(&textures[std::to_string(chunkToDraw["entities"][i]["itemID"].get<int>())]); //will use the texture in the map (set above)
 							rectanglesToDraw.push_back(carryingItem); //draw the player's item's texture if it's non zero, so there is a texture for it
 						}
 

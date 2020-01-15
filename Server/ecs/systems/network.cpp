@@ -27,6 +27,7 @@ void network::removeUser(unsigned int i) //function to basically properly log ou
 	mutexs::getInstance()->chunkLockMutex.unlock();
 
 	saveUserInventory(users.compVec[i].userID, userInventories[users.compVec[i].userID]); //will save the user's inventory
+	userInventories.erase(users.compVec[i].userID); //erases the inventory stored in memory
 
 	//std::cout << "trying to get past main user mtuex...\n";
 	std::lock_guard<std::mutex> mutex(mutexs::mainUserLockMutex);	
@@ -35,6 +36,10 @@ void network::removeUser(unsigned int i) //function to basically properly log ou
 	packet << std::string("die").c_str(); //putting the c style string into the packet
 	users.compVec[i].socket->send(packet); //sending the packet, this will cause the client to end if it hasn't already
 	users.compVec[i].gameSocket->send(packet); //sending the packet, this will cause the client to end if it hasn't already
+
+	if(users.compVec[i].missionEntityID != -1){
+		missions.removeComponent(users.compVec[i].missionEntityID); //removes the user's current active mission if they're logging out
+	}
 
 	sessionIDToEntityID.erase(users.compVec[i].sessionID); //will erase the mapping of the unique session ID to the index in the component vector for this user
 
@@ -360,7 +365,7 @@ void network::server() { //the function for server initialisation
 
 				outputString = "SERVER: NEW CONNECTION @ " + socket->getRemoteAddress().toString() + "\n"; //make a string which includes their IP address...
 				
-				unsigned int entityID = ecs::entity::superEntityManager.create({components::USER, components::DRAWABLE, components::PHYSICAL}); //a new object with those attributes is made
+				unsigned int entityID = ecs::entity::superEntityManager.create({components::USER, components::DRAWABLE, components::PHYSICAL, components::MP_HP}); //a new object with those attributes is made
 
 				unsigned int componentVectorIndex = users.entityToVectorMap(entityID);	//gets the component vector index of this entity
 				unsigned int physicsCompVecIndex = physicsObjects.entityToVectorMap(entityID);
@@ -371,7 +376,7 @@ void network::server() { //the function for server initialisation
 				userPtr->socket = socket;														   //make the new user object contain their socket
 				userPtr->timeOfExpiry = sf::seconds(expiryTimer.getElapsedTime().asSeconds() + 5); //set the expiry time for their socket
 				userPtr->loggedIn = true;
-				userPtr->avatar = response;
+				drawables.compVec[drawables.entityToVectorMap(entityID)].texture = response;
 
 				users.compVec[componentVectorIndex] = *userPtr;									 //add this user to the users vector
 				sessionIDToEntityID.insert({userPtr->sessionID, entityID}); //will add a map entry, mapping their unique session ID to some index in the component vector

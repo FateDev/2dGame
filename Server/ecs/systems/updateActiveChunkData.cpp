@@ -41,7 +41,6 @@ void updateActiveChunkData::updateActiveChunks()
 		chunks.erase(deletion);
 	}
 	
-	//std::cout << generationCoords.size() << "\n";
 	/*
 	Generation:
 	-Every power of 2 on the x-axis excluding the first 3 (so until the 8th chunk), generate a city there
@@ -114,6 +113,7 @@ void updateActiveChunkData::updateChunkData()
 				gameData[chunkEntityVector.first]["entities"][i]["type"] = "COLLISION";
 				if(physicsObjects.compVec[physicsObjects.entityToVectorMap(entityID)].objType == ITEM){ //if the object type is an item then of course we'd want to register it as such
 					gameData[chunkEntityVector.first]["entities"][i]["type"] = "ITEM";
+					gameData[chunkEntityVector.first]["entities"][i]["itemID"] = thrown_items.compVec[thrown_items.entityToVectorMap(entityID)].item_id; //sets the item ID
 				}
 			}else{
 				gameData[chunkEntityVector.first]["entities"][i]["type"] = "OTHER"; //this should never be true, but just to be safe
@@ -125,7 +125,6 @@ void updateActiveChunkData::updateChunkData()
 			if(users.entityToVectorMap(entityID) != -1){ //entityToVectorMap returns -1 if the entityID is not found in its bimap, so we just use that to find
 				unsigned int usersIndex = users.entityToVectorMap(entityID);
 				gameData[chunkEntityVector.first]["entities"][i]["username"] = users.compVec[usersIndex].username;
-				gameData[chunkEntityVector.first]["entities"][i]["avatar"] = users.compVec[usersIndex].avatar;
 				gameData[chunkEntityVector.first]["entities"][i]["id"] = users.compVec[usersIndex].userID;
 				gameData[chunkEntityVector.first]["entities"][i]["itemID"] =  users.compVec[usersIndex].currentItem;
 			}

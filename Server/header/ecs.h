@@ -25,7 +25,7 @@ using json = nlohmann::json;
 
 namespace ecs{
     namespace entity{
-        enum entityType {USER, MOB, COLLISION_OBJECT, OTHER}; //enum for the types of entities, only used for deleting them though
+        enum entityType {USER, MOB, NPC, MISSION, COLLISION_OBJECT, ITEM_THROWN, OTHER}; //enum for the types of entities, only used for deleting them though
     }
 }
 
@@ -33,7 +33,7 @@ namespace ecs{
     namespace component{
         enum objectType {COLLIDER, COLLISION, COLLIDER_COLLISION, ITEM}; //enum for the object types, collider is like users/mobs, collision is like floors/walls (so don't move), collider-collision is both
         //ITEM is a special type, it falls like a normal collider, but then it becomes a collision and detects for a collision to indicate it must be picked up
-        enum components {USER, DRAWABLE, PHYSICAL}; //enum for all of the components
+        enum components {USER, DRAWABLE, PHYSICAL, NPC, MOB, MISSION, MP_HP, THROWN_ITEM}; //enum for all of the components
 
         //the structs below are the components so far
         struct user{ 
@@ -48,14 +48,49 @@ namespace ecs{
             sf::TcpSocket* gameSocket = NULL; //the socket connection for sending game data
             sf::Time timeOfExpiry; //the time till the socket should be removed, this is updated every time the client pings the server
             bool leave = false; //this will be used to flag when the user leaves
-            std::string avatar = "";
             int currentItem = 0; //the ID and texture of the item they're holding - 0 indicates no item
             int currentItemSelection = 0; //index of the small inventory from 0 to 5 of the item they're currently holding
+            float money = 0;
+            int missionEntityID = -1; //will store entity ID of the mission
+        };
+
+        struct mp_hp{
+            float mp;
+            float hp;
+        };
+
+        enum mobType {VILLAGER, COMMANDER, TROLL, ZOMBIE, SLIME}; //the types of entities
+
+        struct npc{
+            mobType mob_type;
+            std::string defaultMessage = "Hi!"; //say hi by default
+            std::string name = "Dob"; //default name
+            std::string resourceLocation = "resources/items/npc1.png";
+            std::string missionString = "Do this mission";
+        };
+
+        struct mob{
+            mobType mob_type;
+            float attackDamage;
+            int targetPlayer = -1; //the entity ID of the player they are attacking
+            std::string resourceLocation;
+            sf::Vector3i dropItems = {1, 2, 3}; //as an example, the drop items could be any of these
+        };
+
+        struct mission{
+            int issuerNPCEntityID; //the id of the NPC this was made by
+            float reward = 100; //100 coins or currency or something as reward
+            int killCount = 50;
+            int currentKillCount = 0;
         };
 
         struct drawable{
             std::string texture = ""; //not necessarily used but useful at times (like for throwing inventory items)
             sf::Vector2i direction = {1, 0}; //this is only used for drawing moving items, for accurate direction use the velocity, initialises direction to 1 especially for throwing items
+        };
+
+        struct thrown_item{
+            int item_id = -1;
         };
 
         struct physical{
@@ -85,6 +120,11 @@ namespace ecs{
         extern ecsComponentStructure<user> users; //this basically tells the compiler that the variable declared is defined somewhere else in the program (main.cpp in this case)
         extern ecsComponentStructure<drawable> drawables;
         extern ecsComponentStructure<physical> physicsObjects;
+        extern ecsComponentStructure<mob> mobs;
+        extern ecsComponentStructure<mp_hp> mpHpObjects;
+        extern ecsComponentStructure<npc> npcs;
+        extern ecsComponentStructure<mission> missions;
+        extern ecsComponentStructure<thrown_item> thrown_items;
 
         //to make a new componenent, (1) make an enum in ecs::component::components, and (2) optionally if it needs to be like a mob or something, also in entity::entityType
         //then (3) you need to put the extern bit here and put the (4) definitions of it in main.cpp
@@ -267,6 +307,7 @@ namespace ecs{
                 sf::Thread* mainGame = 0;
         };
         
+        extern json itemsFromFile; //will be loaded into the game from items.json
         extern std::unordered_map<int, json> userInventories; //will contain json objects of user's inventories (user ID -> user inventory JSON)
         extern std::unordered_map<coordinatesStruct, std::pair<chunkData, std::vector<ecs::entity::entity>>, Hash> chunks; //will contain a list of all the entities in each chunk, useful for physics + read below
         extern std::unordered_map<coordinatesStruct, json, Hash> gameData; //this basically tells the compiler that the variable declared is defined somewhere else in the program (main.cpp in this case)
