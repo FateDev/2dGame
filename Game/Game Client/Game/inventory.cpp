@@ -16,6 +16,8 @@ inventory::inventory(tgui::Gui& gui, sf::RenderWindow* window, game* gameObj) : 
 		inventoryBar->add(smallInventoryButtons[i]); //adds current one to the main group
 	}
 
+	smallInventoryButtons[6]->disconnectAll(); //removes all functions from this, causes errors, we add the function it needs further below
+
 	guiInventoryButtons.resize(7, std::vector<tgui::BitmapButton::Ptr>(8)); //correctly sizing the vector to prevent uninitialised errors
 
 	//this is the temporary exit button for the main gui

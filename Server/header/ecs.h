@@ -50,7 +50,7 @@ namespace ecs{
             bool leave = false; //this will be used to flag when the user leaves
             int currentItem = 0; //the ID and texture of the item they're holding - 0 indicates no item
             int currentItemSelection = 0; //index of the small inventory from 0 to 5 of the item they're currently holding
-            float money = 0;
+            float balance = 0;
             int missionEntityID = -1; //will store entity ID of the mission
         };
 
@@ -263,6 +263,7 @@ namespace ecs{
                 void messageProcessing(); //simply to simplyify the entire process thread
                 void getUserInventory(int userID, json* jsonObj); //will get the user's inventory
                 void saveUserInventory(int userID, json jsonObj); //saves the user's inventory
+                std::string getUserStats(int userID, int entityID); //will load the user stats (MP, HP and balance from the database), return a string of JSON containing the data for initialising the user client
                 std::string login(std::string input, ecs::component::user *userPtr);
         };
 

@@ -41,8 +41,9 @@ private:
 	sf::Font font;
 public:
 	json itemsFromFile; //items loaded from file
-	/*std::atomic<float> currentPosition_x; //atomic pair as the current position may be writed and read from different threads
-	std::atomic<float> currentPosition_y; //atomic pair as the current position may be writed and read from different threads*/
+	float balance = 0;
+	float mp = 0;
+	float hp = 0;
 	std::unordered_map<std::string, sf::Texture> textures; //to avoid having to repeatedly load in textures
 	std::unordered_map<sf::Keyboard::Key, std::string> sfKeyToAbstractKeyMap;
 	std::unordered_map<std::string, sf::Keyboard::Key> abstractKeyTosfKeyMap;

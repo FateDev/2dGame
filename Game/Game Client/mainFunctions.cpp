@@ -112,6 +112,10 @@ void gameBit(sf::Clock* globalClock, networking* networkObject, gameNetwork* gam
 	networkObject->inventoryObject = &inventoryBit; //will set the inventory object
 	networkObject->getUserInventory(); //stores the user's inventory in a json object in this object
 
+	stats onScreenStats(gui, networkObject, sf::VideoMode::getDesktopMode().height - taskbarHeight, sf::VideoMode::getDesktopMode().width); //makes the status object
+
+	networkObject->userStatsOnScreen = &onScreenStats; //gives it a reference, in case data is pushed for it
+
 	while (gameWindow.isOpen()) //so long as the window is open
 	{
 		sf::Event event; //will store the current event

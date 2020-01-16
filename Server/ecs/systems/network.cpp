@@ -397,6 +397,11 @@ void network::server() { //the function for server initialisation
 
 				users.compVec[componentVectorIndex].currentItem = userInventory[0][0].get<int>(); //initialises the current item they're holding to the one at the top left of the inventory
 				
+				std::string clientInitString = "USER::INIT::" + network::getInstance()->getUserStats(userPtr->userID, entityID); //makes the string of data required for the user
+				sf::Packet packet;
+				packet << clientInitString;
+				socket->send(packet); //sends the init data to the user
+
 				mutexs::getInstance()->mainUserLockMutex.unlock();
 
 				//notice the order of locks here, unlock then lock next one, this is to prevent deadlocking
@@ -418,4 +423,24 @@ void network::server() { //the function for server initialisation
 
 		sf::sleep(sf::milliseconds(150)); //slows down the listener loop so less intensive on my poor laptop
 	}
+}
+
+std::string network::getUserStats(int userID, int entityID){
+	CURL *curl = curl_easy_init(); //we can set options for this to make it control how a transfer/transfers will be made
+	std::string readBuffer;		   //string for the returning data
+
+	curl_easy_setopt(curl, CURLOPT_URL, ("http://erewhon.xyz/game/getUserStats.php?id=" + std::to_string(userID)).c_str());
+	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback); //the callback
+	curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);		  //will write data to the string, so the fourth param of the last callback is stored here
+
+	curl_easy_perform(curl);
+
+	json returnJSON = json::parse(readBuffer); //parses the return JSON object
+
+	users.compVec[users.entityToVectorMap(entityID)].balance = returnJSON["balance"].get<float>();
+	mpHpObjects.compVec[mpHpObjects.entityToVectorMap(entityID)].hp = returnJSON["hp"].get<float>();
+	mpHpObjects.compVec[mpHpObjects.entityToVectorMap(entityID)].mp = returnJSON["mp"].get<float>();
+
+	return returnJSON.dump();
 }

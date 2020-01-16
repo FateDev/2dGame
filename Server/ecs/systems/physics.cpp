@@ -254,11 +254,15 @@ void physics::moveEntities()
 				if (chunks[currentChunkCoords].second[i].id == entityID)
 				{																			  //if the entityID is equal to the one we retrieved, it's the user we're looking for
 					chunks[currentChunkCoords].second.erase(chunks[currentChunkCoords].second.begin() + i); //remove the user from the vector
-					chunks[currentChunkCoords].first.userCount--; //decrements the number of users in this chunk
+					if(users.entityToVectorMap(entityID) != -1){ //if it's a user
+						chunks[currentChunkCoords].first.userCount--; //decrements the number of users in this chunk
+					}
 					//std::cout << "decrementing user count (moving) \n";
 					tempEntity.id = entityID; //sets the correct entityID
 					chunks[newChunkCoords].second.push_back(tempEntity); //and pushes to the vector in the new chunk
-					chunks[newChunkCoords].first.userCount++; //increments the number of users in this chunk
+					if(users.entityToVectorMap(entityID) != -1){ //if it's a user
+						chunks[newChunkCoords].first.userCount++; //increments the number of users in this chunk
+					}
 					break;
 				}
 			}

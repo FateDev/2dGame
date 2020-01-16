@@ -171,13 +171,6 @@ private:
 	sf::Vector2i dragDropItemIndexes; //stores the i and j indexes for the item
 
 	tgui::Theme theme; //the theme used
-	/*
-	sf::RectangleShape userItem = sf::RectangleShape(sf::Vector2f(100, 100)); //the item the user is currently carrying
-	sf::Texture userItemTexture; //the texture of the item above
-	bool currentUserItemChanged = true; //if the user item has changed, refresh the above 2 variables, start it off as true to initialise it
-	sf::Vector2i lastClickedOnBox; //the box that was last clicked on, lets us decided if we need to redraw
-	int currentUserSelectionSmallInventory = 0; //a number from 0 to 5 indicating what index the user has currently selected, defaults to the first item
-	*/
 	int currentSelectedItemIndex = 0; //defaults to 0, the currently selected item, used to draw the box which is selected slightly differently
 public:
 	void setInventoryJSON(json obj) { inventoryJSON = obj; drawInventoryItems(); /*and draw the toolbar items*/ }; //sets the JSON object for the inventory
@@ -193,6 +186,21 @@ public:
 	void updateServerSide(); //will send the server the state of the inventory
 	void updateSelectedItem(int newSelected); //will update what item is currently selected
 	inventory(tgui::Gui& gui, sf::RenderWindow* window, game* gameObj);
+};
+
+class stats {
+private:
+	networking* networkingObj = NULL;
+	tgui::Group::Ptr userStats = tgui::Group::create({ "100%", "100%" });
+	tgui::Panel::Ptr statsBox;
+	tgui::Label::Ptr mp;
+	tgui::Label::Ptr hp;
+	tgui::Label::Ptr balance;
+public:
+	void setBalance(float balanceSet);
+	void setMP(float mpSet);
+	void setHP(float hpSet);
+	stats(tgui::Gui& gui, networking* networkingObj, float trueWinHeight, float trueWinWidth);
 };
 
 #endif // !GUI_HEADER
