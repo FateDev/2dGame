@@ -183,9 +183,13 @@ void networking::getResponses() { //retrieves incoming message
 
 			msgContent.erase(msgContent.begin(), msgContent.begin() + msgContent.find("USER::MSG::") + std::string("USER::MSG::").length());
 		}
-		else if (receiveString.find("USER::INVENTORY::") == 0) {
-			receiveString.erase(receiveString.begin(), receiveString.begin() + std::string("USER::INVENTORY::").length()); //will erase the flag
-			inventoryObject->setInventoryJSON(json::parse(receiveString));
+		else if (receiveString.find("USER::SELECTED::") == 0) {
+			std::string userJSON = receiveString;
+			userJSON.erase(0, userJSON.find("USER::INVENTORY::") + std::string("USER::INVENTORY::").length());
+			receiveString.erase(receiveString.begin(), receiveString.begin() + std::string("USER::SELECTED::").length()); //will erase the flag
+			receiveString.erase(receiveString.find("USER::INVENTORY::"), receiveString.size());
+			inventoryObject->setCurrentSelected(std::stoi(receiveString));
+			inventoryObject->setInventoryJSON(json::parse(userJSON));
 			inventoryObject->drawInventoryItems();
 			//std::cout << "redrawing inventory" << "\n";
 		}

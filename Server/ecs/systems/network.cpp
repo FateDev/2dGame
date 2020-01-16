@@ -138,7 +138,7 @@ void network::messageProcessing(){
 
 				if(receiveString.find("GET::INV") == 0){ //if the user's inventory has been requested
 					sf::Packet packet;	 //a packet to hold a string
-					std::string sendString = "USER::INVENTORY::" + userInventories[users.compVec[i].userID].dump();
+					std::string sendString = "USER::SELECTED::" + std::to_string(users.compVec[i].currentItemSelection) + "USER::INVENTORY::" + userInventories[users.compVec[i].userID].dump();
 					packet << sendString; //puts json data into the packet
 
 					users.compVec[i].socket->send(packet); //sends the packet to the user currently being looped over
@@ -148,7 +148,14 @@ void network::messageProcessing(){
 				if(receiveString.find("UPDATE::INVENTORY::") == 0){ //if a request to update the user's inventory has been sent, update it
 					json inventoryJSONString = json::parse(receiveString.erase(0, std::string("UPDATE::INVENTORY::").size()));
 					userInventories[users.compVec[i].userID] = inventoryJSONString;
-					users.compVec[i].currentItem =inventoryJSONString[0][users.compVec[i].currentItemSelection].get<int>(); //gets the item the user has currently selected and sets it as the current item
+					users.compVec[i].currentItem = inventoryJSONString[0][users.compVec[i].currentItemSelection].get<int>(); //gets the item the user has currently selected and sets it as the current item
+					continue;
+				}
+
+				if(receiveString.find("UPDATE::SELECTED_ITEM::") == 0){ //request to update the selected item in the inventory
+					int newSelected = std::stoi(receiveString.erase(0, std::string("UPDATE::SELECTED_ITEM::").size()));
+					users.compVec[i].currentItemSelection = newSelected;
+					users.compVec[i].currentItem = userInventories[users.compVec[i].userID][0][users.compVec[i].currentItemSelection].get<int>(); //gets the item the user has currently selected and sets it as the current item
 					continue;
 				}
 

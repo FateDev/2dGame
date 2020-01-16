@@ -170,6 +170,7 @@ private:
 	bool dragDropActive = false; //is a drag drop event thing happening or not
 	sf::Vector2i dragDropItemIndexes; //stores the i and j indexes for the item
 
+	tgui::Theme theme; //the theme used
 	/*
 	sf::RectangleShape userItem = sf::RectangleShape(sf::Vector2f(100, 100)); //the item the user is currently carrying
 	sf::Texture userItemTexture; //the texture of the item above
@@ -177,8 +178,10 @@ private:
 	sf::Vector2i lastClickedOnBox; //the box that was last clicked on, lets us decided if we need to redraw
 	int currentUserSelectionSmallInventory = 0; //a number from 0 to 5 indicating what index the user has currently selected, defaults to the first item
 	*/
+	int currentSelectedItemIndex = 0; //defaults to 0, the currently selected item, used to draw the box which is selected slightly differently
 public:
 	void setInventoryJSON(json obj) { inventoryJSON = obj; drawInventoryItems(); /*and draw the toolbar items*/ }; //sets the JSON object for the inventory
+	void setCurrentSelected(int selected) { currentSelectedItemIndex = selected;  } //will set the currently selecte item as this
 	void drawInventoryItems(); //will draw the inventory items
 	void openInventory(); //open the inventory
 	void closeInventory(); //close the inventory
@@ -188,6 +191,7 @@ public:
 	void InventoryLive(sf::View* gameView); //this would be called in the main game loop for the entire drag drop functionality
 	void inventoryItemClickRegister(std::string buttonText); //called when an item is clicked on
 	void updateServerSide(); //will send the server the state of the inventory
+	void updateSelectedItem(int newSelected); //will update what item is currently selected
 	inventory(tgui::Gui& gui, sf::RenderWindow* window, game* gameObj);
 };
 

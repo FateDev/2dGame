@@ -70,7 +70,7 @@ void physics::userInput(json keysAndID)
 			userPtr->currentItem = 0; //the current item they're holding is also now a 0
 
 			sf::Packet packet;	 //a packet to hold a string
-			std::string sendString = "USER::INVENTORY::" + userInventories[userPtr->userID].dump();
+			std::string sendString = "USER::SELECTED::" + std::to_string(userPtr->currentItemSelection) + "USER::INVENTORY::" + userInventories[userPtr->userID].dump();
 			packet << sendString; //puts json data into the packet
 
 			userPtr->socket->send(packet); //sends the packet to the user currently being looped over
@@ -171,7 +171,7 @@ bool physics::checkCollision(entity::entity colliderEntity){
 								}
 
 								sf::Packet packet;	 //a packet to hold a string
-								std::string sendString = "USER::INVENTORY::" + userInventories[userPtr->userID].dump();
+								std::string sendString = "USER::SELECTED::" + std::to_string(userPtr->currentItemSelection) + "USER::INVENTORY::" + userInventories[userPtr->userID].dump();
 								packet << sendString; //puts json data into the packet
 
 								userPtr->socket->send(packet); //sends the packet to the user currently being looped over

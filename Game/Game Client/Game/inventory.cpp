@@ -2,7 +2,7 @@
 #include <header.h>
 
 inventory::inventory(tgui::Gui& gui, sf::RenderWindow* window, game* gameObj) : window(window), gameObj(gameObj) {
-	tgui::Theme theme("Game.txt");
+	theme = tgui::Theme("Game.txt");
 	//the above loads the colours and stuff for the widgets from the file "Game.txt"
 
 	//below makes the inventory items buttons
@@ -11,6 +11,7 @@ inventory::inventory(tgui::Gui& gui, sf::RenderWindow* window, game* gameObj) : 
 		smallInventoryButtons[i]->setRenderer(theme.getRenderer("Button2"));
 		smallInventoryButtons[i]->setSize("5%", "8%");
 		smallInventoryButtons[i]->setPosition(std::to_string(65 + 5 * i) + "%", 0);
+		smallInventoryButtons[i]->connect("pressed", [&, i]() { setCurrentSelected(i); updateSelectedItem(i); drawInventoryItems(); }); //clicking the inventory button would set the current item to that, then update it on the server side, and draw the updated stuff
 
 		inventoryBar->add(smallInventoryButtons[i]); //adds current one to the main group
 	}
@@ -86,6 +87,14 @@ void inventory::closeInventory() {
 void inventory::listenForKeys(sf::Event event) {
 	if (event.type == sf::Event::KeyPressed) {
 		std::string key = gameObj->sfKeyToAbstractKeyMap[event.key.code];
+		for (int i = 1; i <= 6; i++) {
+			if (gameObj->networkObj->settings["item" + std::to_string(i)].get<std::string>() == key && !gameObj->networkObj->msgBoxFocused) {
+				updateSelectedItem(i-1); //doing i-1 as the numbers are from 1 to 6, but the item index is from 0 to 5
+				currentSelectedItemIndex = i - 1; //same as above but for internal drawing of the selected box
+				drawInventoryItems();
+			}
+		}
+
 		if (gameObj->networkObj->settings["inventory"].get<std::string>() == key && !gameObj->networkObj->msgBoxFocused) { //did they press the key to open or close the inventory, as long as the message box isn't focused
 			if (this->isInventoryOpen()) {
 				this->closeInventory();
@@ -106,8 +115,22 @@ void inventory::drawInventoryItems() { //will draw items, where the number (ID) 
 			guiInventoryButtons[i][j]->setImageScaling(0.7);
 
 			if (i == 0) {
-				smallInventoryButtons[j]->setImage(gameObj->itemsFromFile[item]["resourceLocation"].get<std::string>());
-				smallInventoryButtons[j]->setImageScaling(0.7);
+				if (j == currentSelectedItemIndex) {
+					smallInventoryButtons[j]->setRenderer(theme.getRenderer("ExpandedInventoryButton"));
+					smallInventoryButtons[j]->setImage(gameObj->itemsFromFile[item]["resourceLocation"].get<std::string>());
+					smallInventoryButtons[j]->setImageScaling(0.7);
+					guiInventoryButtons[i][j]->setRenderer(theme.getRenderer("ExpandedInventoryButton"));
+					guiInventoryButtons[i][j]->setImage(gameObj->itemsFromFile[item]["resourceLocation"].get<std::string>());
+					guiInventoryButtons[i][j]->setImageScaling(0.7);
+				}
+				else {
+					smallInventoryButtons[j]->setRenderer(theme.getRenderer("InventoryToolbarButton"));
+					smallInventoryButtons[j]->setImage(gameObj->itemsFromFile[item]["resourceLocation"].get<std::string>());
+					smallInventoryButtons[j]->setImageScaling(0.7);
+					guiInventoryButtons[i][j]->setRenderer(theme.getRenderer("InventoryToolbarButton"));
+					guiInventoryButtons[i][j]->setImage(gameObj->itemsFromFile[item]["resourceLocation"].get<std::string>());
+					guiInventoryButtons[i][j]->setImageScaling(0.7);
+				}
 			}
 		}
 	}
@@ -119,7 +142,6 @@ void inventory::InventoryLive(sf::View *gameView) { //makes the drag and drop it
 		window->setView(window->getDefaultView());
 		window->draw(dragDropItem);
 	}
-
 	/*
 	if (currentUserItemChanged) {
 		if (lastClickedOnBox.x == 0) { //I'm using i and j rather than x and y, and it turns out that x is i, which is the row number
@@ -208,6 +230,13 @@ void inventory::inventoryItemClickRegister(std::string buttonText) {
 
 void inventory::updateServerSide() {
 	std::string inventoryJSONString = "UPDATE::INVENTORY::" + inventoryJSON.dump();
+	sf::Packet sendPacket;
+	sendPacket << inventoryJSONString;
+	gameObj->networkObj->socket->send(sendPacket); //will send the current state of the inventory
+}
+
+void inventory::updateSelectedItem(int newSelected) {
+	std::string inventoryJSONString = "UPDATE::SELECTED_ITEM::" + std::to_string(newSelected);
 	sf::Packet sendPacket;
 	sendPacket << inventoryJSONString;
 	gameObj->networkObj->socket->send(sendPacket); //will send the current state of the inventory
