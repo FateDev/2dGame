@@ -396,11 +396,7 @@ void network::server() { //the function for server initialisation
 				userInventories[userPtr->userID] = userInventory; //sets the user's inventory
 
 				users.compVec[componentVectorIndex].currentItem = userInventory[0][0].get<int>(); //initialises the current item they're holding to the one at the top left of the inventory
-				
-				std::string clientInitString = "USER::INIT::" + network::getInstance()->getUserStats(userPtr->userID, entityID); //makes the string of data required for the user
-				sf::Packet packet;
-				packet << clientInitString;
-				socket->send(packet); //sends the init data to the user
+				getUserStats(userPtr->userID, entityID); //sets the user stats here
 
 				mutexs::getInstance()->mainUserLockMutex.unlock();
 
@@ -425,7 +421,7 @@ void network::server() { //the function for server initialisation
 	}
 }
 
-std::string network::getUserStats(int userID, int entityID){
+void network::getUserStats(int userID, int entityID){
 	CURL *curl = curl_easy_init(); //we can set options for this to make it control how a transfer/transfers will be made
 	std::string readBuffer;		   //string for the returning data
 
@@ -437,10 +433,10 @@ std::string network::getUserStats(int userID, int entityID){
 	curl_easy_perform(curl);
 
 	json returnJSON = json::parse(readBuffer); //parses the return JSON object
-
+	
 	users.compVec[users.entityToVectorMap(entityID)].balance = returnJSON["balance"].get<float>();
 	mpHpObjects.compVec[mpHpObjects.entityToVectorMap(entityID)].hp = returnJSON["hp"].get<float>();
 	mpHpObjects.compVec[mpHpObjects.entityToVectorMap(entityID)].mp = returnJSON["mp"].get<float>();
-
-	return returnJSON.dump();
+	mpHpObjects.compVec[mpHpObjects.entityToVectorMap(entityID)].max_hp = returnJSON["max_hp"].get<float>();
+	mpHpObjects.compVec[mpHpObjects.entityToVectorMap(entityID)].max_mp = returnJSON["max_mp"].get<float>();
 }

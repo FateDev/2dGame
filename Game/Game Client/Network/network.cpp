@@ -193,13 +193,6 @@ void networking::getResponses() { //retrieves incoming message
 			inventoryObject->drawInventoryItems();
 			//std::cout << "redrawing inventory" << "\n";
 		}
-		else if (receiveString.find("USER::INIT::") == 0) {
-			json userInitJSON = json::parse(receiveString.erase(0, std::string("USER::INIT::").size())); //makes a json object out of the init data
-			balance = userInitJSON["balance"].get<float>();
-			mp = userInitJSON["mp"].get<float>();
-			hp = userInitJSON["hp"].get<float>();
-			continue;
-		}
 
 		if (chatBoxActive == true) { //checks if the chatbox has been set to active, in which case decode received messages and add them to the chatbox
 			msgContent = xorFunction(msgContent);

@@ -198,19 +198,14 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 					rectangle.setFillColor(sf::Color(17, 19, 22)); //everything else grey
 					break;
 				/*
-					rectangle.setFillColor(sf::Color(39, 174, 96)); //green cave
-					break;
 				case 4:
-					rectangle.setFillColor(sf::Color(39, 174, 96)); //green cave colour, but it's actually right stairs
-					//rectangle.setFillColor(sf::Color(231, 76, 60)); //red right stairs
+					rectangle.setFillColor(sf::Color(231, 76, 60)); //red right stairs
 					break;
 				case 5:
-					rectangle.setFillColor(sf::Color(39, 174, 96)); //green cave colour, but it's actually left stairs
-					//rectangle.setFillColor(sf::Color(241, 196, 15)); //yellow left stairs
+					rectangle.setFillColor(sf::Color(241, 196, 15)); //yellow left stairs
 					break;
 				case 0:
-					rectangle.setFillColor(sf::Color(39, 174, 96)); //green cave colour, but it's actually air
-					//rectangle.setFillColor(sf::Color(211, 84, 0)); //orange air
+					rectangle.setFillColor(sf::Color(211, 84, 0)); //orange air
 					break;
 				*/
 				}
@@ -253,13 +248,29 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 								player.setTexture(playerTexture);
 								gameView->setCenter(chunkToDraw["entities"][i]["location"]["x"].get<float>() * scaleFactor, (chunkToDraw["entities"][i]["location"]["y"].get<float>()) * scaleFactor);
 
-								/*currentPosition_x = chunkToDraw["entities"][i]["location"]["x"].get<float>() * scaleFactor;
-								currentPosition_y = chunkToDraw["entities"][i]["location"]["y"].get<float>() * scaleFactor;*/
+								if (statsObj) {
+									//no need to use locking, as the values used are all atomic types
+									statsObj->setBalance(chunkToDraw["entities"][i]["balance"].get<int>());
+									statsObj->setHP(chunkToDraw["entities"][i]["hp"].get<int>());
+									statsObj->setMP(chunkToDraw["entities"][i]["mp"].get<int>());
+									statsObj->setMaxHp(chunkToDraw["entities"][i]["max_hp"].get<int>());
+									statsObj->setMaxMp(chunkToDraw["entities"][i]["max_mp"].get<int>());
+								}
 							}
 							else {
 								//player.setFillColor(sf::Color::Red);
 								player.setTexture(opponentTexture);
 							}
+
+							float hpRatio = (chunkToDraw["entities"][i]["hp"].get<float>() / 100) / (chunkToDraw["entities"][i]["max_hp"].get<float>() / 100);
+							sf::RectangleShape hpLeft;
+							sf::RectangleShape hpRight;
+							hpLeft.setPosition(chunkToDraw["entities"][i]["location"]["x"].get<float>() * scaleFactor, (chunkToDraw["entities"][i]["location"]["y"].get<float>()) * scaleFactor - 115);
+							hpRight.setPosition(chunkToDraw["entities"][i]["location"]["x"].get<float>() * scaleFactor + (50 * hpRatio), (chunkToDraw["entities"][i]["location"]["y"].get<float>()) * scaleFactor - 115);
+							hpLeft.setSize({ 50*hpRatio, 12 });
+							hpRight.setSize({ 50*(1-hpRatio), 12 });
+							hpLeft.setFillColor(sf::Color(46, 204, 113));
+							hpRight.setFillColor(sf::Color(192, 57, 43));
 
 							player.setPosition(chunkToDraw["entities"][i]["location"]["x"].get<float>() * scaleFactor, (chunkToDraw["entities"][i]["location"]["y"].get<float>()) * scaleFactor);
 							//std::cout << chunkToDraw["entities"][i]["direction"]["x"].get<float>() << " -- " << chunkToDraw["entities"][i]["direction"]["y"].get<float>() << "aa \n";
@@ -273,6 +284,8 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 								rectanglesToDraw.push_back(carryingItem); //draw the player's item's texture if it's non zero, so there is a texture for it
 							}
 
+							rectanglesToDraw.push_back(hpLeft);
+							rectanglesToDraw.push_back(hpRight);
 							textToDraw.push_back(text);
 							spritesToDraw.push_back(player);
 						}

@@ -112,9 +112,9 @@ void gameBit(sf::Clock* globalClock, networking* networkObject, gameNetwork* gam
 	networkObject->inventoryObject = &inventoryBit; //will set the inventory object
 	networkObject->getUserInventory(); //stores the user's inventory in a json object in this object
 
-	stats onScreenStats(gui, networkObject, sf::VideoMode::getDesktopMode().height - taskbarHeight, sf::VideoMode::getDesktopMode().width); //makes the status object
+	stats onScreenStats(gui, networkObject); //makes the status object
 
-	networkObject->userStatsOnScreen = &onScreenStats; //gives it a reference, in case data is pushed for it
+	actualGame.statsObj = &onScreenStats; //sets the stats object as this, so the data from the draw loop can be used to update it
 
 	while (gameWindow.isOpen()) //so long as the window is open
 	{
@@ -168,16 +168,19 @@ void gameBit(sf::Clock* globalClock, networking* networkObject, gameNetwork* gam
 
 			try { //it appears there were some inexplicable access violations here, so we'll use this
 				socialTabBit.completeThreadWork();
-			}
-			catch (...) {
+			}catch (...) {
 				std::cout << "something went wrong, but we'll pretend it didn't, for the complete thread work bit" << std::endl;
 			}
+		}
+			
+		if(socialTabBit.active != true && !inventoryBit.isInventoryOpen() && mainGameScreen.active == true){
+			onScreenStats.enableDraw();
+			onScreenStats.updateStats();
 		}
 
 		try {
 			gui.draw(); //draws everything that's been added to it (hopefully just groups of tgui objects for the different screens)
-		}
-		catch (...) {
+		}catch (...) {
 			std::cout << "something went wrong, but we'll pretend it didn't, for drawing the gui (from tgui)" << std::endl;
 		}
 
@@ -187,8 +190,7 @@ void gameBit(sf::Clock* globalClock, networking* networkObject, gameNetwork* gam
 
 		try {
 			gameWindow.display(); //the contents of the screen are shown
-		}
-		catch (...) {
+		}catch (...) {
 			std::cout << "something went wrong, but we'll pretend it didn't, for displaying the game window" << std::endl;
 		}
 

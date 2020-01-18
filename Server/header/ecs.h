@@ -55,8 +55,10 @@ namespace ecs{
         };
 
         struct mp_hp{
-            float mp;
+            float mp = -1;
             float hp;
+            float max_mp = -1;
+            float max_hp;
         };
 
         enum mobType {VILLAGER, COMMANDER, TROLL, ZOMBIE, SLIME}; //the types of entities
@@ -263,7 +265,7 @@ namespace ecs{
                 void messageProcessing(); //simply to simplyify the entire process thread
                 void getUserInventory(int userID, json* jsonObj); //will get the user's inventory
                 void saveUserInventory(int userID, json jsonObj); //saves the user's inventory
-                std::string getUserStats(int userID, int entityID); //will load the user stats (MP, HP and balance from the database), return a string of JSON containing the data for initialising the user client
+                void getUserStats(int userID, int entityID); //will load the user stats (MP, HP and balance from the database), return a string of JSON containing the data for initialising the user client
                 std::string login(std::string input, ecs::component::user *userPtr);
         };
 

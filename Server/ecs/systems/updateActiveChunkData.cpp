@@ -127,6 +127,16 @@ void updateActiveChunkData::updateChunkData()
 				gameData[chunkEntityVector.first]["entities"][i]["username"] = users.compVec[usersIndex].username;
 				gameData[chunkEntityVector.first]["entities"][i]["id"] = users.compVec[usersIndex].userID;
 				gameData[chunkEntityVector.first]["entities"][i]["itemID"] =  users.compVec[usersIndex].currentItem;
+				gameData[chunkEntityVector.first]["entities"][i]["balance"] =  int(users.compVec[usersIndex].balance*100); //will be stored in std::atomic, so only divide by 100 there for displaying
+			}
+
+			if(mpHpObjects.entityToVectorMap(entityID) != -1){ //basically if it's a living thing add data for it
+				unsigned int mpHpIndex = mpHpObjects.entityToVectorMap(entityID);
+				//the below are all x100, so that I can use std::atomic int on client side, so no need to do locking, as that can be expensive
+				gameData[chunkEntityVector.first]["entities"][i]["mp"] =  int(mpHpObjects.compVec[mpHpIndex].mp*100);
+				gameData[chunkEntityVector.first]["entities"][i]["hp"] =  int(mpHpObjects.compVec[mpHpIndex].hp*100);
+				gameData[chunkEntityVector.first]["entities"][i]["max_mp"] =  int(mpHpObjects.compVec[mpHpIndex].max_mp*100);
+				gameData[chunkEntityVector.first]["entities"][i]["max_hp"] =  int(mpHpObjects.compVec[mpHpIndex].max_hp*100);
 			}
 			
 			if(drawables.entityToVectorMap(entityID) != -1){

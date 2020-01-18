@@ -41,23 +41,22 @@ private:
 	sf::Font font;
 public:
 	json itemsFromFile; //items loaded from file
-	float balance = 0;
-	float mp = 0;
-	float hp = 0;
 	std::unordered_map<std::string, sf::Texture> textures; //to avoid having to repeatedly load in textures
 	std::unordered_map<sf::Keyboard::Key, std::string> sfKeyToAbstractKeyMap;
 	std::unordered_map<std::string, sf::Keyboard::Key> abstractKeyTosfKeyMap;
 	sf::Texture playerTexture; //temp
 	sf::Texture opponentTexture; //temp
-	int xDirectionLast = 0; //will hold the direction of the user temporarily, needed to avoid it jumping unnatrually between orientations
+
+	stats* statsObj = NULL;
 	networking* networkObj = NULL;
+	gameNetwork* gameNetworkObj = NULL;
+	
 	std::vector<sf::RectangleShape> backgroundRectanglesToDraw;
 	std::vector<sf::RectangleShape> rectanglesToDraw;
 	std::vector<sf::CircleShape> circlesToDraw;
 	std::vector<sf::Text> textToDraw;
 	std::vector<sf::Sprite> spritesToDraw;
 	std::vector<sf::Texture> texturesToUse;
-	gameNetwork* gameNetworkObj = NULL;
 	json keysObject;
 	json gameData;
 	game(networking* networkObject, gameNetwork* gameConnection, sf::RenderWindow* window, sf::View* view);

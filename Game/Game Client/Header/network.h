@@ -20,7 +20,6 @@ private:
 public:
 	chat* chatBoxObject = NULL;
 	inventory* inventoryObject = NULL;
-	stats* userStatsOnScreen = NULL; //will display user stats on the screen
 	std::mutex messagesMutex; //will lock for retrieving messages
 	sf::TcpSocket* socket = NULL; //makes a new socket
 	std::string websiteUrl = ""; //the website url will be stored here
@@ -30,9 +29,6 @@ public:
 	std::string ip; //the IP address to connect to
 	unsigned short port; //the port to connect to
 	unsigned short userID; //will hold the user ID
-	float balance = 0;
-	float mp = 0;
-	float hp = 0;
 	bool chatBoxActive = false; //is the small chat box active or not
 	bool active = false; //this single global variable allows us to indicate whether or not the server connection is active
 	bool msgBoxFocused = false; //this is used to indicate whether or not the message box is focused (used to decide if to send server keypress information) (we make this public so that we can see in the GUI bit whether or not there is a connection)

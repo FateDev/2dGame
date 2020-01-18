@@ -7,6 +7,7 @@
 #include <json.hpp>
 #include <thread>
 #include <atomic>
+#include <mutex>
 
 using json = nlohmann::json;
 
@@ -192,15 +193,19 @@ class stats {
 private:
 	networking* networkingObj = NULL;
 	tgui::Group::Ptr userStats = tgui::Group::create({ "100%", "100%" });
-	tgui::Panel::Ptr statsBox;
-	tgui::Label::Ptr mp;
-	tgui::Label::Ptr hp;
-	tgui::Label::Ptr balance;
+	tgui::Panel::Ptr statsBox,hpBarLeft, hpBarRight, mpBarLeft, mpBarRight;
+	tgui::Label::Ptr mp, hp, balance;
+	std::atomic_int balanceVal, mpVal, hpVal, max_mpVal, max_hpVal;
 public:
-	void setBalance(float balanceSet);
-	void setMP(float mpSet);
-	void setHP(float hpSet);
-	stats(tgui::Gui& gui, networking* networkingObj, float trueWinHeight, float trueWinWidth);
+	void enableDraw() { userStats->setVisible(true); }; //enables drawing of the stats
+	void disableDraw() { userStats->setVisible(false); }; //disables drawing of the stats
+	void setBalance(int balanceSet);
+	void setMP(int mpSet);
+	void setHP(int hpSet);
+	void setMaxMp(int maxMpSet);
+	void setMaxHp(int maxHpSet);
+	void updateStats(); //called in the main loop, does any updates to the stats indicators
+	stats(tgui::Gui& gui, networking* networkingObj);
 };
 
 #endif // !GUI_HEADER
