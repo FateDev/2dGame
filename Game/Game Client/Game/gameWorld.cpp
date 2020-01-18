@@ -290,8 +290,6 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 							spritesToDraw.push_back(player);
 						}
 						else if (chunkToDraw["entities"][i]["type"].get<std::string>() == "COLLISION") {
-							//continue;
-
 							float width = abs(chunkToDraw["entities"][i]["hitBox"]["top-left"]["x"].get<float>() - chunkToDraw["entities"][i]["hitBox"]["bottom-right"]["x"].get<float>());
 							float height = abs(chunkToDraw["entities"][i]["hitBox"]["top-left"]["y"].get<float>() - chunkToDraw["entities"][i]["hitBox"]["bottom-right"]["y"].get<float>());
 

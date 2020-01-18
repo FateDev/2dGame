@@ -38,6 +38,9 @@ void updateActiveChunkData::updateActiveChunks()
 	}
 	
 	for(auto &deletion : deletionCoords){ //deletes the ones flagged for deletion
+		for(auto &entitiesInChunk : chunks[deletion].second){
+			ecs::entity::superEntityManager.destroy(entitiesInChunk);
+		}
 		chunks.erase(deletion);
 	}
 	
@@ -51,7 +54,7 @@ void updateActiveChunkData::updateActiveChunks()
 
 	bool generationFlag = false; //used to indicate if generation has happened or not (so to skip the semi random generation bit)
 	for(auto &generation : generationCoords){
-		unsigned int entityID = ecs::entity::superEntityManager.create({components::DRAWABLE, components::PHYSICAL}); //a new object with those attributes is made
+		unsigned int entityID = ecs::entity::superEntityManager.create(ecs::entity::COLLISION_OBJECT); //a new object with those attributes is made
 		
 		if(generation.coordinates.first == 0 && generation.coordinates.second%5==0){
 			chunks[generation].first.settingID = 1; //ID: 1 is city
@@ -88,6 +91,8 @@ void updateActiveChunkData::updateActiveChunks()
 
 		if(chunks[generation].first.settingID != 4 && chunks[generation].first.settingID != 5){
 			chunks[generation].second.push_back(entityID); //pushes the floor entity to the chunks object
+		}else{
+			ecs::entity::superEntityManager.destroy(entityID); //we didn't use the entity so destroy it
 		}
 	}
 
@@ -97,8 +102,8 @@ void updateActiveChunkData::updateActiveChunks()
 	}
 }
 
-void updateActiveChunkData::updateChunkData()
-{					  //this is for updating the gameData object
+void updateActiveChunkData::updateChunkData(){ //this is for updating the gameData object
+	std::lock_guard<std::mutex> lock(mutexs::readGameDataMutex); //will unlock at end of scope
 	gameData.clear(); //empties the gameData object
 	for (auto &chunkEntityVector : chunks){
 		gameData[chunkEntityVector.first] = json::object();

@@ -43,7 +43,7 @@ void network::removeUser(unsigned int i) //function to basically properly log ou
 
 	sessionIDToEntityID.erase(users.compVec[i].sessionID); //will erase the mapping of the unique session ID to the index in the component vector for this user
 
-	ecs::entity::superEntityManager.destroy(entity::entity(entityID), ecs::entity::USER); //removes them from the array if it is
+	ecs::entity::superEntityManager.destroy(entity::entity(entityID)); //removes them from the array if it is
 
 	std::string msgString = "SERVER: A USER HAS LEFT\nSERVER: CLIENTS ONLINE: " + std::to_string(users.compVec.size()); //outputs some server info to indicate that the user is gone
 	std::cout << msgString << "\n";	//outputs this string
@@ -216,8 +216,7 @@ void network::messageProcessing(){
 }
 
 void network::process() {
-	while (true)
-	{ //loop endlessly
+	while (true) { //loop endlessly
 		if (selector.wait(sf::milliseconds(250))){ //waits 0.25 seconds for any activity from any of the sockets
 			mutexs::getInstance()->mainUserLockMutex.lock();
 			network::getInstance()->messageProcessing(); //will do the entire messages thing
@@ -372,7 +371,7 @@ void network::server() { //the function for server initialisation
 
 				outputString = "SERVER: NEW CONNECTION @ " + socket->getRemoteAddress().toString() + "\n"; //make a string which includes their IP address...
 				
-				unsigned int entityID = ecs::entity::superEntityManager.create({components::USER, components::DRAWABLE, components::PHYSICAL, components::MP_HP}); //a new object with those attributes is made
+				unsigned int entityID = ecs::entity::superEntityManager.create(ecs::entity::USER); //a new object with those attributes is made
 
 				unsigned int componentVectorIndex = users.entityToVectorMap(entityID);	//gets the component vector index of this entity
 				unsigned int physicsCompVecIndex = physicsObjects.entityToVectorMap(entityID);

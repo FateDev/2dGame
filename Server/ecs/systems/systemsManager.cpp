@@ -14,8 +14,7 @@ using namespace ecs::component;
 
 void systemsManager::systemStart()
 {
-	processNetwork = new sf::Thread(&network::process, network::getInstance()); //makes the thread
-	processNetwork->launch();										 //launches it
+	processNetwork = new std::thread(&network::process, network::getInstance()); //makes the thread
 
 	listenNetwork = new sf::Thread(&network::server, network::getInstance()); //launches the server to listen on that specific port
 	listenNetwork->launch();														//launches it
@@ -26,8 +25,8 @@ void systemsManager::systemStart()
 	gameConnectServer = new sf::Thread(&gameBroadcast::server, gameBroadcast::getInstance());
 	gameConnectServer->launch();
 
-	mainGame = new sf::Thread(&game::runGame, game::getInstance());
-	mainGame->launch();
+	mainGame = new std::thread(&game::runGame, game::getInstance());
+	gameBroadcast = new std::thread(&game::broadcastGame, game::getInstance());
 
 	//below is just initialisation stuff
 	std::ifstream itemsJSONFile("items.json");
@@ -39,7 +38,7 @@ void systemsManager::systemStart()
 	coordinatesStruct startCoord(0, 0);
 	chunks[startCoord].first.settingID = 1; //sets the first chunk's setting ID to 1, which is a city
 	chunks[startCoord].first.permanent = true; //it should never be deleted
-	unsigned int entityID = ecs::entity::superEntityManager.create({components::DRAWABLE, components::PHYSICAL}); //a new object with those attributes is made
+	unsigned int entityID = ecs::entity::superEntityManager.create(ecs::entity::COLLISION_OBJECT); //a new object with those attributes is made
 	physicsObjects.compVec[physicsObjects.entityToVectorMap(entityID)].boxCorners = {
 		sf::Vector2f(startCoord.coordinates.first * chunkPixelSize_x, (startCoord.coordinates.second * chunkPixelSize_y) - 5), 
 		sf::Vector2f((startCoord.coordinates.first * chunkPixelSize_x) + chunkPixelSize_x, (startCoord.coordinates.second * chunkPixelSize_y)  - 5),
@@ -53,15 +52,33 @@ void systemsManager::systemStart()
 
 void systemsManager::systemEnd()
 {
-	if (processNetwork)
-	{							//if a thread exists
-		processNetwork->wait(); //wait until it's completed this bit of code
+	if (processNetwork){//if a thread exists
+		processNetwork->join(); //wait until it's completed this bit of code
 		delete processNetwork;  //delete it, by the way as sever(...) has an infinite while loop inside, this is only really called when quitting the program
 	}
 
-	if (listenNetwork)
-	{						   //if a thread exists
+	if (listenNetwork){//if a thread exists
 		listenNetwork->wait(); //wait until it's completed this bit of code
 		delete listenNetwork;  //delete it, by the way as sever(...) has an infinite while loop inside, this is only really called when quitting the program
+	}
+
+	if (gameListen){//if a thread exists
+		gameListen->wait(); //wait until it's completed this bit of code
+		delete gameListen;  //delete it, by the way as sever(...) has an infinite while loop inside, this is only really called when quitting the program
+	}
+
+	if (gameConnectServer){//if a thread exists
+		gameConnectServer->wait(); //wait until it's completed this bit of code
+		delete gameConnectServer;  //delete it, by the way as sever(...) has an infinite while loop inside, this is only really called when quitting the program
+	}
+
+	if (gameBroadcast){//if a thread exists
+		gameBroadcast->join(); //wait until it's completed this bit of code
+		delete gameBroadcast;  //delete it, by the way as sever(...) has an infinite while loop inside, this is only really called when quitting the program
+	}
+
+	if (mainGame){//if a thread exists
+		mainGame->join(); //wait until it's completed this bit of code
+		delete mainGame;  //delete it, by the way as sever(...) has an infinite while loop inside, this is only really called when quitting the program
 	}
 }

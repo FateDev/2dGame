@@ -13,19 +13,21 @@
 #include "../header/helper.h"
 
 //the size of one chunk
-const int chunkPixelSize_x = 150;
-const int chunkPixelSize_y = 50;
-const int fps = 60;
+const unsigned short chunkPixelSize_x = 150;
+const unsigned short chunkPixelSize_y = 50;
+const unsigned short fps = 60;
+const unsigned short refreshRate = 60; //does 60 updates per second
 const sf::Vector2f deceleration = { 0, 0.1 }; //x = friction on surface deceleration, y = gravity
 const sf::Vector2f acceleration = { 0, 1 }; //x = acceleration by arrow keys (don't want to accelerate), y = acceleration when jumping up
 const sf::Vector2f velocity = { 1, 0 }; //x = initial velocity with arrow keys, y = initial velocity with arrow keys (don't want any so zero)
+const unsigned short maxMobsPerChunk = 3; //the maximum number of mobs per chunk
 
 #include "../deps/json.hpp"
 using json = nlohmann::json;
 
 namespace ecs{
     namespace entity{
-        enum entityType {USER, MOB, NPC, MISSION, COLLISION_OBJECT, ITEM_THROWN, OTHER}; //enum for the types of entities, only used for deleting them though
+        enum entityType {USER, MOB, NPC, MISSION, COLLISION_OBJECT, ITEM_THROWN, OTHER}; //enum for the types of entities
     }
 }
 
@@ -61,13 +63,13 @@ namespace ecs{
             float max_hp;
         };
 
-        enum mobType {VILLAGER, COMMANDER, TROLL, ZOMBIE, SLIME}; //the types of entities
+        enum mobType {TROLL, ZOMBIE, SLIME, FINAL_ENUM_MOBTYPE}; //the types of mobs, final enum is used to find how many enums there are in it
+        enum npcType {VILLAGER, COMMANDER, FINAL_ENUM_NPCTYPE}; //types of NPCs, final enum is used to find how many enums there are in it
 
         struct npc{
-            mobType mob_type;
+            npcType npc_type;
             std::string defaultMessage = "Hi!"; //say hi by default
             std::string name = "Dob"; //default name
-            std::string resourceLocation = "resources/items/npc1.png";
             std::string missionString = "Do this mission";
         };
 
@@ -75,7 +77,6 @@ namespace ecs{
             mobType mob_type;
             float attackDamage;
             int targetPlayer = -1; //the entity ID of the player they are attacking
-            std::string resourceLocation;
             sf::Vector3i dropItems = {1, 2, 3}; //as an example, the drop items could be any of these
         };
 
@@ -87,7 +88,7 @@ namespace ecs{
         };
 
         struct drawable{
-            std::string texture = ""; //not necessarily used but useful at times (like for throwing inventory items)
+            std::string texture = ""; //not necessarily used but useful at times
             sf::Vector2i direction = {1, 0}; //this is only used for drawing moving items, for accurate direction use the velocity, initialises direction to 1 especially for throwing items
         };
 
@@ -156,12 +157,14 @@ namespace ecs{
 
         class entityManager{
             private:
-                std::unordered_set<entity, Hash> entities; //will contain all of the entities
+                std::unordered_map<entity, entityType, Hash> entities; //will contain all of the entities
                 entity nextEntity; //will allow for creating new entities, and easy iteration through the above set, to find the next free id
             public:
-                unsigned int create(std::initializer_list<ecs::component::components> initialiseWithStructs); //makes entity struct with provided structs, will return the entity
+                unsigned int create(std::initializer_list<ecs::component::components> initialiseWithStructs, entityType type); //makes entity struct with provided structs, will return the entity
+                unsigned int create(entityType type); //makes entity struct with provided structs, will return the entity
+                //the types are required to make the destruction safer, so it's better to go with the second version
                 bool alive(entity entityStruct); //will simply check if the provided entity exists in the entities set
-                void destroy(entity entityStruct, ecs::entity::entityType type); //will destroy an entity, removing it from the above set, and removing all of its entries from the components struct
+                void destroy(entity entityStruct); //will destroy an entity, removing it from the above set, and removing all of its entries from the components struct
         };
         
         extern entityManager superEntityManager; //this basically tells the compiler that the variable declared is defined somewhere else in the program (main.cpp in this case)
@@ -173,6 +176,9 @@ namespace ecs{
         struct chunkData{
             int settingID = 9; //1 is City, 9 is cave, have a look at that piece of paper is drew on
             int userCount = 0; //how many users are in this chunk
+            int itemCount = 0; //how many items
+            int mobCount = 0; //how many mobs
+            int npcCount = 0; //how many NPC's
             bool permanent = false; //just checks if this should ever be deleted or not
         };
         
@@ -213,6 +219,7 @@ namespace ecs{
                 static std::mutex userLocationsMutex; //declares the mutex for reading to/from user location comp vec
                 static std::mutex mainUserLockMutex; //used when sending data (gameBroadcast::broadcastGameState()), and logging the user out, and updating chunk data
                 static std::mutex chunkLockMutex; //to be used to lock chunks, so used when sending data to local chunks, adding/removing users from chunks and incrementing/decrementing user count of a chunk
+                static std::mutex readGameDataMutex; //needed to prevent reading and writing from the game data object simultaneously
                 static mutexs* getInstance();
         };
        
@@ -228,6 +235,19 @@ namespace ecs{
                 bool AABB_collision(int collisionEntityID, int colliderEntityID);
        };
 
+       class mobSystem{
+            private:
+                static mobSystem* instance;
+                mobSystem();
+            public:
+                static mobSystem* getInstance();
+                void mobGeneration(); //runs in game loop, if there are less than maxMobsPerChunk mobs in a chunk, generates mobs
+                void findClosestTarget(); //finds closest player in it's chunk, if userCount is 0 skips over this
+                void findDistanceToTarget(); //finds the magnitude of the distance to the target player
+                void dropItems(); //called when they die, drops the items they contain
+                void mobMovement(); //if no target randomised movement, otherwise towards player, if collides with city boundary reverse velocity forget target
+       };
+
         class gameBroadcast{
             private:
                 static gameBroadcast* instance;
@@ -238,7 +258,6 @@ namespace ecs{
                 void broadcastGameState(); //this will read the gameData object and send the relavent chunk data to some connected client
                 void listenToUsers(); //recieves data from users
                 void server();
-
         };
 
         class network{
@@ -290,7 +309,8 @@ namespace ecs{
                 game();
             public:
                 static game* getInstance();
-                void runGame();
+                void broadcastGame(); //will broadcast game data
+                void runGame(); //will run internal game loops and stuff
        };
        
         class systemsManager{
@@ -301,13 +321,14 @@ namespace ecs{
                 void systemStart();
                 void systemEnd();
 
-                sf::Thread* processNetwork = 0; //the thread for running the main receiving and sending processes
+                std::thread* processNetwork = 0; //the thread for running the main receiving and sending processes
                 sf::Thread* listenNetwork = 0; //listening for incoming connections
 
                 sf::Thread* gameConnectServer = 0;
                 sf::Thread* gameListen = 0;
 
-                sf::Thread* mainGame = 0;
+                std::thread* gameBroadcast = 0; //sends out game data
+                std::thread* mainGame = 0;
         };
         
         extern json itemsFromFile; //will be loaded into the game from items.json

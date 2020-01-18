@@ -2,6 +2,8 @@
 
 using namespace ecs::system;
 
+//defines basically just singletons or some static variables in this file
+
 network *network::instance = 0;
 
 network *network::getInstance()
@@ -13,7 +15,7 @@ network *network::getInstance()
 	return instance;
 }
 
-physics *physics::instance = 0; //to make it singleton
+physics *physics::instance = 0;
 physics::physics() {};
 
 physics *physics::getInstance()
@@ -25,10 +27,6 @@ physics *physics::getInstance()
 	return instance;
 }
 
-std::mutex mutexs::userLocationsMutex; //defines the mutex
-std::mutex mutexs::mainUserLockMutex; //defines the mutex
-std::mutex mutexs::chunkLockMutex; //defines the mutex
-
 mutexs *mutexs::instance = 0;
 mutexs::mutexs() {}
 mutexs *mutexs::getInstance()
@@ -39,6 +37,11 @@ mutexs *mutexs::getInstance()
 	}
 	return instance;
 }
+
+std::mutex mutexs::userLocationsMutex; //defines the mutex
+std::mutex mutexs::mainUserLockMutex; //defines the mutex
+std::mutex mutexs::chunkLockMutex; //defines the mutex
+std::mutex mutexs::readGameDataMutex; //defines the mutex
 
 game *game::instance = 0;
 game::game() {}
@@ -68,6 +71,17 @@ gameBroadcast *gameBroadcast::getInstance()
 	if (instance == 0)
 	{
 		instance = new gameBroadcast();
+	}
+	return instance;
+}
+
+mobSystem *mobSystem::instance = 0;
+mobSystem::mobSystem() {};
+mobSystem *mobSystem::getInstance()
+{
+	if (instance == 0)
+	{
+		instance = new mobSystem();
 	}
 	return instance;
 }

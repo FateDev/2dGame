@@ -4,8 +4,7 @@
 using namespace ecs::system;
 using namespace ecs::component;
 
-void physics::userInput(json keysAndID)
-{
+void physics::userInput(json keysAndID) {
 	unsigned short entityID = sessionIDToEntityID[keysAndID["sessionID"]]; //will get the entity ID
 
 	//does this lock below to prevent deadlocking
@@ -75,7 +74,7 @@ void physics::userInput(json keysAndID)
 
 			userPtr->socket->send(packet); //sends the packet to the user currently being looped over
 
-			int thrownEntityID = ecs::entity::superEntityManager.create({DRAWABLE, PHYSICAL, THROWN_ITEM});
+			int thrownEntityID = ecs::entity::superEntityManager.create(ecs::entity::ITEM_THROWN);
 			ecs::component::physical* physicalObj = &physicsObjects.compVec[physicsObjects.entityToVectorMap(thrownEntityID)];
 			physicalObj->coordinates = sf::Vector2f(userCoordinates.x, userCoordinates.y - 5); //sets thrown item's coordinates as this (around player's waist)
 			physicalObj->velocity = sf::Vector2f(direction_x, 0); //sets thrown item's velocity as this
@@ -195,7 +194,7 @@ bool physics::checkCollision(entity::entity colliderEntity){
 						}
 					}
 
-					ecs::entity::superEntityManager.destroy(entity::entity(entityID), ecs::entity::ITEM_THROWN);
+					ecs::entity::superEntityManager.destroy(entity::entity(entityID));
 				}
 			}
 			if(physicsObjects.compVec[physicsObjects.entityToVectorMap(colliderEntity.id)].objType == ITEM && physicsObjects.compVec[physicsObjects.entityToVectorMap(colliderEntity.id)].onFloor == true){
@@ -251,18 +250,20 @@ void physics::moveEntities()
 
 			for (int i = 0; i < chunks[currentChunkCoords].second.size(); i++)
 			{ //get the coordinate retrieved above, and get the chunk at that coordinate, and loop through the vector storing all the entities at that coordinate
-				if (chunks[currentChunkCoords].second[i].id == entityID)
-				{																			  //if the entityID is equal to the one we retrieved, it's the user we're looking for
-					chunks[currentChunkCoords].second.erase(chunks[currentChunkCoords].second.begin() + i); //remove the user from the vector
+				if (chunks[currentChunkCoords].second[i].id == entityID) { //if the entityID is equal to the one we retrieved, it's the user we're looking for
 					if(users.entityToVectorMap(entityID) != -1){ //if it's a user
 						chunks[currentChunkCoords].first.userCount--; //decrements the number of users in this chunk
+						chunks[newChunkCoords].first.userCount++; //increments the number of users in this chunk
+					} else if(thrown_items.entityToVectorMap(entityID) != -1){ //if it's a thrown item
+						chunks[currentChunkCoords].first.itemCount--;
+						chunks[newChunkCoords].first.itemCount++; //increments the number of users in this chunk
+					} else if(mobs.entityToVectorMap(entityID) != -1){ //if it's a mob
+						chunks[currentChunkCoords].first.mobCount--;
+						chunks[newChunkCoords].first.mobCount++; //increments the number of users in this chunk
 					}
-					//std::cout << "decrementing user count (moving) \n";
+					chunks[currentChunkCoords].second.erase(chunks[currentChunkCoords].second.begin() + i); //remove the user from the vector
 					tempEntity.id = entityID; //sets the correct entityID
 					chunks[newChunkCoords].second.push_back(tempEntity); //and pushes to the vector in the new chunk
-					if(users.entityToVectorMap(entityID) != -1){ //if it's a user
-						chunks[newChunkCoords].first.userCount++; //increments the number of users in this chunk
-					}
 					break;
 				}
 			}
