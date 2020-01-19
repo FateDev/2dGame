@@ -41,7 +41,6 @@ mutexs *mutexs::getInstance()
 std::mutex mutexs::userLocationsMutex; //defines the mutex
 std::mutex mutexs::mainUserLockMutex; //defines the mutex
 std::mutex mutexs::chunkLockMutex; //defines the mutex
-std::mutex mutexs::readGameDataMutex; //defines the mutex
 
 game *game::instance = 0;
 game::game() {}
@@ -85,3 +84,15 @@ mobSystem *mobSystem::getInstance()
 	}
 	return instance;
 }
+
+itemSystem *itemSystem::instance = 0;
+itemSystem::itemSystem() {};
+itemSystem *itemSystem::getInstance()
+{
+	if (instance == 0)
+	{
+		instance = new itemSystem();
+	}
+	return instance;
+}
+

@@ -164,6 +164,7 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 	spritesToDraw.clear();
 	texturesToUse.clear();
 	backgroundRectanglesToDraw.clear();
+	spriteAccessories.clear();
 
 	if (!gameData.is_null()) {	//it now moves it
 		for (int j = 0; j < 9; j++) { //the server sends 9 chunks of data
@@ -171,9 +172,9 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 
 			int scaleFactor = 11; //rather than changing server side stuff, just change this to make everything appear correctly
 
-			/*if (chunkToDraw.is_null()) {
+			if (chunkToDraw.is_null()) {
 				std::cout << "Null" << "\n";
-			}*/
+			}
 
 			if (chunkToDraw.is_null()) { //if the data is null skip it (it only happens for the edge of what can be seen for cities, not a huge issue but should fix it (it's a server side issue)
 				continue;
@@ -194,10 +195,9 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 				case 1:
 					rectangle.setFillColor(sf::Color(29, 34, 39)); //city blue
 					break;
-				default:
+				case 9:
 					rectangle.setFillColor(sf::Color(17, 19, 22)); //everything else grey
 					break;
-				/*
 				case 4:
 					rectangle.setFillColor(sf::Color(231, 76, 60)); //red right stairs
 					break;
@@ -207,7 +207,6 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 				case 0:
 					rectangle.setFillColor(sf::Color(211, 84, 0)); //orange air
 					break;
-				*/
 				}
 
 				backgroundRectanglesToDraw.push_back(rectangle);; //simply add a RectangleShape to the container for it to be drawn
@@ -220,7 +219,8 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 
 							//std::cout << "Carrying: resources/items/" << chunkToDraw["entities"][i]["itemID"].get<int>() << ".png" << "\n";
 							sf::RectangleShape carryingItem({ 30, 30 });
-							carryingItem.setPosition(chunkToDraw["entities"][i]["location"]["x"].get<float>() * scaleFactor, (chunkToDraw["entities"][i]["location"]["y"].get<float>()) * scaleFactor - 50);
+							carryingItem.setOrigin(15, 15);
+							carryingItem.setPosition(chunkToDraw["entities"][i]["location"]["x"].get<float>() * scaleFactor, (chunkToDraw["entities"][i]["location"]["y"].get<float>()) * scaleFactor - 30);
 
 							if (chunkToDraw["entities"][i]["itemID"].get<int>() != 0) { //if it's not zero it means there is a texture to draw
 								carryingItem.setTexture(&textures[std::to_string(chunkToDraw["entities"][i]["itemID"].get<int>())]); //will use the correct texture which was loaded from the items.json file and image files
@@ -229,13 +229,14 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 							if (chunkToDraw["entities"][i]["direction"]["x"].get<int>() == 1) {
 								player.setOrigin(sf::Vector2f(0, 72));
 								player.setScale(1.0, 1.0);
-								carryingItem.move({ 5, 0 });
-								carryingItem.setScale(1.0, 1.0);
+								carryingItem.move({ 30, 0 });
+								carryingItem.rotate(45);
 							}
 							else if (chunkToDraw["entities"][i]["direction"]["x"].get<int>() == -1) {
 								player.setOrigin(sf::Vector2f(50, 72));
 								player.setScale(-1.0, 1.0);
-								carryingItem.move({ 17, 0 });
+								carryingItem.move({ 15, 0 });
+								carryingItem.rotate(-45);
 							}
 							else {
 								carryingItem.move({ 5, 0 });
@@ -281,11 +282,11 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 							text.setPosition(chunkToDraw["entities"][i]["location"]["x"].get<float>() * scaleFactor, (chunkToDraw["entities"][i]["location"]["y"].get<float>()) * scaleFactor - 103);
 
 							if (chunkToDraw["entities"][i]["itemID"].get<int>() != 0) {
-								rectanglesToDraw.push_back(carryingItem); //draw the player's item's texture if it's non zero, so there is a texture for it
+								spriteAccessories.push_back(carryingItem); //draw the player's item's texture if it's non zero, so there is a texture for it
 							}
 
-							rectanglesToDraw.push_back(hpLeft);
-							rectanglesToDraw.push_back(hpRight);
+							spriteAccessories.push_back(hpLeft);
+							spriteAccessories.push_back(hpRight);
 							textToDraw.push_back(text);
 							spritesToDraw.push_back(player);
 						}
@@ -296,7 +297,7 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 							//std::cout << chunkToDraw["entities"][i]["hitBox"]["top-left"].dump() << " -- " << chunkToDraw["entities"][i]["hitBox"]["bottom-right"].dump() << " -- " << width << " -- " << height << " # " << chunkToDraw["data"]["setting_id"].get<int>() << std::endl;
 							sf::RectangleShape rectangle(sf::Vector2f(width * scaleFactor, height * scaleFactor));
 
-							rectangle.setPosition(sf::Vector2f(chunkToDraw["entities"][i]["hitBox"]["top-left"]["x"].get<float>() * scaleFactor, chunkToDraw["entities"][i]["hitBox"]["top-left"]["y"].get<float>() * scaleFactor));
+							rectangle.setPosition({ (chunkToDraw["entities"][i]["hitBox"]["top-left"]["x"].get<float>() + chunkToDraw["entities"][i]["location"]["x"].get<float>()) * scaleFactor, (chunkToDraw["entities"][i]["hitBox"]["top-left"]["y"].get<float>() + chunkToDraw["entities"][i]["location"]["y"].get<float>()) * scaleFactor });
 							rectangle.setFillColor(sf::Color(51, 56, 63)); //grey floor
 							backgroundRectanglesToDraw.push_back(rectangle);; //simply add a RectangleShape to the container for it to be drawn
 						}
@@ -308,7 +309,22 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 							carryingItem.setTexture(&textures[std::to_string(chunkToDraw["entities"][i]["itemID"].get<int>())]); //will use the texture in the map (set above)
 							rectanglesToDraw.push_back(carryingItem); //draw the player's item's texture if it's non zero, so there is a texture for it
 						}
+						else {
+							float width = abs(chunkToDraw["entities"][i]["hitBox"]["top-left"]["x"].get<float>() - chunkToDraw["entities"][i]["hitBox"]["bottom-right"]["x"].get<float>());
+							float height = abs(chunkToDraw["entities"][i]["hitBox"]["top-left"]["y"].get<float>() - chunkToDraw["entities"][i]["hitBox"]["bottom-right"]["y"].get<float>());
 
+							//std::cout << chunkToDraw["entities"][i]["hitBox"]["top-left"].dump() << " -- " << chunkToDraw["entities"][i]["hitBox"]["bottom-right"].dump() << " -- " << width << " -- " << height << " # " << chunkToDraw["data"]["setting_id"].get<int>() << std::endl;
+							//std::cout << width << " -- " << height << "\n";
+							sf::RectangleShape rectangle(sf::Vector2f(width * scaleFactor, height * scaleFactor));
+							std::cout << chunkToDraw["entities"][i]["location"]["y"].dump() << "\n";
+							rectangle.setPosition({ (chunkToDraw["entities"][i]["hitBox"]["top-left"]["x"].get<float>() + chunkToDraw["entities"][i]["location"]["x"].get<float>()) * scaleFactor, (chunkToDraw["entities"][i]["hitBox"]["top-left"]["y"].get<float>() + chunkToDraw["entities"][i]["location"]["y"].get<float>()) * scaleFactor });
+							//rectangle.move(0, -20);
+							rectangle.setFillColor(sf::Color(211, 84, 0)); //grey floor
+							rectanglesToDraw.push_back(rectangle);; //simply add a RectangleShape to the container for it to be drawn
+						}
+						if (chunkToDraw["entities"][i]["type"].get<std::string>() == "MOB") {
+							//std::cout << "it's a mob ... ";
+						}
 					}
 				}
 			}
@@ -342,16 +358,19 @@ void game::live(inventory* inventoryBit) { //this is called from the main thread
 	for (auto& x : backgroundRectanglesToDraw) {
 		gameWindow->draw(x);
 	}
-	for (auto& x : textToDraw) {
+	for (auto& x : circlesToDraw) {
 		gameWindow->draw(x);
 	}
-	for (auto& x : circlesToDraw) {
+	for (auto& x : rectanglesToDraw) {
+		gameWindow->draw(x);
+	}
+	for (auto& x : textToDraw) {
 		gameWindow->draw(x);
 	}
 	for (auto& x : spritesToDraw) {
 		gameWindow->draw(x);
 	}
-	for (auto& x : rectanglesToDraw) {
+	for (auto& x : spriteAccessories) {
 		gameWindow->draw(x);
 	}
 	gameNetworkObj->drawMutex.unlock();

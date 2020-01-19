@@ -122,3 +122,7 @@ void entityManager::destroy(entity entityStruct){ //removes entities and all of 
     entities.erase(nextEntity); //erases the entity which is exactly like that
     nextEntity.id = 0; //and sets the entity ID to 0 so that nextEntity can be used elsewhere with no concerns
 }
+
+ecs::entity::entityType entityManager::getType(entity entityStruct){
+    return entities[entityStruct];
+}

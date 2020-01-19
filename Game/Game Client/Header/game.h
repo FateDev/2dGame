@@ -53,10 +53,12 @@ public:
 	
 	std::vector<sf::RectangleShape> backgroundRectanglesToDraw;
 	std::vector<sf::RectangleShape> rectanglesToDraw;
+	std::vector<sf::RectangleShape> spriteAccessories;
 	std::vector<sf::CircleShape> circlesToDraw;
 	std::vector<sf::Text> textToDraw;
 	std::vector<sf::Sprite> spritesToDraw;
 	std::vector<sf::Texture> texturesToUse;
+
 	json keysObject;
 	json gameData;
 	game(networking* networkObject, gameNetwork* gameConnection, sf::RenderWindow* window, sf::View* view);

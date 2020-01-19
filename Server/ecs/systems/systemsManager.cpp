@@ -26,28 +26,18 @@ void systemsManager::systemStart()
 	gameConnectServer->launch();
 
 	mainGame = new std::thread(&game::runGame, game::getInstance());
-	gameBroadcast = new std::thread(&game::broadcastGame, game::getInstance());
+
+	chunksStuff = new std::thread(&game::chunksUpdateLoop, game::getInstance());
+	broadcastGameLoop = new std::thread(&game::broadcastGameLoop, game::getInstance());
+	physicsLoop = new std::thread(&game::physicsLoop, game::getInstance());
 
 	//below is just initialisation stuff
 	std::ifstream itemsJSONFile("items.json");
 	std::stringstream jsonContents;
 	jsonContents << itemsJSONFile.rdbuf(); //reads into read buffer
 	itemsFromFile = json::parse(jsonContents.str()); //puts into object
-
-	//this just makes the first chunk, if any updates are made in the chunk gen section make sure to add them here
-	coordinatesStruct startCoord(0, 0);
-	chunks[startCoord].first.settingID = 1; //sets the first chunk's setting ID to 1, which is a city
-	chunks[startCoord].first.permanent = true; //it should never be deleted
-	unsigned int entityID = ecs::entity::superEntityManager.create(ecs::entity::COLLISION_OBJECT); //a new object with those attributes is made
-	physicsObjects.compVec[physicsObjects.entityToVectorMap(entityID)].boxCorners = {
-		sf::Vector2f(startCoord.coordinates.first * chunkPixelSize_x, (startCoord.coordinates.second * chunkPixelSize_y) - 5), 
-		sf::Vector2f((startCoord.coordinates.first * chunkPixelSize_x) + chunkPixelSize_x, (startCoord.coordinates.second * chunkPixelSize_y)  - 5),
-		sf::Vector2f(startCoord.coordinates.first * chunkPixelSize_x, (startCoord.coordinates.second * chunkPixelSize_y)), 
-		sf::Vector2f((startCoord.coordinates.first * chunkPixelSize_x) + chunkPixelSize_x, (startCoord.coordinates.second * chunkPixelSize_y))
-	};  //sets the corners of these boxes
-	physicsObjects.compVec[physicsObjects.entityToVectorMap(entityID)].coordinates = sf::Vector2f(startCoord.coordinates.first * chunkPixelSize_x, startCoord.coordinates.second * chunkPixelSize_y);
-	physicsObjects.compVec[physicsObjects.entityToVectorMap(entityID)].objType = COLLISION; //sets the object type
-	chunks[startCoord].second.push_back(entityID); //pushes the floor entity to the chunks object
+	
+	updateActiveChunkData::getInstance()->initWorld(coordinatesStruct(0, 0)); //generates the first few chunks in the world
 }
 
 void systemsManager::systemEnd()
@@ -72,13 +62,23 @@ void systemsManager::systemEnd()
 		delete gameConnectServer;  //delete it, by the way as sever(...) has an infinite while loop inside, this is only really called when quitting the program
 	}
 
-	if (gameBroadcast){//if a thread exists
-		gameBroadcast->join(); //wait until it's completed this bit of code
-		delete gameBroadcast;  //delete it, by the way as sever(...) has an infinite while loop inside, this is only really called when quitting the program
-	}
-
 	if (mainGame){//if a thread exists
 		mainGame->join(); //wait until it's completed this bit of code
 		delete mainGame;  //delete it, by the way as sever(...) has an infinite while loop inside, this is only really called when quitting the program
+	}
+
+	if (chunksStuff){
+		chunksStuff->join();
+		delete chunksStuff;
+	}
+
+	if (physicsLoop){
+		physicsLoop->join();
+		delete physicsLoop;
+	}
+
+	if (broadcastGameLoop){
+		broadcastGameLoop->join();
+		delete broadcastGameLoop;
 	}
 }

@@ -15,12 +15,11 @@
 //the size of one chunk
 const unsigned short chunkPixelSize_x = 150;
 const unsigned short chunkPixelSize_y = 50;
-const unsigned short fps = 60;
-const unsigned short refreshRate = 60; //does 60 updates per second
-const sf::Vector2f deceleration = { 0, 0.1 }; //x = friction on surface deceleration, y = gravity
-const sf::Vector2f acceleration = { 0, 1 }; //x = acceleration by arrow keys (don't want to accelerate), y = acceleration when jumping up
-const sf::Vector2f velocity = { 1, 0 }; //x = initial velocity with arrow keys, y = initial velocity with arrow keys (don't want any so zero)
-const unsigned short maxMobsPerChunk = 3; //the maximum number of mobs per chunk
+const unsigned short fps = 40;
+const sf::Vector2f deceleration = { 0, 0.3 }; //x = friction on surface deceleration, y = gravity
+const sf::Vector2f acceleration = { 0, 2 }; //x = acceleration by arrow keys (don't want to accelerate), y = acceleration when jumping up
+const sf::Vector2f velocity = { 2, 0 }; //x = initial velocity with arrow keys, y = initial velocity with arrow keys (don't want any so zero)
+const unsigned short maxMobsPerChunk = 2; //the maximum number of mobs per chunk
 
 #include "../deps/json.hpp"
 using json = nlohmann::json;
@@ -165,6 +164,7 @@ namespace ecs{
                 //the types are required to make the destruction safer, so it's better to go with the second version
                 bool alive(entity entityStruct); //will simply check if the provided entity exists in the entities set
                 void destroy(entity entityStruct); //will destroy an entity, removing it from the above set, and removing all of its entries from the components struct
+                ecs::entity::entityType getType(entity entityStruct); //given the entity struct, the type of the entity will be returned
         };
         
         extern entityManager superEntityManager; //this basically tells the compiler that the variable declared is defined somewhere else in the program (main.cpp in this case)
@@ -174,17 +174,13 @@ namespace ecs{
         extern std::unordered_map<std::string, unsigned int>  sessionIDToEntityID; //will map user's uniqueID's to their entity ID
 
         struct chunkData{
-            int settingID = 9; //1 is City, 9 is cave, have a look at that piece of paper is drew on
+            int settingID = 0; //1 is City, 9 is cave, have a look at that piece of paper is drew on
             int userCount = 0; //how many users are in this chunk
             int itemCount = 0; //how many items
             int mobCount = 0; //how many mobs
             int npcCount = 0; //how many NPC's
+            bool generated = false; //will indicate if it's been generated, as apparently chunks.count(coordinate) isn't reliable due to moving things
             bool permanent = false; //just checks if this should ever be deleted or not
-        };
-        
-        struct mapCleanup{
-            void chunksMapCleanup(); //should be run on a thread, should iterate through every single chunk, with something like 100ms sleep inbetween as it's not that important
-            //it should basically just remove entities that don't exist anymore
         };
 
         struct coordinatesStruct{
@@ -219,7 +215,6 @@ namespace ecs{
                 static std::mutex userLocationsMutex; //declares the mutex for reading to/from user location comp vec
                 static std::mutex mainUserLockMutex; //used when sending data (gameBroadcast::broadcastGameState()), and logging the user out, and updating chunk data
                 static std::mutex chunkLockMutex; //to be used to lock chunks, so used when sending data to local chunks, adding/removing users from chunks and incrementing/decrementing user count of a chunk
-                static std::mutex readGameDataMutex; //needed to prevent reading and writing from the game data object simultaneously
                 static mutexs* getInstance();
         };
        
@@ -241,11 +236,22 @@ namespace ecs{
                 mobSystem();
             public:
                 static mobSystem* getInstance();
-                void mobGeneration(); //runs in game loop, if there are less than maxMobsPerChunk mobs in a chunk, generates mobs
+                void generateMobsAt(coordinatesStruct coordinate); //runs in game loop, if there are less than maxMobsPerChunk mobs in a chunk, generates mobs
                 void findClosestTarget(); //finds closest player in it's chunk, if userCount is 0 skips over this
                 void findDistanceToTarget(); //finds the magnitude of the distance to the target player
                 void dropItems(); //called when they die, drops the items they contain
                 void mobMovement(); //if no target randomised movement, otherwise towards player, if collides with city boundary reverse velocity forget target
+       };
+
+       class itemSystem{
+            private:
+                static itemSystem* instance;
+                itemSystem();
+            public:
+                static itemSystem* getInstance();
+                void throwItem(json keysAndID, int entityID, int direction_x, sf::Vector2f userCoordinates);
+                void pickupItem(entity::entity colliderEntity, entity::entity collisionEntity);
+                bool userItemCollision(component::physical* collisionObject, component::physical* colliderObject);
        };
 
         class gameBroadcast{
@@ -299,6 +305,9 @@ namespace ecs{
 
                 void updateActiveChunks(); //this would update the activeChunks map, removing inactive ones, adding new ones which should be set to active
                 void updateChunkData(); //this would get the data associated with some chunk and store it in the gameData object
+                void generateChunks(std::vector<coordinatesStruct> generationCoords, bool permanent); //given a vector of coordinates, generate chunks
+                void initWorld(coordinatesStruct startCoord); //given a start coordinate, generate the 9 chunks including it and surrounding it
+                void cleanupChunks(std::vector<coordinatesStruct> deletionCoords); //will cleanup/delete the chunks at the coordinates in the deletionCoords vector
                 
                 std::vector<sf::Vector2f> retrievePlayerChunks(unsigned int entityID); 
         };
@@ -311,6 +320,9 @@ namespace ecs{
                 static game* getInstance();
                 void broadcastGame(); //will broadcast game data
                 void runGame(); //will run internal game loops and stuff
+                void chunksUpdateLoop(); //loop to update chunks
+                void broadcastGameLoop();
+                void physicsLoop();
        };
        
         class systemsManager{
@@ -327,8 +339,10 @@ namespace ecs{
                 sf::Thread* gameConnectServer = 0;
                 sf::Thread* gameListen = 0;
 
-                std::thread* gameBroadcast = 0; //sends out game data
                 std::thread* mainGame = 0;
+                std::thread* chunksStuff = 0;
+                std::thread* physicsLoop = 0;
+                std::thread* broadcastGameLoop = 0;
         };
         
         extern json itemsFromFile; //will be loaded into the game from items.json

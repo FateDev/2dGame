@@ -4,21 +4,31 @@
 using namespace ecs::system;
 using namespace ecs::component;
 
+void updateActiveChunkData::initWorld(coordinatesStruct startCoord){ //generates the initial 9 chunks or so, these may be different to the rest
+	std::vector<coordinatesStruct> generationCoords = {};
+	for(int i = -1; i <= 1; i++){
+		for(int j = -1; j <= 1; j++){
+			generationCoords.push_back(coordinatesStruct(startCoord.coordinates.first + i, startCoord.coordinates.second + j));
+		}
+	}
+
+	generateChunks(generationCoords, true); //and they should be permanent
+}
+
 void updateActiveChunkData::updateActiveChunks()
 { //this is for updating which chunks are actually active
 	std::vector<coordinatesStruct> generationCoords = {}; //a vector containing all of the coordinates to generate a new chunk at
 	std::vector<coordinatesStruct> deletionCoords = {}; //a vector containing all of the coordinates to delete chunks from
-	for (auto &chunk : chunks)
-	{
+	for (auto &chunk : chunks) {
 		if(chunk.second.first.userCount > 0){
 			for(int i = chunk.first.coordinates.first-1; i <= chunk.first.coordinates.first+1;i++){
 				for(int j = chunk.first.coordinates.second-1; j <= chunk.first.coordinates.second+1;j++){ //loops around all the surrounding chunks
-					if(!chunks.count(coordinatesStruct(i, j))){ //if the chunk hasn't been made yet
+					if(!chunks[coordinatesStruct(i, j)].first.generated){ //if the chunk hasn't been made yet
 						generationCoords.push_back(coordinatesStruct(i, j)); //flag this up for generation
 					}
 				}
 			}
-		}else{ //if there are no users in this, then potentially flag it up for deletion
+		}else if(!chunk.second.first.permanent){ //if there are no users in this, then potentially flag it up for deletion
 			bool usersPresentInSurroundingChunks = false; //any users present in how many surrounding chunks?
 			for(int i = chunk.first.coordinates.first-1; i <= chunk.first.coordinates.first+1;i++){
 				for(int j = chunk.first.coordinates.second-1; j <= chunk.first.coordinates.second+1;j++){
@@ -31,17 +41,10 @@ void updateActiveChunkData::updateActiveChunks()
 				}
 				if(usersPresentInSurroundingChunks) { break; } //if users are present in surrounding chunk, no longer need to continue checking
 			}
-			if(!usersPresentInSurroundingChunks && !chunk.second.first.permanent){ //as long as there are no users in it, and it's not flagged as a permanent chunk, delete it
+			if(!usersPresentInSurroundingChunks){ //as long as there are no users in it, and it's not flagged as a permanent chunk, delete it
 				deletionCoords.push_back(chunk.first); //flag for deletion
 			}
 		}
-	}
-	
-	for(auto &deletion : deletionCoords){ //deletes the ones flagged for deletion
-		for(auto &entitiesInChunk : chunks[deletion].second){
-			ecs::entity::superEntityManager.destroy(entitiesInChunk);
-		}
-		chunks.erase(deletion);
 	}
 	
 	/*
@@ -49,14 +52,36 @@ void updateActiveChunkData::updateActiveChunks()
 	-Every power of 2 on the x-axis excluding the first 3 (so until the 8th chunk), generate a city there
 		-> their y vaues are always multiples of 5
 	*/
+	std::cout << "Deleting: " << deletionCoords.size() << "\n";
+	std::cout << "Generating: " << generationCoords.size() << "\n";
+	std::cout << "Total number: " << chunks.size() << "\n";
 
-	std::vector<coordinatesStruct> airCoords; //used for the stairs or whatever requires air above
+	cleanupChunks(deletionCoords); //deletes the deletionCoords ones
+	generateChunks(generationCoords, false); //generates the ones at generationCoords, false is saying that these ones shouldn't be permanent
+}
 
-	bool generationFlag = false; //used to indicate if generation has happened or not (so to skip the semi random generation bit)
+void updateActiveChunkData::cleanupChunks(std::vector<coordinatesStruct> deletionCoords){
+	for(auto &deletion : deletionCoords){ //deletes the ones flagged for deletion
+		for(auto &entitiesInChunk : chunks[deletion].second){
+			if(ecs::entity::superEntityManager.getType(entitiesInChunk) == ecs::entity::entityType::MOB){
+				chunks[deletion].first.mobCount--;
+			}else if(ecs::entity::superEntityManager.getType(entitiesInChunk) == ecs::entity::entityType::NPC){
+				chunks[deletion].first.npcCount--;
+			}else if(ecs::entity::superEntityManager.getType(entitiesInChunk) == ecs::entity::entityType::ITEM_THROWN){
+				chunks[deletion].first.itemCount--;
+			}
+			ecs::entity::superEntityManager.destroy(entitiesInChunk);
+		}
+		chunks.erase(deletion);
+	}
+}
+
+void updateActiveChunkData::generateChunks(std::vector<coordinatesStruct> generationCoords, bool permanent){
 	for(auto &generation : generationCoords){
+		bool generationFlag = false; //used to indicate if generation has happened or not (so to skip the semi random generation bit)
 		unsigned int entityID = ecs::entity::superEntityManager.create(ecs::entity::COLLISION_OBJECT); //a new object with those attributes is made
 		
-		if(generation.coordinates.first == 0 && generation.coordinates.second%5==0){
+		if((generation.coordinates.first == 0 && generation.coordinates.second%5==0) || (generation.coordinates.first == 0 && generation.coordinates.second==0)){
 			chunks[generation].first.settingID = 1; //ID: 1 is city
 			generationFlag = true;
 		}else if(std::floor((float)log2(abs(generation.coordinates.first))) == (float)log2(abs(generation.coordinates.first)) && generation.coordinates.second%5==0){
@@ -72,38 +97,39 @@ void updateActiveChunkData::updateActiveChunks()
 			int chance = rand() % 100 + 1;
 			if(chance > 80 && chance < 90 && chunks[coordinatesStruct(generation.coordinates.first, generation.coordinates.second-1)].first.settingID != 1){ //so long as city isn't above
 				chunks[generation].first.settingID = 4; //ID: 4 is stairs right
-				airCoords.push_back(coordinatesStruct(generation.coordinates.first, generation.coordinates.second-1)); //-1 is above it
 			}else if(chance > 90 && chunks[coordinatesStruct(generation.coordinates.first, generation.coordinates.second-1)].first.settingID != 1){ //so long as city isn't above
 				chunks[generation].first.settingID = 5; //ID: 5 is stairs left
-				airCoords.push_back(coordinatesStruct(generation.coordinates.first, generation.coordinates.second-1)); //-1 is above it
 			}else{
 				chunks[generation].first.settingID = 9; //ID: 9 is cave
 			}
 		}
 		
-		physicsObjects.compVec[physicsObjects.entityToVectorMap(entityID)].boxCorners = {
-			sf::Vector2f(generation.coordinates.first * chunkPixelSize_x, (generation.coordinates.second * chunkPixelSize_y) - 5), 
-			sf::Vector2f((generation.coordinates.first * chunkPixelSize_x) + chunkPixelSize_x, (generation.coordinates.second * chunkPixelSize_y) - 5),
-			sf::Vector2f(generation.coordinates.first * chunkPixelSize_x, (generation.coordinates.second * chunkPixelSize_y)), 
-			sf::Vector2f((generation.coordinates.first * chunkPixelSize_x) + chunkPixelSize_x, (generation.coordinates.second * chunkPixelSize_y))
+		if(permanent){
+			chunks[generation].first.permanent = true; //make it permanent on request
+		}
+
+		chunks[generation].first.generated = true; //it's been generated, so flag it as such
+		
+		auto physicsObj = &physicsObjects.compVec[physicsObjects.entityToVectorMap(entityID)];
+		physicsObj->boxCorners = {
+			sf::Vector2f(0, -5), 
+			sf::Vector2f(chunkPixelSize_x, -5),
+			sf::Vector2f(0, 0), 
+			sf::Vector2f(chunkPixelSize_x, 0)
 		}; //sets the corners of these boxes, remember negative is up
-		physicsObjects.compVec[physicsObjects.entityToVectorMap(entityID)].objType = COLLISION; //sets the object type
+		physicsObj->objType = COLLISION; //sets the object type
+		physicsObj->coordinates = {generation.coordinates.first * chunkPixelSize_x, generation.coordinates.second * chunkPixelSize_y};
 
 		if(chunks[generation].first.settingID != 4 && chunks[generation].first.settingID != 5){
 			chunks[generation].second.push_back(entityID); //pushes the floor entity to the chunks object
+			mobSystem::getInstance()->generateMobsAt(generation); //generates mobs at these coordinates
 		}else{
 			ecs::entity::superEntityManager.destroy(entityID); //we didn't use the entity so destroy it
 		}
 	}
-
-	for(auto &generateAir : airCoords){ 
-		//generates air above stairs chunks, which does cause an air chunk to potentially suddenly appear on one of an active user's surrounding chunks, but not a huge issue
-		chunks[generateAir].first.settingID = 0; //ID: 0 is air
-	}
 }
 
 void updateActiveChunkData::updateChunkData(){ //this is for updating the gameData object
-	std::lock_guard<std::mutex> lock(mutexs::readGameDataMutex); //will unlock at end of scope
 	gameData.clear(); //empties the gameData object
 	for (auto &chunkEntityVector : chunks){
 		gameData[chunkEntityVector.first] = json::object();
@@ -111,22 +137,29 @@ void updateActiveChunkData::updateChunkData(){ //this is for updating the gameDa
 		{
 			std::lock_guard<std::mutex> mutex(mutexs::mainUserLockMutex);	//locks the mutex so user can't logout while this is being updated or vice versa
 			int entityID = chunkEntityVector.second.second[i].id;
-
-			if(users.entityToVectorMap(entityID) != -1){ //it must be a user
-				gameData[chunkEntityVector.first]["entities"][i]["type"] = "USER"; //its type is user, use these sort of capital letter words to describe the entity 'type'
-			}else if(drawables.entityToVectorMap(entityID) != -1 && physicsObjects.entityToVectorMap(entityID) != -1){ //its probably floor or wall or something
-				gameData[chunkEntityVector.first]["entities"][i]["type"] = "COLLISION";
-				if(physicsObjects.compVec[physicsObjects.entityToVectorMap(entityID)].objType == ITEM){ //if the object type is an item then of course we'd want to register it as such
+			
+			switch (entity::superEntityManager.getType(entity::entity(entityID))){ //setting the type of the entity
+				case entity::entityType::USER:
+					gameData[chunkEntityVector.first]["entities"][i]["type"] = "USER"; //its type is user, use these sort of capital letter words to describe the entity 'type'
+					break;
+				case entity::entityType::COLLISION_OBJECT:
+					gameData[chunkEntityVector.first]["entities"][i]["type"] = "COLLISION"; //probably the floor or wall or something similar
+					break;
+				case entity::entityType::MOB:
+					gameData[chunkEntityVector.first]["entities"][i]["type"] = "MOB"; //it's probably a mob so set it as such
+					break;
+				case entity::entityType::ITEM_THROWN: {
 					gameData[chunkEntityVector.first]["entities"][i]["type"] = "ITEM";
 					gameData[chunkEntityVector.first]["entities"][i]["itemID"] = thrown_items.compVec[thrown_items.entityToVectorMap(entityID)].item_id; //sets the item ID
+					break;
 				}
-			}else{
-				gameData[chunkEntityVector.first]["entities"][i]["type"] = "OTHER"; //this should never be true, but just to be safe
+				//add in other conditions like these for mobs, items, or other things
+				default:{
+					gameData[chunkEntityVector.first]["entities"][i]["type"] = "OTHER"; //this should never be true, but just to be safe
+				}
 			}
-			//add in other conditions like these for mobs, items, or other things
 			
 			//the below are the generic information stuff
-
 			if(users.entityToVectorMap(entityID) != -1){ //entityToVectorMap returns -1 if the entityID is not found in its bimap, so we just use that to find
 				unsigned int usersIndex = users.entityToVectorMap(entityID);
 				gameData[chunkEntityVector.first]["entities"][i]["username"] = users.compVec[usersIndex].username;
@@ -155,7 +188,7 @@ void updateActiveChunkData::updateChunkData(){ //this is for updating the gameDa
 				unsigned int physicsIndex = physicsObjects.entityToVectorMap(entityID);
 				gameData[chunkEntityVector.first]["entities"][i]["location"]["x"] = physicsObjects.compVec[physicsIndex].coordinates.x;
 				gameData[chunkEntityVector.first]["entities"][i]["location"]["y"] = physicsObjects.compVec[physicsIndex].coordinates.y;
-				//the hit box stuff
+				//the hit box stuff, for anything other than a wall/floor it won't give the actual location, rather locations relative to the local origin
 				gameData[chunkEntityVector.first]["entities"][i]["hitBox"]["top-left"]["x"] = physicsObjects.compVec[physicsIndex].boxCorners[0].x;
 				gameData[chunkEntityVector.first]["entities"][i]["hitBox"]["top-left"]["y"] = physicsObjects.compVec[physicsIndex].boxCorners[0].y;
 				gameData[chunkEntityVector.first]["entities"][i]["hitBox"]["bottom-right"]["x"] = physicsObjects.compVec[physicsIndex].boxCorners[3].x;

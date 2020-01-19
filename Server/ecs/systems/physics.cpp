@@ -17,22 +17,18 @@ void physics::userInput(json keysAndID) {
 	bool *onFloor = &ecs::component::physicsObjects.compVec[physicsVectorIndex].onFloor;
 	sf::Vector2i *direction = &ecs::component::drawables.compVec[drawablesVectorIndex].direction;
 
-	if ((keysAndID["left"] && keysAndID["right"]) || (!keysAndID["left"] && !keysAndID["right"]))
-	{ //if both or neither of them are pressed, the velocity is zero
+	if ((keysAndID["left"] && keysAndID["right"]) || (!keysAndID["left"] && !keysAndID["right"])) { //if both or neither of them are pressed, the velocity is zero
 		userVelocity->x = 0;
-	}
-	else
-	{
-		if (keysAndID["left"]){
+	} else {
+		if (keysAndID["left"]) {
 			userVelocity->x = -velocity.x;
 		}
-		if (keysAndID["right"]){
+		if (keysAndID["right"]) {
 			userVelocity->x = velocity.x;
 		}
 	}
 
-	if (keysAndID["jump"] && *onFloor)
-	{									   //will jump up and indicate that it's not on the floor anymore
+	if (keysAndID["jump"] && *onFloor) { //will jump up and indicate that it's not on the floor anymore
 		userVelocity->y = -acceleration.y; //negative y is upwards
 		*onFloor = false;
 	}
@@ -59,68 +55,32 @@ void physics::userInput(json keysAndID) {
 
 	mutexs::userLocationsMutex.unlock();
 
-	if(keysAndID["throwItem"].get<bool>()){ //sends a message to the user to update their inventory and redraw it to include the fact that their item is now gone
-		mutexs::mainUserLockMutex.lock(); //need to use this lock
-		ecs::component::user* userPtr = &users.compVec[users.entityToVectorMap(entityID)]; //gets the user object
-		int thrownItemID = userInventories[userPtr->userID][0][userPtr->currentItemSelection]; //need this for the texture of the item
-
-		if(thrownItemID != 0){ //if it's not an empty inventory index
-			userInventories[userPtr->userID][0][userPtr->currentItemSelection] = 0; //sets the item they've selected to 0 as they've thrown it out
-			userPtr->currentItem = 0; //the current item they're holding is also now a 0
-
-			sf::Packet packet;	 //a packet to hold a string
-			std::string sendString = "USER::SELECTED::" + std::to_string(userPtr->currentItemSelection) + "USER::INVENTORY::" + userInventories[userPtr->userID].dump();
-			packet << sendString; //puts json data into the packet
-
-			userPtr->socket->send(packet); //sends the packet to the user currently being looped over
-
-			int thrownEntityID = ecs::entity::superEntityManager.create(ecs::entity::ITEM_THROWN);
-			ecs::component::physical* physicalObj = &physicsObjects.compVec[physicsObjects.entityToVectorMap(thrownEntityID)];
-			physicalObj->coordinates = sf::Vector2f(userCoordinates.x, userCoordinates.y - 5); //sets thrown item's coordinates as this (around player's waist)
-			physicalObj->velocity = sf::Vector2f(direction_x, 0); //sets thrown item's velocity as this
-			physicalObj->objType = ITEM; //special type of collision/collider object
-			thrown_items.compVec[thrown_items.entityToVectorMap(thrownEntityID)].item_id = thrownItemID; //sets the id of the fallent item
-			drawables.compVec[drawables.entityToVectorMap(thrownEntityID)].texture = itemsFromFile[thrownItemID]["resourceLocation"].get<std::string>();
-
-			ecs::system::coordinatesStruct thrownItemChunk = coordinatesStruct(chunkCoordHelperX(physicalObj->coordinates.x, chunkPixelSize_x), chunkCoordHelperY(physicalObj->coordinates.y, chunkPixelSize_y));
-			//mutexs::getInstance()->chunkLockMutex.lock();
-			chunks[thrownItemChunk].second.push_back(entity::entity(thrownEntityID));
-			//mutexs::getInstance()->chunkLockMutex.unlock();
-		}
-		mutexs::mainUserLockMutex.unlock();
-	}	
+	itemSystem::getInstance()->throwItem(keysAndID, entityID, direction_x, userCoordinates); //runs a subroutine for throwing items (check if they should be thrown too)
 }
 
 bool physics::AABB_collision(int collisionEntityID, int colliderEntityID){ //true = collision, false = no collision
 	auto collisionObject = &physicsObjects.compVec[physicsObjects.entityToVectorMap(collisionEntityID)];
 	auto colliderObject = &physicsObjects.compVec[physicsObjects.entityToVectorMap(colliderEntityID)];
 
+	sf::Vector2f topLeftCorner = {collisionObject->boxCorners[0].x + collisionObject->coordinates.x, collisionObject->boxCorners[0].y + collisionObject->coordinates.y};
+	sf::Vector2f bottomRightCorner = {collisionObject->boxCorners[3].x + collisionObject->coordinates.x, collisionObject->boxCorners[3].y + collisionObject->coordinates.y};
+
 	bool collision = false;
 	if(collisionObject->objType == COLLISION){
 		for(auto &colliderVert : colliderObject->boxCorners){
-			if(colliderVert.x+colliderObject->coordinates.x >= collisionObject->boxCorners[0].x && colliderVert.x+colliderObject->coordinates.x <= collisionObject->boxCorners[3].x){
-				if(colliderVert.y+colliderObject->coordinates.y <= collisionObject->boxCorners[3].y && colliderVert.y+colliderObject->coordinates.y >= collisionObject->boxCorners[0].y){
-					colliderObject->coordinates.y = collisionObject->boxCorners[0].y; //collision resolution (hacky way, do it properly next time)
+			if(colliderVert.x+colliderObject->coordinates.x >= topLeftCorner.x && colliderVert.x+colliderObject->coordinates.x <= bottomRightCorner.x){
+				if(colliderVert.y+colliderObject->coordinates.y <= bottomRightCorner.y && colliderVert.y+colliderObject->coordinates.y >= topLeftCorner.y){
+					colliderObject->coordinates.y = topLeftCorner.y; //collision resolution (hacky way, do it properly next time)
 					if(colliderObject->velocity.y > 0){ //collision resolution (hacky way, do it properly next time)
 						colliderObject->velocity.y = 0; //collision resolution (hacky way, do it properly next time)
 					}
 					colliderObject->onFloor = true; //collision resolution (hacky way, do it properly next time)
-					//std::cout << colliderVert.x+colliderObject->coordinates.x << " -- " << collisionObject->boxCorners[0].x << " -- " << collisionObject->boxCorners[3].x << "\n";
-					//std::cout << colliderVert.y+colliderObject->coordinates.y << " -- " << collisionObject->boxCorners[0].y << " -- " << collisionObject->boxCorners[3].y << "\n";
 					collision = true;
-					//break;
-					//return true;
 				}
 			}
 		}
-	}
-	
-	if(collisionObject->objType == ITEM && users.entityToVectorMap(colliderEntityID) != -1){ //if the item 'collided with' (nearby) is near a user do this
-		float diffX = colliderObject->coordinates.x - collisionObject->coordinates.x;
-		float diffY = colliderObject->coordinates.y - collisionObject->coordinates.y;
-		if(sqrt(pow(diffX, 2) + pow(diffY, 2)) < 5){ //if the distance between the coordinates is less than 5 units count it as a 'collision' (being nearby, so can be picked up)
-			collision = true;
-		}
+	} else if(users.entityToVectorMap(colliderEntityID) != -1 && !collision){
+		collision = itemSystem::getInstance()->userItemCollision(collisionObject, colliderObject); //checks if a user should pick up an item
 	}
 
 	return collision;
@@ -151,56 +111,10 @@ bool physics::checkCollision(entity::entity colliderEntity){
 	for(auto &collisionEntity : collisionObjects){
 		//std::cout << "checking for collisions..." << " ";
 		if(AABB_collision(collisionEntity.id, colliderEntity.id)){ //if there is an actual collision
-			if(users.entityToVectorMap(colliderEntity.id) != -1){ //this means the collider is a user
-				if(physicsObjects.compVec[physicsObjects.entityToVectorMap(collisionEntity.id)].objType == ITEM && physicsObjects.compVec[physicsObjects.entityToVectorMap(collisionEntity.id)].onFloor == true){
-					//std::cout << "a user collides with an item" << "\n";
-					
-					int entityID = collisionEntity.id;
-					int itemTypeID = thrown_items.compVec[thrown_items.entityToVectorMap(entityID)].item_id; //the item ID
-					
-					ecs::component::user* userPtr = &users.compVec[users.entityToVectorMap(colliderEntity.id)]; //the user which will now receive the item
-					bool pickedUpItem = false;
-					for(int i = 0; i < 6; i++){
-						for(int j = 0; j < 6; j++){
-							if(userInventories[userPtr->userID][i][j].get<int>() == 0){
-								userInventories[userPtr->userID][i][j] = itemTypeID;
-
-								if(i == 0 && j == userPtr->currentItemSelection){
-									userPtr->currentItem = itemTypeID;
-								}
-
-								sf::Packet packet;	 //a packet to hold a string
-								std::string sendString = "USER::SELECTED::" + std::to_string(userPtr->currentItemSelection) + "USER::INVENTORY::" + userInventories[userPtr->userID].dump();
-								packet << sendString; //puts json data into the packet
-
-								userPtr->socket->send(packet); //sends the packet to the user currently being looped over
-								
-								pickedUpItem = true;
-								break;
-							}
-						}
-						if(pickedUpItem){
-							break;
-						}
-					}
-
-					sf::Vector2f coordinates = physicsObjects.compVec[physicsObjects.entityToVectorMap(entityID)].coordinates;
-					ecs::system::coordinatesStruct removeItemCoordinates(chunkCoordHelperX(int(coordinates.x), chunkPixelSize_x), chunkCoordHelperY(int(coordinates.y), chunkPixelSize_y)); //get what the coordinates would be in the world using simple mod math
-
-					for(int i = 0; i < chunks[removeItemCoordinates].second.size(); i++){
-						if(chunks[removeItemCoordinates].second[i].id == entityID){
-							chunks[removeItemCoordinates].second.erase(chunks[removeItemCoordinates].second.begin() + i);
-							break;
-						}
-					}
-
-					ecs::entity::superEntityManager.destroy(entity::entity(entityID));
-				}
+			if(mobs.entityToVectorMap(colliderEntity.id) != -1){ //this means it's a mob
+				continue;
 			}
-			if(physicsObjects.compVec[physicsObjects.entityToVectorMap(colliderEntity.id)].objType == ITEM && physicsObjects.compVec[physicsObjects.entityToVectorMap(colliderEntity.id)].onFloor == true){
-				//above covers the other case where the item is a collider instead (still need to stop it)
-				physicsObjects.compVec[physicsObjects.entityToVectorMap(colliderEntity.id)].velocity.x = 0; //once an item has fallen to the ground it should stop moving
-			}
+			itemSystem::getInstance()->pickupItem(colliderEntity, collisionEntity);
 			hasCollisionHappened = true; //there has been a collision
 		}
 	}
@@ -209,10 +123,9 @@ bool physics::checkCollision(entity::entity colliderEntity){
 	return hasCollisionHappened;
 }
 
-void physics::moveEntities()
-{
+void physics::moveEntities() {
 	std::lock_guard<std::mutex> lock(mutexs::userLocationsMutex); //will block attempts to lock this mutex again, thereby allowing us to prevent accidentally accessing shared data at the wrong time, released at the end of scope
-	
+
 	int componentIndex = 0;
 	ecs::entity::entity tempEntity; //used to put the users entity inside some chunk
 	for (int j = 0; j < ecs::component::physicsObjects.compVec.size(); j++)
@@ -254,6 +167,7 @@ void physics::moveEntities()
 					if(users.entityToVectorMap(entityID) != -1){ //if it's a user
 						chunks[currentChunkCoords].first.userCount--; //decrements the number of users in this chunk
 						chunks[newChunkCoords].first.userCount++; //increments the number of users in this chunk
+						//std::cout << "moved " << users.compVec[users.entityToVectorMap(entityID)].username << " to chunk: " << newChunkCoords.coordinates.first << ", " << newChunkCoords.coordinates.second << std::endl;
 					} else if(thrown_items.entityToVectorMap(entityID) != -1){ //if it's a thrown item
 						chunks[currentChunkCoords].first.itemCount--;
 						chunks[newChunkCoords].first.itemCount++; //increments the number of users in this chunk
@@ -267,9 +181,6 @@ void physics::moveEntities()
 					break;
 				}
 			}
-			//std::cout << chunks[newChunkCoords].size() << " -- " << chunks[currentChunkCoords].size() << std::endl;
-			//std::cout << "moved " << users.compVec[users.entityToVectorMap(entityID)].username << " to chunk: " << newChunkCoords.coordinates.first << ", " << newChunkCoords.coordinates.second << std::endl;
-			updateActiveChunkData::getInstance()->updateActiveChunks(); //updates the active chunks, we call it after anyone moves in any chunk as that's when a new chunk may need to be generated
 		}
 	}
 }

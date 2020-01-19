@@ -1,2 +1,21 @@
+# Server Changes
+## Server v0.0
+I've added in fixes for the following:
+-All the code in game.cpp
+    -All 4 functions now run on separate threads, all use mutexs for synchronisation
+    -Performance is actually better now due to this
+    -Chunks are now generated every 0.1s, which means users will occasionally see chunks being generated, but not a huge issue
+    -Need to find a better method than this (better code in general is needed)
+-The code in updateActiveChunkData.cpp
+    -The chunks now generate with their own mobs
+    -There is a new flag in the chunkData (chunks[coordinate].first.generated), which indicates whether or not a chunk has been generated
+        -If set to true, it's run through this subroutine otherwise it's accidentally come into existence likely due to mobs
+        -In which case it is flagged for deletion
+    -Overall, roughly 25 chunks are maintained at all times, which is not an issue
+-itemSystems.cpp contains a bunch of the item related code that was previously in physics.cpp
+-mobSystem.cpp currently just contains the function for generating mobs, called by the generateChunks(...) function in updateActiveChunkData.cpp
+-I've updated some constants in ecs.h to make the overall gameplay feel smoother
+-Collision detection for platforms now works the same as for anything else (coordinates + local coordinates for collision box vertices)
+
 # Errors and Stuff
 Ok so basically you might get some errors about hashtable stuff or whatever when using unordered stl containers, so basically to resolve this you need to make your custom type have some equality testing functionality, for example, making an overload of the == operator, and then also need to make a custom hashing function, which should be easily achievable by using a unique id or something on your struct, and just returning that for the hash function.
