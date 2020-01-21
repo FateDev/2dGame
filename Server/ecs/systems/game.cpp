@@ -17,9 +17,7 @@ void game::runGame() {
 void game::physicsLoop(){
 	while (true){
 		std::chrono::system_clock::time_point timePoint = std::chrono::system_clock::now() + std::chrono::milliseconds(1000/fps);
-		mutexs::chunkLockMutex.lock();
 		physics::getInstance()->moveEntities();
-		mutexs::chunkLockMutex.unlock();
 		std::this_thread::sleep_until(timePoint); //sleeps until time to process everything again
 	}
 }

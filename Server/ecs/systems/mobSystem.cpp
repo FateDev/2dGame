@@ -29,3 +29,19 @@ void mobSystem::generateMobsAt(coordinatesStruct coordinate){
         chunks[coordinate].first.mobCount++; //increments that chunks mob count
     }
 }
+
+void mobSystem::mobMovement(int entityID){
+    int chance = (rand() % 100 > 95) ? 1 : 0; //if the number is greater than 95 put 1, else 0 - 5% chance of changing movement
+    if(chance){
+        int selection = rand() % 3; //so 0, 1 or 2 - 0 is stop moving, 1 is move left, 2 is move right
+        if(selection == 0){
+            physicsObjects.compVec[physicsObjects.entityToVectorMap(entityID)].velocity.x = 0;
+        }else if(selection == 1){
+            physicsObjects.compVec[physicsObjects.entityToVectorMap(entityID)].velocity.x = -1;
+            drawables.compVec[drawables.entityToVectorMap(entityID)].direction.x = -1;
+        }else if(selection == 2){
+            physicsObjects.compVec[physicsObjects.entityToVectorMap(entityID)].velocity.x = 1;
+            drawables.compVec[drawables.entityToVectorMap(entityID)].direction.x = 1;
+        }
+    }
+}

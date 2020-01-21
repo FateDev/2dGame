@@ -93,6 +93,7 @@ bool physics::checkCollision(entity::entity colliderEntity){
 	coordinatesStruct currentChunkCoords(chunkCoordHelperX(int(coordinates->x), chunkPixelSize_x), chunkCoordHelperY(int(coordinates->y), chunkPixelSize_y));
 
 	std::vector<entity::entity> collisionObjects; //so like the floor/stairs etc
+	mutexs::chunkLockMutex.lock();
 	for(int j = -1; j <= 1; j++){
 		for(int i = -1; i <= 1; i++){ //will loop through the chunk the user is in, as well as the 2 adjacent chunks
 			for(auto &entity : chunks[coordinatesStruct(currentChunkCoords.coordinates.first+i, currentChunkCoords.coordinates.second+j)].second){ //will loop through all the physics objects in this chunk
@@ -118,6 +119,7 @@ bool physics::checkCollision(entity::entity colliderEntity){
 			hasCollisionHappened = true; //there has been a collision
 		}
 	}
+	mutexs::chunkLockMutex.unlock();
 	//TO DO: implement the collider-collision stuff, so like physical users which other users can't just walk through
 
 	return hasCollisionHappened;
@@ -138,11 +140,18 @@ void physics::moveEntities() {
 			continue; //we don't really care about floors/stairs colliding
 		}
 
+		int entityID = physicsObjects.vectorToEntityMap(componentIndex);
+
 		////////1st we update any velocities as required
 		physicsalStruct->velocity.y += deceleration.y; //if it's not on ground it should accelerate downwards
 
 		////////2nd we do collision detection and resolution based on the current positions and velocities, but they will potentially be updated here
-		checkCollision(physicsObjects.vectorToEntityMap(componentIndex)); //does the collision detection
+		checkCollision(entityID); //does the collision detection
+
+		////////2.5nd do mob movement
+		if(entity::superEntityManager.getType(entity::entity(entityID)) == entity::MOB){ //if it's a mob, do mob stuff with it
+			mobSystem::getInstance()->mobMovement(entityID);
+		}
 
 		////////3rd we use the velocity which may or may not have been updated in the previous step to get the new coordinates/chunkCoordinates, and update the coordinates themselves
 		coordinatesStruct currentChunkCoords(
@@ -159,8 +168,7 @@ void physics::moveEntities() {
 
 		////////4th we update the information held in the chunks if the new chunk coordinate calculated is different from the current one
 		if (newChunkCoords.coordinates.first != currentChunkCoords.coordinates.first || newChunkCoords.coordinates.second != currentChunkCoords.coordinates.second){
-			unsigned int entityID = physicsObjects.vectorToEntityMap(componentIndex);
-
+			mutexs::chunkLockMutex.lock();
 			for (int i = 0; i < chunks[currentChunkCoords].second.size(); i++)
 			{ //get the coordinate retrieved above, and get the chunk at that coordinate, and loop through the vector storing all the entities at that coordinate
 				if (chunks[currentChunkCoords].second[i].id == entityID) { //if the entityID is equal to the one we retrieved, it's the user we're looking for
@@ -181,6 +189,7 @@ void physics::moveEntities() {
 					break;
 				}
 			}
+			mutexs::chunkLockMutex.unlock();
 		}
 	}
 }

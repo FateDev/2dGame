@@ -70,6 +70,10 @@ game::game(networking* networkObject, gameNetwork* gameConnection, sf::RenderWin
 	texture.loadFromFile("resources/default_character.png");
 	textures["default"] = texture;
 
+	texture = sf::Texture();
+	texture.loadFromFile("resources/mob_1.png");
+	textures["mob_1"] = texture;
+
 	std::ifstream itemsJSONFile("items.json");
 	std::stringstream jsonContents;
 	jsonContents << itemsJSONFile.rdbuf(); //reads into read buffer
@@ -173,7 +177,7 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 			int scaleFactor = 11; //rather than changing server side stuff, just change this to make everything appear correctly
 
 			if (chunkToDraw.is_null()) {
-				std::cout << "Null" << "\n";
+				//std::cout << "Null" << "\n";
 			}
 
 			if (chunkToDraw.is_null()) { //if the data is null skip it (it only happens for the edge of what can be seen for cities, not a huge issue but should fix it (it's a server side issue)
@@ -309,21 +313,24 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 							carryingItem.setTexture(&textures[std::to_string(chunkToDraw["entities"][i]["itemID"].get<int>())]); //will use the texture in the map (set above)
 							rectanglesToDraw.push_back(carryingItem); //draw the player's item's texture if it's non zero, so there is a texture for it
 						}
-						else {
+						else if (chunkToDraw["entities"][i]["type"].get<std::string>() == "MOB") {
 							float width = abs(chunkToDraw["entities"][i]["hitBox"]["top-left"]["x"].get<float>() - chunkToDraw["entities"][i]["hitBox"]["bottom-right"]["x"].get<float>());
 							float height = abs(chunkToDraw["entities"][i]["hitBox"]["top-left"]["y"].get<float>() - chunkToDraw["entities"][i]["hitBox"]["bottom-right"]["y"].get<float>());
 
 							//std::cout << chunkToDraw["entities"][i]["hitBox"]["top-left"].dump() << " -- " << chunkToDraw["entities"][i]["hitBox"]["bottom-right"].dump() << " -- " << width << " -- " << height << " # " << chunkToDraw["data"]["setting_id"].get<int>() << std::endl;
 							//std::cout << width << " -- " << height << "\n";
 							sf::RectangleShape rectangle(sf::Vector2f(width * scaleFactor, height * scaleFactor));
-							std::cout << chunkToDraw["entities"][i]["location"]["y"].dump() << "\n";
+							rectangle.setTexture(&textures["mob_1"]);
+							if (chunkToDraw["entities"][i]["direction"]["x"].get<int>() == 1) {
+								rectangle.setOrigin(sf::Vector2f(50, 0));
+								rectangle.setScale(-1.0, 1.0);
+							}
+							//std::cout << chunkToDraw["entities"][i]["direction"]["x"].get<int>() << "\n";
+							//std::cout << chunkToDraw["entities"][i]["location"]["y"].dump() << "\n";
 							rectangle.setPosition({ (chunkToDraw["entities"][i]["hitBox"]["top-left"]["x"].get<float>() + chunkToDraw["entities"][i]["location"]["x"].get<float>()) * scaleFactor, (chunkToDraw["entities"][i]["hitBox"]["top-left"]["y"].get<float>() + chunkToDraw["entities"][i]["location"]["y"].get<float>()) * scaleFactor });
 							//rectangle.move(0, -20);
-							rectangle.setFillColor(sf::Color(211, 84, 0)); //grey floor
+							//rectangle.setFillColor(sf::Color(211, 84, 0)); //grey floor
 							rectanglesToDraw.push_back(rectangle);; //simply add a RectangleShape to the container for it to be drawn
-						}
-						if (chunkToDraw["entities"][i]["type"].get<std::string>() == "MOB") {
-							//std::cout << "it's a mob ... ";
 						}
 					}
 				}

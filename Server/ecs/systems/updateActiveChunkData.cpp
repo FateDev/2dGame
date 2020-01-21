@@ -51,10 +51,10 @@ void updateActiveChunkData::updateActiveChunks()
 	Generation:
 	-Every power of 2 on the x-axis excluding the first 3 (so until the 8th chunk), generate a city there
 		-> their y vaues are always multiples of 5
-	*/
 	std::cout << "Deleting: " << deletionCoords.size() << "\n";
 	std::cout << "Generating: " << generationCoords.size() << "\n";
 	std::cout << "Total number: " << chunks.size() << "\n";
+	*/
 
 	cleanupChunks(deletionCoords); //deletes the deletionCoords ones
 	generateChunks(generationCoords, false); //generates the ones at generationCoords, false is saying that these ones shouldn't be permanent
@@ -130,12 +130,11 @@ void updateActiveChunkData::generateChunks(std::vector<coordinatesStruct> genera
 }
 
 void updateActiveChunkData::updateChunkData(){ //this is for updating the gameData object
+	std::lock_guard<std::mutex> mutex(mutexs::mainUserLockMutex);	//locks the mutex so user can't logout while this is being updated or vice versa
 	gameData.clear(); //empties the gameData object
 	for (auto &chunkEntityVector : chunks){
 		gameData[chunkEntityVector.first] = json::object();
-		for (int i = 0; i < chunkEntityVector.second.second.size(); i++)
-		{
-			std::lock_guard<std::mutex> mutex(mutexs::mainUserLockMutex);	//locks the mutex so user can't logout while this is being updated or vice versa
+		for (int i = 0; i < chunkEntityVector.second.second.size(); i++){
 			int entityID = chunkEntityVector.second.second[i].id;
 			
 			switch (entity::superEntityManager.getType(entity::entity(entityID))){ //setting the type of the entity

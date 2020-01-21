@@ -4,44 +4,34 @@
 using namespace ecs::system;
 using namespace ecs::component;
 
-void gameBroadcast::broadcastGameState()
-{ //this broadcasts stuff on port 5001
+void gameBroadcast::broadcastGameState(){ //this broadcasts stuff on port 5001
 	std::lock_guard<std::mutex> mutex(mutexs::mainUserLockMutex);
-	for (auto &chunkEntityVector : chunks)
-	{
-		for (auto &user : chunkEntityVector.second.second)
-		{
-			json jsonObj = json::object();
-			int userCompVecIndex = users.entityToVectorMap(user.id);			   //user ID in this case is the entity ID
-			int physicsCompVecIndex = physicsObjects.entityToVectorMap(user.id); //user ID in this case is the entity ID
-			
-			if(userCompVecIndex == -1){ //-1 indicates that it wasn't found
-				continue;
-			}
+	for (int i = 0; i < users.compVec.size(); i++){
+		json jsonObj = json::object();
 
-			if (users.compVec[userCompVecIndex].gameConnected == true)
-			{
-				if (selector.isReady(*(users.compVec[userCompVecIndex].gameSocket)))
-				{
-					sf::Vector2f currentChunk = {chunkCoordHelperX(int(physicsObjects.compVec[physicsCompVecIndex].coordinates.x), chunkPixelSize_x), chunkCoordHelperY(int(physicsObjects.compVec[physicsCompVecIndex].coordinates.y), chunkPixelSize_y)};
-					sf::IpAddress userIP = users.compVec[userCompVecIndex].socket->getRemoteAddress();
-					double size = gameData.size();
-					jsonObj["chunks"][0] = gameData[coordinatesStruct(currentChunk.x - 1, currentChunk.y - 1)].dump();
-					jsonObj["chunks"][1] = gameData[coordinatesStruct(currentChunk.x - 1, currentChunk.y)].dump();
-					jsonObj["chunks"][2] = gameData[coordinatesStruct(currentChunk.x - 1, currentChunk.y + 1)].dump();
-					jsonObj["chunks"][3] = gameData[coordinatesStruct(currentChunk.x, currentChunk.y - 1)].dump();
-					jsonObj["chunks"][4] = gameData[coordinatesStruct(currentChunk.x, currentChunk.y)].dump();
-					jsonObj["chunks"][5] = gameData[coordinatesStruct(currentChunk.x, currentChunk.y + 1)].dump();
-					jsonObj["chunks"][6] = gameData[coordinatesStruct(currentChunk.x + 1, currentChunk.y - 1)].dump();
-					jsonObj["chunks"][7] = gameData[coordinatesStruct(currentChunk.x + 1, currentChunk.y)].dump();
-					jsonObj["chunks"][8] = gameData[coordinatesStruct(currentChunk.x + 1, currentChunk.y + 1)].dump();
-					jsonObj["time"] = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count(); //attatches microsecond time
+		user* userObj = &users.compVec[i];
+		physical* physicsObj = &physicsObjects.compVec[physicsObjects.entityToVectorMap(users.vectorToEntityMap(i))];
 
-					sf::Packet packet;
-					packet << jsonObj.dump();
+		if (userObj->gameConnected == true){
+			if (selector.isReady(*(userObj->gameSocket))){
+				sf::Vector2f currentChunk = {chunkCoordHelperX(int(physicsObj->coordinates.x), chunkPixelSize_x), chunkCoordHelperY(int(physicsObj->coordinates.y), chunkPixelSize_y)};
+				sf::IpAddress userIP = userObj->socket->getRemoteAddress();
+				double size = gameData.size();
+				jsonObj["chunks"][0] = gameData[coordinatesStruct(currentChunk.x - 1, currentChunk.y - 1)].dump();
+				jsonObj["chunks"][1] = gameData[coordinatesStruct(currentChunk.x - 1, currentChunk.y)].dump();
+				jsonObj["chunks"][2] = gameData[coordinatesStruct(currentChunk.x - 1, currentChunk.y + 1)].dump();
+				jsonObj["chunks"][3] = gameData[coordinatesStruct(currentChunk.x, currentChunk.y - 1)].dump();
+				jsonObj["chunks"][4] = gameData[coordinatesStruct(currentChunk.x, currentChunk.y)].dump();
+				jsonObj["chunks"][5] = gameData[coordinatesStruct(currentChunk.x, currentChunk.y + 1)].dump();
+				jsonObj["chunks"][6] = gameData[coordinatesStruct(currentChunk.x + 1, currentChunk.y - 1)].dump();
+				jsonObj["chunks"][7] = gameData[coordinatesStruct(currentChunk.x + 1, currentChunk.y)].dump();
+				jsonObj["chunks"][8] = gameData[coordinatesStruct(currentChunk.x + 1, currentChunk.y + 1)].dump();
+				jsonObj["time"] = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count(); //attatches microsecond time
 
-					users.compVec[userCompVecIndex].gameSocket->send(packet);
-				}
+				sf::Packet packet;
+				packet << jsonObj.dump();
+
+				userObj->gameSocket->send(packet);
 			}
 		}
 	}

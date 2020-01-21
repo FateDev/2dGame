@@ -240,7 +240,7 @@ namespace ecs{
                 void findClosestTarget(); //finds closest player in it's chunk, if userCount is 0 skips over this
                 void findDistanceToTarget(); //finds the magnitude of the distance to the target player
                 void dropItems(); //called when they die, drops the items they contain
-                void mobMovement(); //if no target randomised movement, otherwise towards player, if collides with city boundary reverse velocity forget target
+                void mobMovement(int entityID); //if no target randomised movement, otherwise towards player, if collides with city boundary reverse velocity forget target
        };
 
        class itemSystem{
