@@ -228,6 +228,7 @@ namespace ecs{
                 void moveEntities();
                 bool checkCollision(entity::entity colliderEntity);
                 bool AABB_collision(int collisionEntityID, int colliderEntityID);
+                void chunkMovementManager(coordinatesStruct newChunkCoords, coordinatesStruct currentChunkCoords, int entityID);
        };
 
        class mobSystem{
@@ -241,6 +242,7 @@ namespace ecs{
                 void findDistanceToTarget(); //finds the magnitude of the distance to the target player
                 void dropItems(); //called when they die, drops the items they contain
                 void mobMovement(int entityID); //if no target randomised movement, otherwise towards player, if collides with city boundary reverse velocity forget target
+                bool mobMovementRestrictions(component::physical* physicalStruct, coordinatesStruct newChunkCoords); //called in physics if it's a mob, used to prevent them from walking or falling into cities
        };
 
        class itemSystem{
@@ -308,8 +310,7 @@ namespace ecs{
                 void generateChunks(std::vector<coordinatesStruct> generationCoords, bool permanent); //given a vector of coordinates, generate chunks
                 void initWorld(coordinatesStruct startCoord); //given a start coordinate, generate the 9 chunks including it and surrounding it
                 void cleanupChunks(std::vector<coordinatesStruct> deletionCoords); //will cleanup/delete the chunks at the coordinates in the deletionCoords vector
-                
-                std::vector<sf::Vector2f> retrievePlayerChunks(unsigned int entityID); 
+                void prepareGameData(coordinatesStruct coordinate); //will prepare the selected chunk's game data entry to be sent
         };
        
        class game{

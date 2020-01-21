@@ -26,5 +26,8 @@ I've prevented mobs from spawning in cities, and they also can't move into citie
 I've purposely made it so that if mobs collide with cities, their x-velocity reverses, but not their direction (as if they were backing off).
 I had more mutex related issues I believe, so I've temporarily moved a mutex back into game.cpp, but still saw an error - so I'll have to be on the lookout for errors around physics::moveEntities() and mutexs.
 
+## Server v0.3
+In an attempt to improve server performance, I've made it so chunkData is generated only for the few chunks directly surrounding the player, not other chunks.
+
 # Errors and Stuff
 Ok so basically you might get some errors about hashtable stuff or whatever when using unordered stl containers, so basically to resolve this you need to make your custom type have some equality testing functionality, for example, making an overload of the == operator, and then also need to make a custom hashing function, which should be easily achievable by using a unique id or something on your struct, and just returning that for the hash function.

@@ -134,75 +134,89 @@ void updateActiveChunkData::generateChunks(std::vector<coordinatesStruct> genera
 void updateActiveChunkData::updateChunkData(){ //this is for updating the gameData object
 	std::lock_guard<std::mutex> mutex(mutexs::mainUserLockMutex);	//locks the mutex so user can't logout while this is being updated or vice versa
 	gameData.clear(); //empties the gameData object
-	for (auto &chunkEntityVector : chunks){
-		gameData[chunkEntityVector.first] = json::object();
-		for (int i = 0; i < chunkEntityVector.second.second.size(); i++){
-			int entityID = chunkEntityVector.second.second[i].id;
-			
-			switch (entity::superEntityManager.getType(entity::entity(entityID))){ //setting the type of the entity
-				case entity::entityType::USER:
-					gameData[chunkEntityVector.first]["entities"][i]["type"] = "USER"; //its type is user, use these sort of capital letter words to describe the entity 'type'
-					break;
-				case entity::entityType::COLLISION_OBJECT:
-					gameData[chunkEntityVector.first]["entities"][i]["type"] = "COLLISION"; //probably the floor or wall or something similar
-					break;
-				case entity::entityType::MOB:
-					gameData[chunkEntityVector.first]["entities"][i]["type"] = "MOB"; //it's probably a mob so set it as such
-					break;
-				case entity::entityType::ITEM_THROWN: {
-					gameData[chunkEntityVector.first]["entities"][i]["type"] = "ITEM";
-					gameData[chunkEntityVector.first]["entities"][i]["itemID"] = thrown_items.compVec[thrown_items.entityToVectorMap(entityID)].item_id; //sets the item ID
-					break;
-				}
-				//add in other conditions like these for mobs, items, or other things
-				default:{
-					gameData[chunkEntityVector.first]["entities"][i]["type"] = "OTHER"; //this should never be true, but just to be safe
+
+	for(int i = 0; i < users.compVec.size(); i++){
+		int entityID = users.vectorToEntityMap(i);
+		sf::Vector2f *userCoordinates = &physicsObjects.compVec[physicsObjects.entityToVectorMap(entityID)].coordinates;
+		for(int i = -1; i <= 1; i++){
+			for(int j = -1; j <= 1; j++){
+				coordinatesStruct chunkCoord = coordinatesStruct(chunkCoordHelperX(userCoordinates->x, chunkPixelSize_x) + i, chunkCoordHelperY(userCoordinates->y, chunkPixelSize_y) + j);
+				if(gameData[chunkCoord].empty()){
+					gameData[chunkCoord] = json::object();
+					prepareGameData(chunkCoord); //prepares this chunk with its data, to be sent
 				}
 			}
-			
-			//the below are the generic information stuff
-			if(users.entityToVectorMap(entityID) != -1){ //entityToVectorMap returns -1 if the entityID is not found in its bimap, so we just use that to find
-				unsigned int usersIndex = users.entityToVectorMap(entityID);
-				gameData[chunkEntityVector.first]["entities"][i]["username"] = users.compVec[usersIndex].username;
-				gameData[chunkEntityVector.first]["entities"][i]["id"] = users.compVec[usersIndex].userID;
-				gameData[chunkEntityVector.first]["entities"][i]["itemID"] =  users.compVec[usersIndex].currentItem;
-				gameData[chunkEntityVector.first]["entities"][i]["balance"] =  int(users.compVec[usersIndex].balance*100); //will be stored in std::atomic, so only divide by 100 there for displaying
-			}
-
-			if(mpHpObjects.entityToVectorMap(entityID) != -1){ //basically if it's a living thing add data for it
-				unsigned int mpHpIndex = mpHpObjects.entityToVectorMap(entityID);
-				//the below are all x100, so that I can use std::atomic int on client side, so no need to do locking, as that can be expensive
-				gameData[chunkEntityVector.first]["entities"][i]["mp"] =  int(mpHpObjects.compVec[mpHpIndex].mp*100);
-				gameData[chunkEntityVector.first]["entities"][i]["hp"] =  int(mpHpObjects.compVec[mpHpIndex].hp*100);
-				gameData[chunkEntityVector.first]["entities"][i]["max_mp"] =  int(mpHpObjects.compVec[mpHpIndex].max_mp*100);
-				gameData[chunkEntityVector.first]["entities"][i]["max_hp"] =  int(mpHpObjects.compVec[mpHpIndex].max_hp*100);
-			}
-			
-			if(drawables.entityToVectorMap(entityID) != -1){
-				unsigned int drawablesIndex = drawables.entityToVectorMap(entityID);
-				gameData[chunkEntityVector.first]["entities"][i]["direction"]["x"] = drawables.compVec[drawablesIndex].direction.x;
-				gameData[chunkEntityVector.first]["entities"][i]["direction"]["y"] = drawables.compVec[drawablesIndex].direction.y;
-				gameData[chunkEntityVector.first]["entities"][i]["texture"] = drawables.compVec[drawablesIndex].texture;
-			}
-
-			if(physicsObjects.entityToVectorMap(entityID) != -1){
-				unsigned int physicsIndex = physicsObjects.entityToVectorMap(entityID);
-				gameData[chunkEntityVector.first]["entities"][i]["location"]["x"] = physicsObjects.compVec[physicsIndex].coordinates.x;
-				gameData[chunkEntityVector.first]["entities"][i]["location"]["y"] = physicsObjects.compVec[physicsIndex].coordinates.y;
-				//the hit box stuff, for anything other than a wall/floor it won't give the actual location, rather locations relative to the local origin
-				gameData[chunkEntityVector.first]["entities"][i]["hitBox"]["top-left"]["x"] = physicsObjects.compVec[physicsIndex].boxCorners[0].x;
-				gameData[chunkEntityVector.first]["entities"][i]["hitBox"]["top-left"]["y"] = physicsObjects.compVec[physicsIndex].boxCorners[0].y;
-				gameData[chunkEntityVector.first]["entities"][i]["hitBox"]["bottom-right"]["x"] = physicsObjects.compVec[physicsIndex].boxCorners[3].x;
-				gameData[chunkEntityVector.first]["entities"][i]["hitBox"]["bottom-right"]["y"] = physicsObjects.compVec[physicsIndex].boxCorners[3].y;
-			}
-
 		}
-		gameData[chunkEntityVector.first]["data"]["x"] = chunkEntityVector.first.coordinates.first * chunkPixelSize_x;
-		gameData[chunkEntityVector.first]["data"]["y"] = chunkEntityVector.first.coordinates.second * chunkPixelSize_y;
-		gameData[chunkEntityVector.first]["data"]["width"] = chunkPixelSize_x;
-		gameData[chunkEntityVector.first]["data"]["height"] = chunkPixelSize_y;
-		gameData[chunkEntityVector.first]["data"]["userCount"] = chunkEntityVector.second.first.userCount;
-		gameData[chunkEntityVector.first]["data"]["entityCount"] = chunkEntityVector.second.second.size();
-		gameData[chunkEntityVector.first]["data"]["setting_id"] = chunkEntityVector.second.first.settingID;
 	}
+}
+
+void updateActiveChunkData::prepareGameData(coordinatesStruct coordinate){
+	for (int i = 0; i < chunks[coordinate].second.size(); i++){
+		int entityID = chunks[coordinate].second[i].id;
+		
+		switch (entity::superEntityManager.getType(entity::entity(entityID))){ //setting the type of the entity
+			case entity::entityType::USER:
+				gameData[coordinate]["entities"][i]["type"] = "USER"; //its type is user, use these sort of capital letter words to describe the entity 'type'
+				break;
+			case entity::entityType::COLLISION_OBJECT:
+				gameData[coordinate]["entities"][i]["type"] = "COLLISION"; //probably the floor or wall or something similar
+				break;
+			case entity::entityType::MOB:
+				gameData[coordinate]["entities"][i]["type"] = "MOB"; //it's probably a mob so set it as such
+				break;
+			case entity::entityType::ITEM_THROWN: {
+				gameData[coordinate]["entities"][i]["type"] = "ITEM";
+				gameData[coordinate]["entities"][i]["itemID"] = thrown_items.compVec[thrown_items.entityToVectorMap(entityID)].item_id; //sets the item ID
+				break;
+			}
+			//add in other conditions like these for mobs, items, or other things
+			default:{
+				gameData[coordinate]["entities"][i]["type"] = "OTHER"; //this should never be true, but just to be safe
+			}
+		}
+		
+		//the below are the generic information stuff
+		if(users.entityToVectorMap(entityID) != -1){ //entityToVectorMap returns -1 if the entityID is not found in its bimap, so we just use that to find
+			unsigned int usersIndex = users.entityToVectorMap(entityID);
+			gameData[coordinate]["entities"][i]["username"] = users.compVec[usersIndex].username;
+			gameData[coordinate]["entities"][i]["id"] = users.compVec[usersIndex].userID;
+			gameData[coordinate]["entities"][i]["itemID"] =  users.compVec[usersIndex].currentItem;
+			gameData[coordinate]["entities"][i]["balance"] =  int(users.compVec[usersIndex].balance*100); //will be stored in std::atomic, so only divide by 100 there for displaying
+		}
+
+		if(mpHpObjects.entityToVectorMap(entityID) != -1){ //basically if it's a living thing add data for it
+			unsigned int mpHpIndex = mpHpObjects.entityToVectorMap(entityID);
+			//the below are all x100, so that I can use std::atomic int on client side, so no need to do locking, as that can be expensive
+			gameData[coordinate]["entities"][i]["mp"] =  int(mpHpObjects.compVec[mpHpIndex].mp*100);
+			gameData[coordinate]["entities"][i]["hp"] =  int(mpHpObjects.compVec[mpHpIndex].hp*100);
+			gameData[coordinate]["entities"][i]["max_mp"] =  int(mpHpObjects.compVec[mpHpIndex].max_mp*100);
+			gameData[coordinate]["entities"][i]["max_hp"] =  int(mpHpObjects.compVec[mpHpIndex].max_hp*100);
+		}
+		
+		if(drawables.entityToVectorMap(entityID) != -1){
+			unsigned int drawablesIndex = drawables.entityToVectorMap(entityID);
+			gameData[coordinate]["entities"][i]["direction"]["x"] = drawables.compVec[drawablesIndex].direction.x;
+			gameData[coordinate]["entities"][i]["direction"]["y"] = drawables.compVec[drawablesIndex].direction.y;
+			gameData[coordinate]["entities"][i]["texture"] = drawables.compVec[drawablesIndex].texture;
+		}
+
+		if(physicsObjects.entityToVectorMap(entityID) != -1){
+			unsigned int physicsIndex = physicsObjects.entityToVectorMap(entityID);
+			gameData[coordinate]["entities"][i]["location"]["x"] = physicsObjects.compVec[physicsIndex].coordinates.x;
+			gameData[coordinate]["entities"][i]["location"]["y"] = physicsObjects.compVec[physicsIndex].coordinates.y;
+			//the hit box stuff, for anything other than a wall/floor it won't give the actual location, rather locations relative to the local origin
+			gameData[coordinate]["entities"][i]["hitBox"]["top-left"]["x"] = physicsObjects.compVec[physicsIndex].boxCorners[0].x;
+			gameData[coordinate]["entities"][i]["hitBox"]["top-left"]["y"] = physicsObjects.compVec[physicsIndex].boxCorners[0].y;
+			gameData[coordinate]["entities"][i]["hitBox"]["bottom-right"]["x"] = physicsObjects.compVec[physicsIndex].boxCorners[3].x;
+			gameData[coordinate]["entities"][i]["hitBox"]["bottom-right"]["y"] = physicsObjects.compVec[physicsIndex].boxCorners[3].y;
+		}
+
+	}
+	gameData[coordinate]["data"]["x"] = coordinate.coordinates.first * chunkPixelSize_x;
+	gameData[coordinate]["data"]["y"] = coordinate.coordinates.second * chunkPixelSize_y;
+	gameData[coordinate]["data"]["width"] = chunkPixelSize_x;
+	gameData[coordinate]["data"]["height"] = chunkPixelSize_y;
+	gameData[coordinate]["data"]["userCount"] = chunks[coordinate].first.userCount;
+	gameData[coordinate]["data"]["entityCount"] = chunks[coordinate].second.size();
+	gameData[coordinate]["data"]["setting_id"] = chunks[coordinate].first.settingID;
 }
