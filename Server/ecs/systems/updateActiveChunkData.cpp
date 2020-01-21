@@ -122,7 +122,9 @@ void updateActiveChunkData::generateChunks(std::vector<coordinatesStruct> genera
 
 		if(chunks[generation].first.settingID != 4 && chunks[generation].first.settingID != 5){
 			chunks[generation].second.push_back(entityID); //pushes the floor entity to the chunks object
-			mobSystem::getInstance()->generateMobsAt(generation); //generates mobs at these coordinates
+			if(chunks[generation].first.settingID != 1){
+				mobSystem::getInstance()->generateMobsAt(generation); //generates mobs at these coordinates
+			}
 		}else{
 			ecs::entity::superEntityManager.destroy(entityID); //we didn't use the entity so destroy it
 		}

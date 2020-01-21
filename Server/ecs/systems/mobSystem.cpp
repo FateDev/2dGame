@@ -45,3 +45,21 @@ void mobSystem::mobMovement(int entityID){
         }
     }
 }
+
+bool mobSystem::mobMovementRestrictions(physical* physicalStruct, coordinatesStruct newChunkCoords){
+    bool cityDetected = false;
+    if(chunks[newChunkCoords].first.settingID == 4 || chunks[newChunkCoords].first.settingID == 5){
+        if(chunks[coordinatesStruct(newChunkCoords.coordinates.first, newChunkCoords.coordinates.second+1)].first.settingID == 1){
+            physicalStruct->coordinates.x -= physicalStruct->velocity.x; //update the x position
+            physicalStruct->coordinates.y -= physicalStruct->velocity.y; //update the y position
+            physicalStruct->velocity.x *= -1; //reverses direction
+            cityDetected = true;
+        }
+    } else if (chunks[newChunkCoords].first.settingID == 1){
+        physicalStruct->coordinates.x -= physicalStruct->velocity.x; //update the x position
+        physicalStruct->coordinates.y -= physicalStruct->velocity.y; //update the y position
+        physicalStruct->velocity.x *= -1; //reverses direction
+        cityDetected = true;
+    }
+    return cityDetected;
+}

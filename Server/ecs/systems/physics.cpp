@@ -93,7 +93,6 @@ bool physics::checkCollision(entity::entity colliderEntity){
 	coordinatesStruct currentChunkCoords(chunkCoordHelperX(int(coordinates->x), chunkPixelSize_x), chunkCoordHelperY(int(coordinates->y), chunkPixelSize_y));
 
 	std::vector<entity::entity> collisionObjects; //so like the floor/stairs etc
-	mutexs::chunkLockMutex.lock();
 	for(int j = -1; j <= 1; j++){
 		for(int i = -1; i <= 1; i++){ //will loop through the chunk the user is in, as well as the 2 adjacent chunks
 			for(auto &entity : chunks[coordinatesStruct(currentChunkCoords.coordinates.first+i, currentChunkCoords.coordinates.second+j)].second){ //will loop through all the physics objects in this chunk
@@ -119,7 +118,6 @@ bool physics::checkCollision(entity::entity colliderEntity){
 			hasCollisionHappened = true; //there has been a collision
 		}
 	}
-	mutexs::chunkLockMutex.unlock();
 	//TO DO: implement the collider-collision stuff, so like physical users which other users can't just walk through
 
 	return hasCollisionHappened;
@@ -167,29 +165,34 @@ void physics::moveEntities() {
 		);
 
 		////////4th we update the information held in the chunks if the new chunk coordinate calculated is different from the current one
-		if (newChunkCoords.coordinates.first != currentChunkCoords.coordinates.first || newChunkCoords.coordinates.second != currentChunkCoords.coordinates.second){
-			mutexs::chunkLockMutex.lock();
-			for (int i = 0; i < chunks[currentChunkCoords].second.size(); i++)
-			{ //get the coordinate retrieved above, and get the chunk at that coordinate, and loop through the vector storing all the entities at that coordinate
-				if (chunks[currentChunkCoords].second[i].id == entityID) { //if the entityID is equal to the one we retrieved, it's the user we're looking for
-					if(users.entityToVectorMap(entityID) != -1){ //if it's a user
-						chunks[currentChunkCoords].first.userCount--; //decrements the number of users in this chunk
-						chunks[newChunkCoords].first.userCount++; //increments the number of users in this chunk
-						//std::cout << "moved " << users.compVec[users.entityToVectorMap(entityID)].username << " to chunk: " << newChunkCoords.coordinates.first << ", " << newChunkCoords.coordinates.second << std::endl;
-					} else if(thrown_items.entityToVectorMap(entityID) != -1){ //if it's a thrown item
-						chunks[currentChunkCoords].first.itemCount--;
-						chunks[newChunkCoords].first.itemCount++; //increments the number of users in this chunk
-					} else if(mobs.entityToVectorMap(entityID) != -1){ //if it's a mob
-						chunks[currentChunkCoords].first.mobCount--;
-						chunks[newChunkCoords].first.mobCount++; //increments the number of users in this chunk
-					}
-					chunks[currentChunkCoords].second.erase(chunks[currentChunkCoords].second.begin() + i); //remove the user from the vector
-					tempEntity.id = entityID; //sets the correct entityID
-					chunks[newChunkCoords].second.push_back(tempEntity); //and pushes to the vector in the new chunk
-					break;
-				}
+		if(entity::superEntityManager.getType(entity::entity(entityID)) == entity::MOB){
+			if(!mobSystem::getInstance()->mobMovementRestrictions(physicsalStruct, newChunkCoords)){
+				chunkMovementManager(newChunkCoords, currentChunkCoords, entityID);
 			}
-			mutexs::chunkLockMutex.unlock();
+		} else if (newChunkCoords.coordinates.first != currentChunkCoords.coordinates.first || newChunkCoords.coordinates.second != currentChunkCoords.coordinates.second){
+			chunkMovementManager(newChunkCoords, currentChunkCoords, entityID);
+		}
+	}
+}
+
+void physics::chunkMovementManager(coordinatesStruct newChunkCoords, coordinatesStruct currentChunkCoords, int entityID){
+	for (int i = 0; i < chunks[currentChunkCoords].second.size(); i++)
+	{ //get the coordinate retrieved above, and get the chunk at that coordinate, and loop through the vector storing all the entities at that coordinate
+		if (chunks[currentChunkCoords].second[i].id == entityID) { //if the entityID is equal to the one we retrieved, it's the user we're looking for
+			if(entity::superEntityManager.getType(entity::entity(entityID)) == entity::USER){ //if it's a user
+				chunks[currentChunkCoords].first.userCount--; //decrements the number of users in this chunk
+				chunks[newChunkCoords].first.userCount++; //increments the number of users in this chunk
+				//std::cout << "moved " << users.compVec[users.entityToVectorMap(entityID)].username << " to chunk: " << newChunkCoords.coordinates.first << ", " << newChunkCoords.coordinates.second << std::endl;
+			} else if(entity::superEntityManager.getType(entity::entity(entityID)) == entity::ITEM_THROWN){ //if it's a thrown item
+				chunks[currentChunkCoords].first.itemCount--;
+				chunks[newChunkCoords].first.itemCount++; //increments the number of users in this chunk
+			} else if(entity::superEntityManager.getType(entity::entity(entityID)) == entity::MOB){ //if it's a mob
+				chunks[currentChunkCoords].first.mobCount--;
+				chunks[newChunkCoords].first.mobCount++; //increments the number of users in this chunk
+			}
+			chunks[currentChunkCoords].second.erase(chunks[currentChunkCoords].second.begin() + i); //remove the user from the vector
+			chunks[newChunkCoords].second.push_back(entity::entity(entityID)); //and pushes to the vector in the new chunk
+			break;
 		}
 	}
 }
