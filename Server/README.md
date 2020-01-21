@@ -17,5 +17,9 @@ I've added in fixes for the following:
 -I've updated some constants in ecs.h to make the overall gameplay feel smoother
 -Collision detection for platforms now works the same as for anything else (coordinates + local coordinates for collision box vertices)
 
+## Server v0.1
+I've added in movement for the mobs, they currently more or less randomly move side to side, and that is reflected on the client side.
+I've removed mutexs from places and placed them elsewhere to make sure I'm locking for less time, and have increased the overall performance of the program by rewriting part of gameBroadcast.cpp (it was checking every entity in every chunk to send data)
+
 # Errors and Stuff
 Ok so basically you might get some errors about hashtable stuff or whatever when using unordered stl containers, so basically to resolve this you need to make your custom type have some equality testing functionality, for example, making an overload of the == operator, and then also need to make a custom hashing function, which should be easily achievable by using a unique id or something on your struct, and just returning that for the hash function.
