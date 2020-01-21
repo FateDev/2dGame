@@ -321,7 +321,7 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 							//std::cout << width << " -- " << height << "\n";
 							sf::RectangleShape rectangle(sf::Vector2f(width * scaleFactor, height * scaleFactor));
 							rectangle.setTexture(&textures["mob_1"]);
-							if (chunkToDraw["entities"][i]["direction"]["x"].get<int>() == 1) {
+							if (chunkToDraw["entities"][i]["direction"]["x"].get<int>() == -1) {
 								rectangle.setOrigin(sf::Vector2f(50, 0));
 								rectangle.setScale(-1.0, 1.0);
 							}
