@@ -24,6 +24,7 @@ ecs::entity::entityManager ecs::entity::superEntityManager;
 std::unordered_map<ecs::system::coordinatesStruct, std::pair<ecs::system::chunkData, std::vector<ecs::entity::entity>>, ecs::system::Hash> ecs::system::chunks;
 std::unordered_map<ecs::system::coordinatesStruct, json, ecs::system::Hash> ecs::system::gameData;
 std::unordered_map<std::string, unsigned int>  ecs::system::sessionIDToEntityID;
+std::unordered_map<unsigned int, std::unordered_set<unsigned int>> ecs::system::entitiesInRange; //maps entity id to a set of other ids
 std::unordered_map<int, json> ecs::system::userInventories;
 
 int main(){

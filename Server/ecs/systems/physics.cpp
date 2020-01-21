@@ -166,7 +166,7 @@ void physics::moveEntities() {
 
 		////////4th we update the information held in the chunks if the new chunk coordinate calculated is different from the current one
 		if(entity::superEntityManager.getType(entity::entity(entityID)) == entity::MOB){
-			if(!mobSystem::getInstance()->mobMovementRestrictions(physicsalStruct, newChunkCoords)){
+			if(!mobSystem::getInstance()->mobMovementRestrictions(entityID, newChunkCoords)){
 				chunkMovementManager(newChunkCoords, currentChunkCoords, entityID);
 			}
 		} else if (newChunkCoords.coordinates.first != currentChunkCoords.coordinates.first || newChunkCoords.coordinates.second != currentChunkCoords.coordinates.second){
@@ -176,8 +176,7 @@ void physics::moveEntities() {
 }
 
 void physics::chunkMovementManager(coordinatesStruct newChunkCoords, coordinatesStruct currentChunkCoords, int entityID){
-	for (int i = 0; i < chunks[currentChunkCoords].second.size(); i++)
-	{ //get the coordinate retrieved above, and get the chunk at that coordinate, and loop through the vector storing all the entities at that coordinate
+	for (int i = 0; i < chunks[currentChunkCoords].second.size(); i++){ //get the coordinate retrieved above, and get the chunk at that coordinate, and loop through the vector storing all the entities at that coordinate
 		if (chunks[currentChunkCoords].second[i].id == entityID) { //if the entityID is equal to the one we retrieved, it's the user we're looking for
 			if(entity::superEntityManager.getType(entity::entity(entityID)) == entity::USER){ //if it's a user
 				chunks[currentChunkCoords].first.userCount--; //decrements the number of users in this chunk
@@ -194,5 +193,51 @@ void physics::chunkMovementManager(coordinatesStruct newChunkCoords, coordinates
 			chunks[newChunkCoords].second.push_back(entity::entity(entityID)); //and pushes to the vector in the new chunk
 			break;
 		}
+	}
+}
+
+void physics::updateEntitiesInRange(){
+	entitiesInRange.clear();
+	for(int i = 0; i < mpHpObjects.compVec.size(); i++){
+		int mpObj_entityID = mpHpObjects.vectorToEntityMap(i);
+		sf::Vector2f entityCoords = physicsObjects.compVec[physicsObjects.entityToVectorMap(mpObj_entityID)].coordinates;
+		float width = abs(physicsObjects.compVec[physicsObjects.entityToVectorMap(mpObj_entityID)].boxCorners[0].x - physicsObjects.compVec[physicsObjects.entityToVectorMap(mpObj_entityID)].boxCorners[3].x);
+		float height = abs(physicsObjects.compVec[physicsObjects.entityToVectorMap(mpObj_entityID)].boxCorners[0].y - physicsObjects.compVec[physicsObjects.entityToVectorMap(mpObj_entityID)].boxCorners[3].y);
+		double radialMagnitude = sqrt(pow(width, 2) + pow(height, 2));
+
+		sf::Vector2f entityAttackBoxOrigin;
+		if(drawables.compVec[drawables.entityToVectorMap(mpObj_entityID)].direction.x == -1){
+			entityAttackBoxOrigin = {entityCoords.x - (0.5*width), entityCoords.y + width/2}; //so the origin of the attack box is in front of them
+		}else{
+			entityAttackBoxOrigin = {entityCoords.x + (1.5*width), entityCoords.y + width/2}; //so the origin of the attack box is in front of them
+		}
+
+		entityCoords.x = chunkCoordHelperX(entityCoords.x, chunkPixelSize_x);
+		entityCoords.y = chunkCoordHelperY(entityCoords.y, chunkPixelSize_y);
+		for(int i = -1; i <= 1; i++){
+			coordinatesStruct currentChunk(entityCoords.x + i, entityCoords.y); //will mean that the adjacent 2 chunks are looped over
+			for(auto &entity : chunks[currentChunk].second){
+				if(users.entityToVectorMap(entity.id) != -1 || mobs.entityToVectorMap(entity.id) != -1){
+					if(entity.id == mpObj_entityID){
+						continue;
+					}
+					if(users.entityToVectorMap(mpObj_entityID) != -1){
+						std::cout << "(" << entityAttackBoxOrigin.x << ", " << entityAttackBoxOrigin.y << ") // (" << physicsObjects.compVec[physicsObjects.entityToVectorMap(entity.id)].coordinates.x << ", " << physicsObjects.compVec[physicsObjects.entityToVectorMap(entity.id)].coordinates.y << ") // " << "\n";
+						std::cout << findDistance(physicsObjects.compVec[physicsObjects.entityToVectorMap(entity.id)].coordinates, entityAttackBoxOrigin)  << " -- " << radialMagnitude << "\n";
+					}
+					if(findDistance(physicsObjects.compVec[physicsObjects.entityToVectorMap(entity.id)].coordinates, entityAttackBoxOrigin) < radialMagnitude){ 
+						//if the entity in the outer loop and inner loop are less than a certain distance apart (radialMagntiude), add the inner loop entity to the unordered_set
+						//of entities that the outer loop entity can attack (are in range)
+						entitiesInRange[mpObj_entityID].insert(entity.id);
+					}
+				}
+			}
+		}
+		//std::cout << "Number of entities in range: " << entitiesInRange[mpObj_entityID].size();
+		//if(users.entityToVectorMap(mpObj_entityID) != -1){
+		//	std::cout << " - of user: " << users.compVec[users.entityToVectorMap(mpObj_entityID)].username << "\n";
+		//}else if(mobs.entityToVectorMap(mpObj_entityID) != -1){
+		//	std::cout << " - of a mob. " << "\n";
+		//}
 	}
 }

@@ -29,5 +29,8 @@ I had more mutex related issues I believe, so I've temporarily moved a mutex bac
 ## Server v0.3
 In an attempt to improve server performance, I've made it so chunkData is generated only for the few chunks directly surrounding the player, not other chunks.
 
+## Server v0.4
+Added in method to get what entities are in range of other entities for combat system (though only going to implement up to chasing the user for now).
+
 # Errors and Stuff
 Ok so basically you might get some errors about hashtable stuff or whatever when using unordered stl containers, so basically to resolve this you need to make your custom type have some equality testing functionality, for example, making an overload of the == operator, and then also need to make a custom hashing function, which should be easily achievable by using a unique id or something on your struct, and just returning that for the hash function.

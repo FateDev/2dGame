@@ -46,3 +46,9 @@ int chunkCoordHelperX(float coord, float screenSize){
 int chunkCoordHelperY(float coord, float screenSize){
 	return ceil(coord/screenSize);
 }
+
+double findDistance(sf::Vector2f point1, sf::Vector2f point2){
+	double distanceX = point1.x - point2.x;
+	double distanceY = point1.y - point2.y;
+	return sqrt(pow(distanceX, 2) + pow(distanceY, 2));
+}

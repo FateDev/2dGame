@@ -46,19 +46,23 @@ void mobSystem::mobMovement(int entityID){
     }
 }
 
-bool mobSystem::mobMovementRestrictions(physical* physicalStruct, coordinatesStruct newChunkCoords){
+bool mobSystem::mobMovementRestrictions(unsigned int entityID, coordinatesStruct newChunkCoords){
     bool cityDetected = false;
+    physical* physicalStruct = &physicsObjects.compVec[physicsObjects.entityToVectorMap(entityID)];
+    drawable* drawableStruct = &drawables.compVec[drawables.entityToVectorMap(entityID)];
     if(chunks[newChunkCoords].first.settingID == 4 || chunks[newChunkCoords].first.settingID == 5){
         if(chunks[coordinatesStruct(newChunkCoords.coordinates.first, newChunkCoords.coordinates.second+1)].first.settingID == 1){
             physicalStruct->coordinates.x -= physicalStruct->velocity.x; //update the x position
             physicalStruct->coordinates.y -= physicalStruct->velocity.y; //update the y position
             physicalStruct->velocity.x *= -1; //reverses direction
+            drawableStruct->direction *= -1; //reverses direction for drawing too
             cityDetected = true;
         }
     } else if (chunks[newChunkCoords].first.settingID == 1){
         physicalStruct->coordinates.x -= physicalStruct->velocity.x; //update the x position
         physicalStruct->coordinates.y -= physicalStruct->velocity.y; //update the y position
         physicalStruct->velocity.x *= -1; //reverses direction
+        drawableStruct->direction *= -1; //reverses direction for drawing too
         cityDetected = true;
     }
     return cityDetected;

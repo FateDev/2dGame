@@ -30,6 +30,7 @@ void systemsManager::systemStart()
 	chunksStuff = new std::thread(&game::chunksUpdateLoop, game::getInstance());
 	broadcastGameLoop = new std::thread(&game::broadcastGameLoop, game::getInstance());
 	physicsLoop = new std::thread(&game::physicsLoop, game::getInstance());
+	updateInRangeThread = new std::thread(&game::updateInRangeLoop, game::getInstance());
 
 	//below is just initialisation stuff
 	std::ifstream itemsJSONFile("items.json");
@@ -81,4 +82,11 @@ void systemsManager::systemEnd()
 		broadcastGameLoop->join();
 		delete broadcastGameLoop;
 	}
+
+	if (updateInRangeThread){
+		updateInRangeThread->join();
+		delete updateInRangeThread;
+	}
+	
+
 }

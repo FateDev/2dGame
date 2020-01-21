@@ -153,6 +153,10 @@ void updateActiveChunkData::updateChunkData(){ //this is for updating the gameDa
 void updateActiveChunkData::prepareGameData(coordinatesStruct coordinate){
 	for (int i = 0; i < chunks[coordinate].second.size(); i++){
 		int entityID = chunks[coordinate].second[i].id;
+
+		if(drawables.entityToVectorMap(entityID) == -1){ //if it doesn't have a drawables component, it cannot be drawn, and as such do not put it in here
+			continue;
+		}
 		
 		switch (entity::superEntityManager.getType(entity::entity(entityID))){ //setting the type of the entity
 			case entity::entityType::USER:

@@ -4,12 +4,14 @@
 #include <unordered_map>
 #include <string>
 #include <cmath>
+#include <SFML/System.hpp>
 
 int chunkCoordHelperX(float coord, float screenSize);
 int chunkCoordHelperY(float coord, float screenSize);
 bool extractInformation(std::string &msg);
 bool checkLeave(std::string &msg);
 bool processString(std::string msg);
+double findDistance(sf::Vector2f point1, sf::Vector2f point2);
 size_t WriteCallback(char *contents, size_t size, size_t nmemb, void *userp);
 
 //simple bidirectional map, assuming that the set of all keys and the set of A and B are unique in their sets (considering the parameters below)

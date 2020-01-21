@@ -13,13 +13,13 @@
 #include "../header/helper.h"
 
 //the size of one chunk
-const unsigned short chunkPixelSize_x = 150;
+const unsigned short chunkPixelSize_x = 200;
 const unsigned short chunkPixelSize_y = 50;
-const unsigned short fps = 40;
-const sf::Vector2f deceleration = { 0, 0.3 }; //x = friction on surface deceleration, y = gravity
-const sf::Vector2f acceleration = { 0, 2 }; //x = acceleration by arrow keys (don't want to accelerate), y = acceleration when jumping up
-const sf::Vector2f velocity = { 2, 0 }; //x = initial velocity with arrow keys, y = initial velocity with arrow keys (don't want any so zero)
-const unsigned short maxMobsPerChunk = 2; //the maximum number of mobs per chunk
+const unsigned short fps = 30;
+const sf::Vector2f deceleration = { 0, 0.4 }; //x = friction on surface deceleration, y = gravity
+const sf::Vector2f acceleration = { 0, 2.5 }; //x = acceleration by arrow keys (don't want to accelerate), y = acceleration when jumping up
+const sf::Vector2f velocity = { 2.5, 0 }; //x = initial velocity with arrow keys, y = initial velocity with arrow keys (don't want any so zero)
+const unsigned short maxMobsPerChunk = 1; //the maximum number of mobs per chunk
 
 #include "../deps/json.hpp"
 using json = nlohmann::json;
@@ -34,6 +34,7 @@ namespace ecs{
     namespace component{
         enum objectType {COLLIDER, COLLISION, COLLIDER_COLLISION, ITEM}; //enum for the object types, collider is like users/mobs, collision is like floors/walls (so don't move), collider-collision is both
         //ITEM is a special type, it falls like a normal collider, but then it becomes a collision and detects for a collision to indicate it must be picked up
+        //ATTACK_BOX is also special, it is directly in front of a mob or user and is the region in which, if a mob/user crosses, they can be attacked
         enum components {USER, DRAWABLE, PHYSICAL, NPC, MOB, MISSION, MP_HP, THROWN_ITEM}; //enum for all of the components
 
         //the structs below are the components so far
@@ -128,7 +129,7 @@ namespace ecs{
         extern ecsComponentStructure<mission> missions;
         extern ecsComponentStructure<thrown_item> thrown_items;
 
-        //to make a new componenent, (1) make an enum in ecs::component::components, and (2) optionally if it needs to be like a mob or something, also in entity::entityType
+        //to make a new componenent, (1) make an enum in ecs::component::components, and (2) if it needs to be like a mob or something, also in entity::entityType
         //then (3) you need to put the extern bit here and put the (4) definitions of it in main.cpp
         //then you need to (5) put the explicit instantiations of the component structures at the bottom of components.cpp,
         //and (6) then add a way to initialise it in entityManager::create(...) (using the if statements) in entities.cpp,
@@ -171,6 +172,7 @@ namespace ecs{
     }
 
     namespace system{
+        extern std::unordered_map<unsigned int, std::unordered_set<unsigned int>> entitiesInRange; //maps entity id to a set of other ids
         extern std::unordered_map<std::string, unsigned int>  sessionIDToEntityID; //will map user's uniqueID's to their entity ID
 
         struct chunkData{
@@ -229,6 +231,7 @@ namespace ecs{
                 bool checkCollision(entity::entity colliderEntity);
                 bool AABB_collision(int collisionEntityID, int colliderEntityID);
                 void chunkMovementManager(coordinatesStruct newChunkCoords, coordinatesStruct currentChunkCoords, int entityID);
+                void updateEntitiesInRange(); //will update the entitiesInRange unordered_map
        };
 
        class mobSystem{
@@ -242,7 +245,7 @@ namespace ecs{
                 void findDistanceToTarget(); //finds the magnitude of the distance to the target player
                 void dropItems(); //called when they die, drops the items they contain
                 void mobMovement(int entityID); //if no target randomised movement, otherwise towards player, if collides with city boundary reverse velocity forget target
-                bool mobMovementRestrictions(component::physical* physicalStruct, coordinatesStruct newChunkCoords); //called in physics if it's a mob, used to prevent them from walking or falling into cities
+                bool mobMovementRestrictions(unsigned int entityID, coordinatesStruct newChunkCoords); //called in physics if it's a mob, used to prevent them from walking or falling into cities
        };
 
        class itemSystem{
@@ -324,6 +327,7 @@ namespace ecs{
                 void chunksUpdateLoop(); //loop to update chunks
                 void broadcastGameLoop();
                 void physicsLoop();
+                void updateInRangeLoop();
        };
        
         class systemsManager{
@@ -344,6 +348,7 @@ namespace ecs{
                 std::thread* chunksStuff = 0;
                 std::thread* physicsLoop = 0;
                 std::thread* broadcastGameLoop = 0;
+                std::thread* updateInRangeThread = 0;
         };
         
         extern json itemsFromFile; //will be loaded into the game from items.json
