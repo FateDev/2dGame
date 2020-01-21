@@ -330,7 +330,7 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 							rectangle.setPosition({ (chunkToDraw["entities"][i]["hitBox"]["top-left"]["x"].get<float>() + chunkToDraw["entities"][i]["location"]["x"].get<float>()) * scaleFactor, (chunkToDraw["entities"][i]["hitBox"]["top-left"]["y"].get<float>() + chunkToDraw["entities"][i]["location"]["y"].get<float>()) * scaleFactor });
 							//rectangle.move(0, -20);
 							//rectangle.setFillColor(sf::Color(211, 84, 0)); //grey floor
-							rectanglesToDraw.push_back(rectangle);; //simply add a RectangleShape to the container for it to be drawn
+							rectanglesToDraw.push_back(rectangle); //simply add a RectangleShape to the container for it to be drawn
 						}
 					}
 				}
