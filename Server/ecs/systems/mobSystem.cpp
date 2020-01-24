@@ -67,3 +67,7 @@ bool mobSystem::mobMovementRestrictions(unsigned int entityID, coordinatesStruct
     }
     return cityDetected;
 }
+
+void mobSystem::dropItems(int entityID){
+    
+}

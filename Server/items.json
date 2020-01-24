@@ -10,14 +10,14 @@
     "itemID": 1,
     "type": "weapon",
     "subtype": "meelee",
-    "damage": 1000,
+    "damage": 20,
     "resourceLocation": "resources/items/weapon1.png"
   },
   {
     "itemID": 2,
     "type": "weapon",
     "subtype": "meelee",
-    "damage": 100,
+    "damage": 30,
     "resourceLocation": "resources/items/weapon2.png"
   },
   {
@@ -31,21 +31,21 @@
     "itemID": 4,
     "type": "weapon",
     "subtype": "meelee",
-    "damage": 80,
+    "damage": 30,
     "resourceLocation": "resources/items/weapon4.png"
   },
   {
     "itemID": 5,
     "type": "weapon",
     "subtype": "meelee",
-    "damage": 90,
+    "damage": 40,
     "resourceLocation": "resources/items/weapon5.png"
   },
   {
     "itemID": 6,
     "type": "weapon",
     "subtype": "meelee",
-    "damage": 600,
+    "damage": 40,
     "resourceLocation": "resources/items/weapon6.png"
   },
   {

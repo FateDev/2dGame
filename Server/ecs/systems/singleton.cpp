@@ -41,6 +41,7 @@ mutexs *mutexs::getInstance()
 std::mutex mutexs::userLocationsMutex; //defines the mutex
 std::mutex mutexs::mainUserLockMutex; //defines the mutex
 std::mutex mutexs::chunkLockMutex; //defines the mutex
+std::mutex mutexs::attackVectorMutex; //defines the mutex
 
 game *game::instance = 0;
 game::game() {}
@@ -92,6 +93,17 @@ itemSystem *itemSystem::getInstance()
 	if (instance == 0)
 	{
 		instance = new itemSystem();
+	}
+	return instance;
+}
+
+mpHpSystem *mpHpSystem::instance = 0;
+mpHpSystem::mpHpSystem() {};
+mpHpSystem *mpHpSystem::getInstance()
+{
+	if (instance == 0)
+	{
+		instance = new mpHpSystem();
 	}
 	return instance;
 }

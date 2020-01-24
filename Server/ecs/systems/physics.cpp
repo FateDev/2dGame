@@ -17,6 +17,16 @@ void physics::userInput(json keysAndID) {
 	bool *onFloor = &ecs::component::physicsObjects.compVec[physicsVectorIndex].onFloor;
 	sf::Vector2i *direction = &ecs::component::drawables.compVec[drawablesVectorIndex].direction;
 
+	if(keysAndID["use_item"] == true){
+		int currentItem = users.compVec[users.entityToVectorMap(entityID)].currentItem;
+		if(itemsFromFile[currentItem]["type"].get<std::string>() == "weapon"){
+			float damage = itemsFromFile[currentItem]["damage"].get<float>();
+			mutexs::attackVectorMutex.lock();
+			attacks.push_back({entityID, damage}); //pushes atttacks to this for processing
+			mutexs::attackVectorMutex.unlock();
+		}
+	}
+
 	if ((keysAndID["left"] && keysAndID["right"]) || (!keysAndID["left"] && !keysAndID["right"])) { //if both or neither of them are pressed, the velocity is zero
 		userVelocity->x = 0;
 	} else {
@@ -142,6 +152,11 @@ void physics::moveEntities() {
 
 		////////1st we update any velocities as required
 		physicsalStruct->velocity.y += deceleration.y; //if it's not on ground it should accelerate downwards
+		//and get the current chunk coords, before making any changes
+		coordinatesStruct currentChunkCoords(
+			chunkCoordHelperX(physicsalStruct->coordinates.x, chunkPixelSize_x), 
+			chunkCoordHelperY(physicsalStruct->coordinates.y, chunkPixelSize_y)
+		);  //get what the current chunk coordinates would be in the world using simple mod math
 
 		////////2nd we do collision detection and resolution based on the current positions and velocities, but they will potentially be updated here
 		checkCollision(entityID); //does the collision detection
@@ -152,10 +167,6 @@ void physics::moveEntities() {
 		}
 
 		////////3rd we use the velocity which may or may not have been updated in the previous step to get the new coordinates/chunkCoordinates, and update the coordinates themselves
-		coordinatesStruct currentChunkCoords(
-			chunkCoordHelperX(physicsalStruct->coordinates.x, chunkPixelSize_x), 
-			chunkCoordHelperY(physicsalStruct->coordinates.y, chunkPixelSize_y)
-		);  //get what the current chunk coordinates would be in the world using simple mod math
 		physicsalStruct->coordinates.x += physicsalStruct->velocity.x; //update the x position
 		physicsalStruct->coordinates.y += physicsalStruct->velocity.y; //update the y position
 		sf::Vector2f newCoordinates(physicsalStruct->coordinates.x, physicsalStruct->coordinates.y);
@@ -166,7 +177,7 @@ void physics::moveEntities() {
 
 		////////4th we update the information held in the chunks if the new chunk coordinate calculated is different from the current one
 		if(entity::superEntityManager.getType(entity::entity(entityID)) == entity::MOB){
-			if(!mobSystem::getInstance()->mobMovementRestrictions(entityID, newChunkCoords)){
+			if(!mobSystem::getInstance()->mobMovementRestrictions(entityID, newChunkCoords)){ //so that they can't go into cities
 				chunkMovementManager(newChunkCoords, currentChunkCoords, entityID);
 			}
 		} else if (newChunkCoords.coordinates.first != currentChunkCoords.coordinates.first || newChunkCoords.coordinates.second != currentChunkCoords.coordinates.second){
@@ -181,7 +192,7 @@ void physics::chunkMovementManager(coordinatesStruct newChunkCoords, coordinates
 			if(entity::superEntityManager.getType(entity::entity(entityID)) == entity::USER){ //if it's a user
 				chunks[currentChunkCoords].first.userCount--; //decrements the number of users in this chunk
 				chunks[newChunkCoords].first.userCount++; //increments the number of users in this chunk
-				//std::cout << "moved " << users.compVec[users.entityToVectorMap(entityID)].username << " to chunk: " << newChunkCoords.coordinates.first << ", " << newChunkCoords.coordinates.second << std::endl;
+				std::cout << "moved " << users.compVec[users.entityToVectorMap(entityID)].username << " to chunk: " << newChunkCoords.coordinates.first << ", " << newChunkCoords.coordinates.second << std::endl;
 			} else if(entity::superEntityManager.getType(entity::entity(entityID)) == entity::ITEM_THROWN){ //if it's a thrown item
 				chunks[currentChunkCoords].first.itemCount--;
 				chunks[newChunkCoords].first.itemCount++; //increments the number of users in this chunk
@@ -221,10 +232,6 @@ void physics::updateEntitiesInRange(){
 					if(entity.id == mpObj_entityID){
 						continue;
 					}
-					if(users.entityToVectorMap(mpObj_entityID) != -1){
-						std::cout << "(" << entityAttackBoxOrigin.x << ", " << entityAttackBoxOrigin.y << ") // (" << physicsObjects.compVec[physicsObjects.entityToVectorMap(entity.id)].coordinates.x << ", " << physicsObjects.compVec[physicsObjects.entityToVectorMap(entity.id)].coordinates.y << ") // " << "\n";
-						std::cout << findDistance(physicsObjects.compVec[physicsObjects.entityToVectorMap(entity.id)].coordinates, entityAttackBoxOrigin)  << " -- " << radialMagnitude << "\n";
-					}
 					if(findDistance(physicsObjects.compVec[physicsObjects.entityToVectorMap(entity.id)].coordinates, entityAttackBoxOrigin) < radialMagnitude){ 
 						//if the entity in the outer loop and inner loop are less than a certain distance apart (radialMagntiude), add the inner loop entity to the unordered_set
 						//of entities that the outer loop entity can attack (are in range)
@@ -233,11 +240,5 @@ void physics::updateEntitiesInRange(){
 				}
 			}
 		}
-		//std::cout << "Number of entities in range: " << entitiesInRange[mpObj_entityID].size();
-		//if(users.entityToVectorMap(mpObj_entityID) != -1){
-		//	std::cout << " - of user: " << users.compVec[users.entityToVectorMap(mpObj_entityID)].username << "\n";
-		//}else if(mobs.entityToVectorMap(mpObj_entityID) != -1){
-		//	std::cout << " - of a mob. " << "\n";
-		//}
 	}
 }

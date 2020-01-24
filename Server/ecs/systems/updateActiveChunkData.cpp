@@ -19,6 +19,7 @@ void updateActiveChunkData::updateActiveChunks()
 { //this is for updating which chunks are actually active
 	std::vector<coordinatesStruct> generationCoords = {}; //a vector containing all of the coordinates to generate a new chunk at
 	std::vector<coordinatesStruct> deletionCoords = {}; //a vector containing all of the coordinates to delete chunks from
+	std::unordered_set<coordinatesStruct, ecs::system::Hash> liveChunks; //the set of active chunks
 	for (auto &chunk : chunks) {
 		if(chunk.second.first.userCount > 0){
 			for(int i = chunk.first.coordinates.first-1; i <= chunk.first.coordinates.first+1;i++){
@@ -26,24 +27,14 @@ void updateActiveChunkData::updateActiveChunks()
 					if(!chunks[coordinatesStruct(i, j)].first.generated){ //if the chunk hasn't been made yet
 						generationCoords.push_back(coordinatesStruct(i, j)); //flag this up for generation
 					}
+					liveChunks.insert(coordinatesStruct(i, j)); //adds this chunk to the set of chunks flagged as 'alive'
 				}
 			}
-		}else if(!chunk.second.first.permanent){ //if there are no users in this, then potentially flag it up for deletion
-			bool usersPresentInSurroundingChunks = false; //any users present in how many surrounding chunks?
-			for(int i = chunk.first.coordinates.first-1; i <= chunk.first.coordinates.first+1;i++){
-				for(int j = chunk.first.coordinates.second-1; j <= chunk.first.coordinates.second+1;j++){
-					if(chunks.count(coordinatesStruct(i, j))){
-						if(chunks[coordinatesStruct(i, j)].first.userCount > 0){
-							usersPresentInSurroundingChunks = true;
-							break;
-						}
-					}
-				}
-				if(usersPresentInSurroundingChunks) { break; } //if users are present in surrounding chunk, no longer need to continue checking
-			}
-			if(!usersPresentInSurroundingChunks){ //as long as there are no users in it, and it's not flagged as a permanent chunk, delete it
-				deletionCoords.push_back(chunk.first); //flag for deletion
-			}
+		}
+	}
+	for(auto &chunk : chunks){
+		if(liveChunks.find(chunk.first) == liveChunks.end()){
+			deletionCoords.push_back(chunk.first);
 		}
 	}
 	
@@ -61,6 +52,7 @@ void updateActiveChunkData::updateActiveChunks()
 }
 
 void updateActiveChunkData::cleanupChunks(std::vector<coordinatesStruct> deletionCoords){
+	bool ignoreDeletion = false; //temporary fix
 	for(auto &deletion : deletionCoords){ //deletes the ones flagged for deletion
 		for(auto &entitiesInChunk : chunks[deletion].second){
 			if(ecs::entity::superEntityManager.getType(entitiesInChunk) == ecs::entity::entityType::MOB){
@@ -69,9 +61,13 @@ void updateActiveChunkData::cleanupChunks(std::vector<coordinatesStruct> deletio
 				chunks[deletion].first.npcCount--;
 			}else if(ecs::entity::superEntityManager.getType(entitiesInChunk) == ecs::entity::entityType::ITEM_THROWN){
 				chunks[deletion].first.itemCount--;
+			}else if(ecs::entity::superEntityManager.getType(entitiesInChunk) == ecs::entity::entityType::USER){
+				ignoreDeletion = true;
+				break;
 			}
 			ecs::entity::superEntityManager.destroy(entitiesInChunk);
 		}
+		if(ignoreDeletion){continue;};
 		chunks.erase(deletion);
 	}
 }

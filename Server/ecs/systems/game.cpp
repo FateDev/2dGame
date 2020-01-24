@@ -36,7 +36,7 @@ void game::broadcastGameLoop(){
 
 void game::chunksUpdateLoop(){
 	while(true){
-		std::chrono::system_clock::time_point timePoint = std::chrono::system_clock::now() + std::chrono::milliseconds(250);
+		std::chrono::system_clock::time_point timePoint = std::chrono::system_clock::now() + std::chrono::milliseconds(50);
 		mutexs::chunkLockMutex.lock();
 		updateActiveChunkData::getInstance()->updateActiveChunks(); //updates the active chunks, we call it after anyone moves in any chunk as that's when a new chunk may need to be generated
 		mutexs::chunkLockMutex.unlock();
@@ -46,14 +46,19 @@ void game::chunksUpdateLoop(){
 
 void game::updateInRangeLoop(){
 	while(true){
-		std::chrono::system_clock::time_point timePoint = std::chrono::system_clock::now() + std::chrono::milliseconds(500);
+		std::chrono::system_clock::time_point timePoint = std::chrono::system_clock::now() + std::chrono::milliseconds(200);
 		mutexs::chunkLockMutex.lock();
 		physics::getInstance()->updateEntitiesInRange(); //updates what entities are in range of what entity
-		int entity = users.vectorToEntityMap(0);
-		if(entity != -1){
-			int total = entitiesInRange[entity].size();
-			std::cout << "This many in range of " << users.compVec[users.entityToVectorMap(entity)].username << ": " << total << "\n";
-		}
+		mutexs::chunkLockMutex.unlock();
+		std::this_thread::sleep_until(timePoint); //sleeps until time to process everything again
+	}
+}
+
+void game::damageLoop(){
+	while(true){
+		std::chrono::system_clock::time_point timePoint = std::chrono::system_clock::now() + std::chrono::milliseconds(100);
+		mutexs::chunkLockMutex.lock();
+		mpHpSystem::getInstance()->damage(); //updates what entities are in range of what entity
 		mutexs::chunkLockMutex.unlock();
 		std::this_thread::sleep_until(timePoint); //sleeps until time to process everything again
 	}

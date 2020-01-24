@@ -26,6 +26,7 @@ std::unordered_map<ecs::system::coordinatesStruct, json, ecs::system::Hash> ecs:
 std::unordered_map<std::string, unsigned int>  ecs::system::sessionIDToEntityID;
 std::unordered_map<unsigned int, std::unordered_set<unsigned int>> ecs::system::entitiesInRange; //maps entity id to a set of other ids
 std::unordered_map<int, json> ecs::system::userInventories;
+std::vector<std::pair<int, float>> ecs::system::attacks;
 
 int main(){
 	curl_global_init(CURL_GLOBAL_ALL); //initialise libcurl functionality globally

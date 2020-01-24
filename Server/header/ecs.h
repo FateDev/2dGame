@@ -58,9 +58,9 @@ namespace ecs{
 
         struct mp_hp{
             float mp = -1;
-            float hp;
+            float hp = 100; //default of 100hp
             float max_mp = -1;
-            float max_hp;
+            float max_hp = 100; //default of 100 max hp
         };
 
         enum mobType {TROLL, ZOMBIE, SLIME, FINAL_ENUM_MOBTYPE}; //the types of mobs, final enum is used to find how many enums there are in it
@@ -75,6 +75,7 @@ namespace ecs{
 
         struct mob{
             mobType mob_type;
+            long nextAttackTime = 0; //if this time has passed, then the mob can attack, otherwis it cannot (helps with putting in a cooldown on mob attacks)
             float attackDamage;
             int targetPlayer = -1; //the entity ID of the player they are attacking
             sf::Vector3i dropItems = {1, 2, 3}; //as an example, the drop items could be any of these
@@ -172,6 +173,7 @@ namespace ecs{
     }
 
     namespace system{
+        extern std::vector<std::pair<int, float>> attacks; //will contain the entity IDs that have initiated an attack, and the damage of the attack
         extern std::unordered_map<unsigned int, std::unordered_set<unsigned int>> entitiesInRange; //maps entity id to a set of other ids
         extern std::unordered_map<std::string, unsigned int>  sessionIDToEntityID; //will map user's uniqueID's to their entity ID
 
@@ -214,6 +216,7 @@ namespace ecs{
                 static mutexs* instance;
                 mutexs();
             public:
+                static std::mutex attackVectorMutex; //for pushing/popping from the attack vector (pushed to from different places, popped from in mpHp.cpp)
                 static std::mutex userLocationsMutex; //declares the mutex for reading to/from user location comp vec
                 static std::mutex mainUserLockMutex; //used when sending data (gameBroadcast::broadcastGameState()), and logging the user out, and updating chunk data
                 static std::mutex chunkLockMutex; //to be used to lock chunks, so used when sending data to local chunks, adding/removing users from chunks and incrementing/decrementing user count of a chunk
@@ -243,7 +246,7 @@ namespace ecs{
                 void generateMobsAt(coordinatesStruct coordinate); //runs in game loop, if there are less than maxMobsPerChunk mobs in a chunk, generates mobs
                 void findClosestTarget(); //finds closest player in it's chunk, if userCount is 0 skips over this
                 void findDistanceToTarget(); //finds the magnitude of the distance to the target player
-                void dropItems(); //called when they die, drops the items they contain
+                void dropItems(int entityID); //called when they die, drops the items they contain
                 void mobMovement(int entityID); //if no target randomised movement, otherwise towards player, if collides with city boundary reverse velocity forget target
                 bool mobMovementRestrictions(unsigned int entityID, coordinatesStruct newChunkCoords); //called in physics if it's a mob, used to prevent them from walking or falling into cities
        };
@@ -328,6 +331,16 @@ namespace ecs{
                 void broadcastGameLoop();
                 void physicsLoop();
                 void updateInRangeLoop();
+                void damageLoop();
+       };
+
+       class mpHpSystem{
+            private:
+                static mpHpSystem* instance;
+                mpHpSystem();
+            public:
+                static mpHpSystem* getInstance();
+                void damage();
        };
        
         class systemsManager{
@@ -349,6 +362,7 @@ namespace ecs{
                 std::thread* physicsLoop = 0;
                 std::thread* broadcastGameLoop = 0;
                 std::thread* updateInRangeThread = 0;
+                std::thread* damageThread = 0;
         };
         
         extern json itemsFromFile; //will be loaded into the game from items.json
