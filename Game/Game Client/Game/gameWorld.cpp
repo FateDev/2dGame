@@ -53,7 +53,7 @@ game::game(networking* networkObject, gameNetwork* gameConnection, sf::RenderWin
 	keysObject["right"] = false;
 	keysObject["jump"] = false;
 	keysObject["interactNPC"] = false;
-	keysObject["switchTarget"] = false;
+	keysObject["use_item"] = false;
 	keysObject["throwItem"] = false;
 	keysObject["custom_binding1"] = false;
 	keysObject["custom_binding2"] = false;
@@ -89,7 +89,7 @@ game::game(networking* networkObject, gameNetwork* gameConnection, sf::RenderWin
 void game::listenForKeys(sf::Event event) {
 	if (event.type == sf::Event::KeyPressed) { //keysObject[key] = true/false; true = key is pressed, false = key is not pressed/released
 		std::string key = sfKeyToAbstractKeyMap[event.key.code];
-		if (key==networkObj->settings["left"].get<std::string>() || key == networkObj->settings["right"].get<std::string>() || key == networkObj->settings["jump"].get<std::string>() || key == networkObj->settings["interactNPC"].get<std::string>() || key == networkObj->settings["throwItem"].get<std::string>() || key == networkObj->settings["switchTarget"].get<std::string>() || key == networkObj->settings["custom_binding1"]["key"].get<std::string>() || key == networkObj->settings["custom_binding2"]["key"].get<std::string>() || key == networkObj->settings["custom_binding3"]["key"].get<std::string>()) {
+		if (key==networkObj->settings["left"].get<std::string>() || key == networkObj->settings["right"].get<std::string>() || key == networkObj->settings["jump"].get<std::string>() || key == networkObj->settings["interactNPC"].get<std::string>() || key == networkObj->settings["throwItem"].get<std::string>() || key == networkObj->settings["use_item"].get<std::string>() || key == networkObj->settings["custom_binding1"]["key"].get<std::string>() || key == networkObj->settings["custom_binding2"]["key"].get<std::string>() || key == networkObj->settings["custom_binding3"]["key"].get<std::string>()) {
 			if (key == networkObj->settings["left"].get<std::string>() && keysObject["left"] != true) {
 				keysObject["left"] = true;
 				changeInButtonState = true; //used to indicate that s  ome buttons have been pressed
@@ -102,8 +102,8 @@ void game::listenForKeys(sf::Event event) {
 			}else if (key == networkObj->settings["interactNPC"].get<std::string>() && keysObject["interactNPC"] != true) {
 				keysObject["interactNPC"] = true;
 				changeInButtonState = true; //used to indicate that some buttons have been pressed
-			}else if (key == networkObj->settings["switchTarget"].get<std::string>() && keysObject["switchTarget"] != true) {
-				keysObject["switchTarget"] = true;
+			}else if (key == networkObj->settings["use_item"].get<std::string>() && keysObject["use_item"] != true) {
+				keysObject["use_item"] = true;
 				changeInButtonState = true; //used to indicate that some buttons have been pressed
 			}else if (key == networkObj->settings["throwItem"].get<std::string>() && keysObject["throwItem"] != true) {
 				keysObject["throwItem"] = true;
@@ -139,8 +139,8 @@ void game::listenForKeys(sf::Event event) {
 			}else if (key == networkObj->settings["interactNPC"].get<std::string>() && keysObject["interactNPC"] != false) {
 				keysObject["interactNPC"] = false;
 				changeInButtonState = true; //used to indicate that some buttons have been pressed
-			}else if (key == networkObj->settings["switchTarget"].get<std::string>() && keysObject["switchTarget"] != false) {
-				keysObject["switchTarget"] = false;
+			}else if (key == networkObj->settings["use_item"].get<std::string>() && keysObject["use_item"] != false) {
+				keysObject["use_item"] = false;
 				changeInButtonState = true; //used to indicate that some buttons have been pressed
 			}else if (key == networkObj->settings["throwItem"].get<std::string>() && keysObject["throwItem"] != false) {
 				keysObject["throwItem"] = false;
@@ -267,15 +267,19 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 								player.setTexture(opponentTexture);
 							}
 
-							float hpRatio = (chunkToDraw["entities"][i]["hp"].get<float>() / 100) / (chunkToDraw["entities"][i]["max_hp"].get<float>() / 100);
-							sf::RectangleShape hpLeft;
-							sf::RectangleShape hpRight;
-							hpLeft.setPosition(chunkToDraw["entities"][i]["location"]["x"].get<float>() * scaleFactor, (chunkToDraw["entities"][i]["location"]["y"].get<float>()) * scaleFactor - 115);
-							hpRight.setPosition(chunkToDraw["entities"][i]["location"]["x"].get<float>() * scaleFactor + (50 * hpRatio), (chunkToDraw["entities"][i]["location"]["y"].get<float>()) * scaleFactor - 115);
-							hpLeft.setSize({ 50*hpRatio, 12 });
-							hpRight.setSize({ 50*(1-hpRatio), 12 });
-							hpLeft.setFillColor(sf::Color(46, 204, 113));
-							hpRight.setFillColor(sf::Color(192, 57, 43));
+							if (chunkToDraw["entities"][i]["id"].get<int>() != networkObj->userID) {
+								float hpRatio = (chunkToDraw["entities"][i]["hp"].get<float>() / 100) / (chunkToDraw["entities"][i]["max_hp"].get<float>() / 100);
+								sf::RectangleShape hpLeft;
+								sf::RectangleShape hpRight;
+								hpLeft.setPosition(chunkToDraw["entities"][i]["location"]["x"].get<float>() * scaleFactor, (chunkToDraw["entities"][i]["location"]["y"].get<float>()) * scaleFactor - 115);
+								hpRight.setPosition(chunkToDraw["entities"][i]["location"]["x"].get<float>() * scaleFactor + (50 * hpRatio), (chunkToDraw["entities"][i]["location"]["y"].get<float>()) * scaleFactor - 115);
+								hpLeft.setSize({ 50 * hpRatio, 12 });
+								hpRight.setSize({ 50 * (1 - hpRatio), 12 });
+								hpLeft.setFillColor(sf::Color(46, 204, 113));
+								hpRight.setFillColor(sf::Color(192, 57, 43));
+								spriteAccessories.push_back(hpLeft);
+								spriteAccessories.push_back(hpRight);
+							}
 
 							player.setPosition(chunkToDraw["entities"][i]["location"]["x"].get<float>() * scaleFactor, (chunkToDraw["entities"][i]["location"]["y"].get<float>()) * scaleFactor);
 							//std::cout << chunkToDraw["entities"][i]["direction"]["x"].get<float>() << " -- " << chunkToDraw["entities"][i]["direction"]["y"].get<float>() << "aa \n";
@@ -289,8 +293,6 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 								spriteAccessories.push_back(carryingItem); //draw the player's item's texture if it's non zero, so there is a texture for it
 							}
 
-							spriteAccessories.push_back(hpLeft);
-							spriteAccessories.push_back(hpRight);
 							textToDraw.push_back(text);
 							spritesToDraw.push_back(player);
 						}
@@ -326,11 +328,24 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 								rectangle.setScale(-1.0, 1.0);
 							}
 							//std::cout << chunkToDraw["entities"][i]["direction"]["x"].get<int>() << "\n";
-							//std::cout << chunkToDraw["entities"][i]["location"]["y"].dump() << "\n";
+							//std::cout << chunkToDraw["entities"][i].dump() << "\n";
 							rectangle.setPosition({ (chunkToDraw["entities"][i]["hitBox"]["top-left"]["x"].get<float>() + chunkToDraw["entities"][i]["location"]["x"].get<float>()) * scaleFactor, (chunkToDraw["entities"][i]["hitBox"]["top-left"]["y"].get<float>() + chunkToDraw["entities"][i]["location"]["y"].get<float>()) * scaleFactor });
 							//rectangle.move(0, -20);
 							//rectangle.setFillColor(sf::Color(211, 84, 0)); //grey floor
+
+							float hpRatio = (chunkToDraw["entities"][i]["hp"].get<float>() / 100) / (chunkToDraw["entities"][i]["max_hp"].get<float>() / 100);
+							sf::RectangleShape hpLeft;
+							sf::RectangleShape hpRight;
+							hpLeft.setPosition(chunkToDraw["entities"][i]["location"]["x"].get<float>()* scaleFactor, (chunkToDraw["entities"][i]["location"]["y"].get<float>())* scaleFactor - 115);
+							hpRight.setPosition(chunkToDraw["entities"][i]["location"]["x"].get<float>()* scaleFactor + (50 * hpRatio), (chunkToDraw["entities"][i]["location"]["y"].get<float>())* scaleFactor - 115);
+							hpLeft.setSize({ 50 * hpRatio, 12 });
+							hpRight.setSize({ 50 * (1 - hpRatio), 12 });
+							hpLeft.setFillColor(sf::Color(46, 204, 113));
+							hpRight.setFillColor(sf::Color(192, 57, 43));
+
 							rectanglesToDraw.push_back(rectangle); //simply add a RectangleShape to the container for it to be drawn
+							rectanglesToDraw.push_back(hpRight);
+							rectanglesToDraw.push_back(hpLeft);
 						}
 					}
 				}
@@ -348,7 +363,7 @@ void game::live(inventory* inventoryBit) { //this is called from the main thread
 
 			//we're resetting some of them here, as they just do a single action, rather than move or whatever
 			keysObject["interactNPC"] = false;
-			keysObject["switchTarget"] = false;
+			keysObject["use_item"] = false;
 			keysObject["jump"] = false; //we want to be able to jump repeatedly
 
 			changeInButtonState = false; //reset this so that we don't repeatedly send the same data to the server
