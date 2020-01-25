@@ -3,6 +3,7 @@
 
 using namespace ecs::system;
 using namespace ecs::component;
+using namespace::ecs;
 
 void itemSystem::throwItem(json keysAndID, int entityID, int direction_x, sf::Vector2f userCoordinates){
 	if(keysAndID["throwItem"].get<bool>()){ //sends a message to the user to update their inventory and redraw it to include the fact that their item is now gone

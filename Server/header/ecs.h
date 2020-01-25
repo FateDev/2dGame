@@ -75,9 +75,9 @@ namespace ecs{
 
         struct mob{
             mobType mob_type;
-            long nextAttackTime = 0; //if this time has passed, then the mob can attack, otherwis it cannot (helps with putting in a cooldown on mob attacks)
+            long nextAttackTime = 0; //if this time has passed, then the mob can attack, otherwise it cannot (helps with putting in a cooldown on mob attacks)
             float attackDamage;
-            int targetPlayer = -1; //the entity ID of the player they are attacking
+            int targetEntity = -1; //the entity ID of the player they are attacking
             sf::Vector3i dropItems = {1, 2, 3}; //as an example, the drop items could be any of these
         };
 
@@ -184,7 +184,6 @@ namespace ecs{
             int mobCount = 0; //how many mobs
             int npcCount = 0; //how many NPC's
             bool generated = false; //will indicate if it's been generated, as apparently chunks.count(coordinate) isn't reliable due to moving things
-            bool permanent = false; //just checks if this should ever be deleted or not
         };
 
         struct coordinatesStruct{
@@ -239,14 +238,14 @@ namespace ecs{
 
        class mobSystem{
             private:
+                sf::Clock clock; //used for attack cooldowns and such
                 static mobSystem* instance;
                 mobSystem();
             public:
                 static mobSystem* getInstance();
+                void targetEntity(int fromEntityID, int targetEntityID);
+                void moveTowardsTarget(int mobEntityID);
                 void generateMobsAt(coordinatesStruct coordinate); //runs in game loop, if there are less than maxMobsPerChunk mobs in a chunk, generates mobs
-                void findClosestTarget(); //finds closest player in it's chunk, if userCount is 0 skips over this
-                void findDistanceToTarget(); //finds the magnitude of the distance to the target player
-                void dropItems(int entityID); //called when they die, drops the items they contain
                 void mobMovement(int entityID); //if no target randomised movement, otherwise towards player, if collides with city boundary reverse velocity forget target
                 bool mobMovementRestrictions(unsigned int entityID, coordinatesStruct newChunkCoords); //called in physics if it's a mob, used to prevent them from walking or falling into cities
        };
@@ -300,6 +299,7 @@ namespace ecs{
                 void getUserInventory(int userID, json* jsonObj); //will get the user's inventory
                 void saveUserInventory(int userID, json jsonObj); //saves the user's inventory
                 void getUserStats(int userID, int entityID); //will load the user stats (MP, HP and balance from the database), return a string of JSON containing the data for initialising the user client
+                void saveUserStats(int userID, int entityID); //saves the user stats to the server
                 std::string login(std::string input, ecs::component::user *userPtr);
         };
 
@@ -314,7 +314,7 @@ namespace ecs{
 
                 void updateActiveChunks(); //this would update the activeChunks map, removing inactive ones, adding new ones which should be set to active
                 void updateChunkData(); //this would get the data associated with some chunk and store it in the gameData object
-                void generateChunks(std::vector<coordinatesStruct> generationCoords, bool permanent); //given a vector of coordinates, generate chunks
+                void generateChunks(std::vector<coordinatesStruct> generationCoords); //given a vector of coordinates, generate chunks
                 void initWorld(coordinatesStruct startCoord); //given a start coordinate, generate the 9 chunks including it and surrounding it
                 void cleanupChunks(std::vector<coordinatesStruct> deletionCoords); //will cleanup/delete the chunks at the coordinates in the deletionCoords vector
                 void prepareGameData(coordinatesStruct coordinate); //will prepare the selected chunk's game data entry to be sent

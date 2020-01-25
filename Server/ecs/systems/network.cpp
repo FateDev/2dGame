@@ -1,3 +1,5 @@
+#define _CRT_SECURE_NO_WARNINGS
+
 #include "../../header/ecs.h"
 #include "../../header/helper.h"
 
@@ -26,6 +28,7 @@ void network::removeUser(unsigned int i) //function to basically properly log ou
 	updateActiveChunkData::getInstance()->updateActiveChunks(); //updates the active chunks
 	mutexs::getInstance()->chunkLockMutex.unlock();
 
+	saveUserStats(users.compVec[i].userID, entityID); //will save the user's stats
 	saveUserInventory(users.compVec[i].userID, userInventories[users.compVec[i].userID]); //will save the user's inventory
 	userInventories.erase(users.compVec[i].userID); //erases the inventory stored in memory
 
@@ -438,4 +441,21 @@ void network::getUserStats(int userID, int entityID){
 	mpHpObjects.compVec[mpHpObjects.entityToVectorMap(entityID)].mp = returnJSON["mp"].get<float>();
 	mpHpObjects.compVec[mpHpObjects.entityToVectorMap(entityID)].max_hp = returnJSON["max_hp"].get<float>();
 	mpHpObjects.compVec[mpHpObjects.entityToVectorMap(entityID)].max_mp = returnJSON["max_mp"].get<float>();
+}
+
+void network::saveUserStats(int userID, int entityID) {
+	CURL* curl = curl_easy_init(); //we can set options for this to make it control how a transfer/transfers will be made
+	auto* userMpHpObj = &mpHpObjects.compVec[mpHpObjects.entityToVectorMap(entityID)];
+
+	curl_easy_setopt(curl, CURLOPT_URL, ("http://erewhon.xyz/game/saveUserStats.php?"
+		"id=" + std::to_string(userID)
+		+ "&mp=" + std::to_string(userMpHpObj->mp)
+		+ "&hp=" + std::to_string(userMpHpObj->hp)
+		+ "&max_mp=" + std::to_string(userMpHpObj->max_mp)
+		+ "&max_hp=" + std::to_string(userMpHpObj->max_hp)
+	).c_str());
+
+	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+
+	curl_easy_perform(curl);
 }

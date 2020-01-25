@@ -36,7 +36,7 @@ void game::broadcastGameLoop(){
 
 void game::chunksUpdateLoop(){
 	while(true){
-		std::chrono::system_clock::time_point timePoint = std::chrono::system_clock::now() + std::chrono::milliseconds(50);
+		std::chrono::system_clock::time_point timePoint = std::chrono::system_clock::now() + std::chrono::milliseconds(250);
 		mutexs::chunkLockMutex.lock();
 		updateActiveChunkData::getInstance()->updateActiveChunks(); //updates the active chunks, we call it after anyone moves in any chunk as that's when a new chunk may need to be generated
 		mutexs::chunkLockMutex.unlock();
@@ -46,7 +46,7 @@ void game::chunksUpdateLoop(){
 
 void game::updateInRangeLoop(){
 	while(true){
-		std::chrono::system_clock::time_point timePoint = std::chrono::system_clock::now() + std::chrono::milliseconds(200);
+		std::chrono::system_clock::time_point timePoint = std::chrono::system_clock::now() + std::chrono::milliseconds(500);
 		mutexs::chunkLockMutex.lock();
 		physics::getInstance()->updateEntitiesInRange(); //updates what entities are in range of what entity
 		mutexs::chunkLockMutex.unlock();
@@ -56,7 +56,7 @@ void game::updateInRangeLoop(){
 
 void game::damageLoop(){
 	while(true){
-		std::chrono::system_clock::time_point timePoint = std::chrono::system_clock::now() + std::chrono::milliseconds(100);
+		std::chrono::system_clock::time_point timePoint = std::chrono::system_clock::now() + std::chrono::milliseconds(250);
 		mutexs::chunkLockMutex.lock();
 		mpHpSystem::getInstance()->damage(); //updates what entities are in range of what entity
 		mutexs::chunkLockMutex.unlock();

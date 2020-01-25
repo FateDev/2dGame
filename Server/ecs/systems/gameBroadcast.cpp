@@ -14,7 +14,7 @@ void gameBroadcast::broadcastGameState(){ //this broadcasts stuff on port 5001
 
 		if (userObj->gameConnected == true){
 			if (selector.isReady(*(userObj->gameSocket))){
-				sf::Vector2f currentChunk = {chunkCoordHelperX(int(physicsObj->coordinates.x), chunkPixelSize_x), chunkCoordHelperY(int(physicsObj->coordinates.y), chunkPixelSize_y)};
+				sf::Vector2f currentChunk = {float(chunkCoordHelperX(int(physicsObj->coordinates.x), chunkPixelSize_x)), float(chunkCoordHelperY(int(physicsObj->coordinates.y), chunkPixelSize_y))};
 				sf::IpAddress userIP = userObj->socket->getRemoteAddress();
 				double size = gameData.size();
 				jsonObj["chunks"][0] = gameData[coordinatesStruct(currentChunk.x - 1, currentChunk.y - 1)].dump();

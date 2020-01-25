@@ -12,7 +12,7 @@ void updateActiveChunkData::initWorld(coordinatesStruct startCoord){ //generates
 		}
 	}
 
-	generateChunks(generationCoords, true); //and they should be permanent
+	generateChunks(generationCoords); //and they should be permanent
 }
 
 void updateActiveChunkData::updateActiveChunks()
@@ -56,7 +56,7 @@ void updateActiveChunkData::updateActiveChunks()
 	*/
 
 	cleanupChunks(deletionCoords); //deletes the deletionCoords ones
-	generateChunks(generationCoords, false); //generates the ones at generationCoords, false is saying that these ones shouldn't be permanent
+	generateChunks(generationCoords); //generates the ones at generationCoords, false is saying that these ones shouldn't be permanent
 }
 
 void updateActiveChunkData::cleanupChunks(std::vector<coordinatesStruct> deletionCoords){
@@ -75,7 +75,7 @@ void updateActiveChunkData::cleanupChunks(std::vector<coordinatesStruct> deletio
 	}
 }
 
-void updateActiveChunkData::generateChunks(std::vector<coordinatesStruct> generationCoords, bool permanent){
+void updateActiveChunkData::generateChunks(std::vector<coordinatesStruct> generationCoords){
 	for(auto &generation : generationCoords){
 		bool generationFlag = false; //used to indicate if generation has happened or not (so to skip the semi random generation bit)
 		unsigned int entityID = ecs::entity::superEntityManager.create(ecs::entity::COLLISION_OBJECT); //a new object with those attributes is made
@@ -102,10 +102,6 @@ void updateActiveChunkData::generateChunks(std::vector<coordinatesStruct> genera
 				chunks[generation].first.settingID = 9; //ID: 9 is cave
 			}
 		}
-		
-		if(permanent){
-			chunks[generation].first.permanent = true; //make it permanent on request
-		}
 
 		chunks[generation].first.generated = true; //it's been generated, so flag it as such
 		
@@ -117,7 +113,7 @@ void updateActiveChunkData::generateChunks(std::vector<coordinatesStruct> genera
 			sf::Vector2f(chunkPixelSize_x, 0)
 		}; //sets the corners of these boxes, remember negative is up
 		physicsObj->objType = COLLISION; //sets the object type
-		physicsObj->coordinates = {generation.coordinates.first * chunkPixelSize_x, generation.coordinates.second * chunkPixelSize_y};
+		physicsObj->coordinates = {float(generation.coordinates.first * chunkPixelSize_x), float(generation.coordinates.second * chunkPixelSize_y)};
 
 		if(chunks[generation].first.settingID != 4 && chunks[generation].first.settingID != 5){
 			chunks[generation].second.push_back(entityID); //pushes the floor entity to the chunks object

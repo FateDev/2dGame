@@ -14,7 +14,7 @@ void mobSystem::generateMobsAt(coordinatesStruct coordinate){
         physical* mobPhysical = &physicsObjects.compVec[physicsObjects.entityToVectorMap(entityID)];
         mobPhysical->objType = ecs::component::objectType::COLLIDER;
         mobPhysical->boxCorners = {sf::Vector2f(0, -7.5), sf::Vector2f(6, -7.5), sf::Vector2f(0, 0), sf::Vector2f(6, 0)}; //same box as users
-        mobPhysical->coordinates = {(coordinate.coordinates.first * chunkPixelSize_x) + chunkPixelSize_x/4 + (rand() % (chunkPixelSize_x/2)), (coordinate.coordinates.second * chunkPixelSize_y) + 2};
+        mobPhysical->coordinates = {(float(coordinate.coordinates.first * chunkPixelSize_x) + chunkPixelSize_x/4 + (rand() % (chunkPixelSize_x/2))), float((coordinate.coordinates.second * chunkPixelSize_y) + 2)};
         
         mob* newMob = &mobs.compVec[mobs.entityToVectorMap(entityID)];
 
@@ -31,18 +31,25 @@ void mobSystem::generateMobsAt(coordinatesStruct coordinate){
 }
 
 void mobSystem::mobMovement(int entityID){
-    int chance = (rand() % 100 > 95) ? 1 : 0; //if the number is greater than 95 put 1, else 0 - 5% chance of changing movement
-    if(chance){
-        int selection = rand() % 3; //so 0, 1 or 2 - 0 is stop moving, 1 is move left, 2 is move right
-        if(selection == 0){
-            physicsObjects.compVec[physicsObjects.entityToVectorMap(entityID)].velocity.x = 0;
-        }else if(selection == 1){
-            physicsObjects.compVec[physicsObjects.entityToVectorMap(entityID)].velocity.x = -1;
-            drawables.compVec[drawables.entityToVectorMap(entityID)].direction.x = -1;
-        }else if(selection == 2){
-            physicsObjects.compVec[physicsObjects.entityToVectorMap(entityID)].velocity.x = 1;
-            drawables.compVec[drawables.entityToVectorMap(entityID)].direction.x = 1;
+    if (mobs.compVec[mobs.entityToVectorMap(entityID)].targetEntity == -1) { //if it's not targetting anything, just randomly move around
+        int chance = (rand() % 100 > 95) ? 1 : 0; //if the number is greater than 95 put 1, else 0 - 5% chance of changing movement
+        if (chance) {
+            int selection = rand() % 3; //so 0, 1 or 2 - 0 is stop moving, 1 is move left, 2 is move right
+            if (selection == 0) {
+                physicsObjects.compVec[physicsObjects.entityToVectorMap(entityID)].velocity.x = 0;
+            }
+            else if (selection == 1) {
+                physicsObjects.compVec[physicsObjects.entityToVectorMap(entityID)].velocity.x = -1;
+                drawables.compVec[drawables.entityToVectorMap(entityID)].direction.x = -1;
+            }
+            else if (selection == 2) {
+                physicsObjects.compVec[physicsObjects.entityToVectorMap(entityID)].velocity.x = 1;
+                drawables.compVec[drawables.entityToVectorMap(entityID)].direction.x = 1;
+            }
         }
+    }
+    else {
+        moveTowardsTarget(entityID); //otherwise move towards the target
     }
 }
 
@@ -68,6 +75,36 @@ bool mobSystem::mobMovementRestrictions(unsigned int entityID, coordinatesStruct
     return cityDetected;
 }
 
-void mobSystem::dropItems(int entityID){
-    
+void mobSystem::targetEntity(int fromEntityID, int targetEntityID){
+    mobs.compVec[mobs.entityToVectorMap(fromEntityID)].targetEntity = targetEntityID;
+}
+
+void mobSystem::moveTowardsTarget(int mobEntityID) {
+    auto *mobMobsObj = &mobs.compVec[mobs.entityToVectorMap(mobEntityID)];
+
+    if (!entity::superEntityManager.alive(mobMobsObj->targetEntity)) { //if the entity that they are targetting is no longer active, set their target to -1
+        mobMobsObj->targetEntity = -1;
+    }else {
+        auto* mobPhysicsObj = &physicsObjects.compVec[physicsObjects.entityToVectorMap(mobEntityID)];
+        auto* mobDrawingObj = &drawables.compVec[drawables.entityToVectorMap(mobEntityID)];
+        sf::Vector2f targetCoordinates = physicsObjects.compVec[physicsObjects.entityToVectorMap(mobMobsObj->targetEntity)].coordinates;
+        if (targetCoordinates.x < mobPhysicsObj->coordinates.x) { //if the target is about to the left of the mob
+            mobPhysicsObj->velocity.x = -1;
+            mobDrawingObj->direction.x = -1;
+        }else if(targetCoordinates.x > mobPhysicsObj->coordinates.x) {
+            mobPhysicsObj->velocity.x = 1;
+            mobDrawingObj->direction.x = 1;
+        }
+        else { //this pretty much only happens when 2 mobs are trying to attac each other
+            mobPhysicsObj->velocity.x = 0;
+            mobDrawingObj->direction.x = 1;
+        }
+
+        if (findDistance(targetCoordinates, mobPhysicsObj->coordinates) < 5 && mobMobsObj->nextAttackTime < clock.getElapsedTime().asMilliseconds()) { //if the entity is in range, and the mob isn't cooling down from an attack, attack
+            mutexs::attackVectorMutex.lock();
+            attacks.push_back({ mobEntityID, 5 }); //for now just setting damage as 5
+            mutexs::attackVectorMutex.unlock();
+            mobMobsObj->nextAttackTime = clock.getElapsedTime().asMilliseconds() + 500;
+        }
+    }
 }

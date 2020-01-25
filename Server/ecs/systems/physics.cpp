@@ -3,6 +3,7 @@
 
 using namespace ecs::system;
 using namespace ecs::component;
+using namespace::ecs;
 
 void physics::userInput(json keysAndID) {
 	unsigned short entityID = sessionIDToEntityID[keysAndID["sessionID"]]; //will get the entity ID
@@ -23,6 +24,11 @@ void physics::userInput(json keysAndID) {
 			float damage = itemsFromFile[currentItem]["damage"].get<float>();
 			mutexs::attackVectorMutex.lock();
 			attacks.push_back({entityID, damage}); //pushes atttacks to this for processing, so we can process all of the attack stuff in one place
+			mutexs::attackVectorMutex.unlock();
+		}
+		else if(currentItem == 0) {
+			mutexs::attackVectorMutex.lock();
+			attacks.push_back({ entityID, 1 }); //if they are holding nothing they can do 1 damage
 			mutexs::attackVectorMutex.unlock();
 		}
 	}
@@ -218,9 +224,9 @@ void physics::updateEntitiesInRange(){
 
 		sf::Vector2f entityAttackBoxOrigin;
 		if(drawables.compVec[drawables.entityToVectorMap(mpObj_entityID)].direction.x == -1){
-			entityAttackBoxOrigin = {entityCoords.x - (0.5*width), entityCoords.y + width/2}; //so the origin of the attack box is in front of them
+			entityAttackBoxOrigin = {entityCoords.x - (0.5f*width), entityCoords.y + width/2.0f}; //so the origin of the attack box is in front of them
 		}else{
-			entityAttackBoxOrigin = {entityCoords.x + (1.5*width), entityCoords.y + width/2}; //so the origin of the attack box is in front of them
+			entityAttackBoxOrigin = {entityCoords.x + (1.5f*width), entityCoords.y + width/2.0f}; //so the origin of the attack box is in front of them
 		}
 
 		entityCoords.x = chunkCoordHelperX(entityCoords.x, chunkPixelSize_x);

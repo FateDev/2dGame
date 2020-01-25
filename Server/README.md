@@ -32,5 +32,21 @@ In an attempt to improve server performance, I've made it so chunkData is genera
 ## Server v0.4
 Added in method to get what entities are in range of other entities for combat system (though only going to implement up to chasing the user for now).
 
+## Server v0.5
+
+-Made changes in game.cpp, generally slowed down tick rate of a few as they don't need to be that fast
+
+-To remove narrowing warnings, made sure to typecast to float/int as required in a number of files (mostly needed whenever I was using chunkCoordHelper functions)
+
+-If you hit a mob, it will now chase you and hit you back, until you die, at which point you respawn with full health and MP at spawn
+
+-Mobs also apply their damage to an area, so can damage multiple entities, just like users - so they can damage other mobs
+
+​	-This means mobs can now fight mobs if you lure them in correctly, and kill each other/kill one greatly weaken another
+
+-User stats are now saved online
+
+-There are no permanent chunks anymore, to boost performance even a tiny bit, also because it lead to unexpected errors
+
 # Errors and Stuff
 Ok so basically you might get some errors about hashtable stuff or whatever when using unordered stl containers, so basically to resolve this you need to make your custom type have some equality testing functionality, for example, making an overload of the == operator, and then also need to make a custom hashing function, which should be easily achievable by using a unique id or something on your struct, and just returning that for the hash function.
