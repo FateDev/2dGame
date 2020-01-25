@@ -23,7 +23,7 @@ void updateActiveChunkData::updateActiveChunks()
 
 	for(int i = 0; i < users.compVec.size(); i++){ //loop through all users, and their position, instead of chunks
 		int entityID = users.vectorToEntityMap(i);
-		sf::Vector2f* userCoordinates = &physicsObjects.compVec[physicsObjects.entityToVectorMap(i)].coordinates;
+		sf::Vector2f* userCoordinates = &physicsObjects.compVec[physicsObjects.entityToVectorMap(entityID)].coordinates;
 		
 		coordinatesStruct currentChunkCoords(
 			chunkCoordHelperX(userCoordinates->x, chunkPixelSize_x), 
