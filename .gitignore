@@ -34,3 +34,10 @@ Game/Game Client/Builds
 **/deps/*
 Game/Game Client/cryptic.h
 Game/Game Client/cryptic.cpp
+**/cryptic.h
+Game/Game Client/Game.rc
+Game/Game Client/Game.aps
+Game/Game Client/icon1.ico
+Game/Game Client/icon2.ico
+Game/Launcher/Launcher.aps
+Game/Launcher/Launcher.rc
