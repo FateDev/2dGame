@@ -7,6 +7,7 @@
 #include <curl/curl.h>
 #include <SFML/Graphics.hpp>
 #include "headerFuncs.h"
+#include "cryptic.h"
 
 #ifdef _DEBUG
 #	pragma comment(lib, "tgui-d.lib")
@@ -21,8 +22,12 @@ int main() {
 	sf::Clock* globalClock = new sf::Clock; //the clock which is used to check when to ping the server
 	networking* networkObject = new networking(); //initialises the network object
 
-	sf::RenderWindow *launcherWindow = new sf::RenderWindow(sf::VideoMode(800, 600), "One More Time", sf::Style::Close); //window, the one used for the launcher
+	sf::RenderWindow *launcherWindow = new sf::RenderWindow(sf::VideoMode(800, 600), "Descend", sf::Style::Close); //window, the one used for the launcher
 	launcher* launcherObject = new launcher(networkObject, launcherWindow, globalClock); //launcher
+
+	sf::Image icon;
+	icon.loadFromFile("resources/icon.png");
+	launcherWindow->setIcon(200, 200, icon.getPixelsPtr());
 
 	while (launcherWindow->isOpen())
 	{
@@ -57,7 +62,7 @@ int main() {
 		std::string arguments = "";
 
 		//the below are passed as arguments for the game program to use
-		arguments += "Hg+Lb9B6Q/zrMduYEvPmuQ==";
+		arguments += key;
 		arguments += " " + networkObject->confirmedUsername;
 
 		ShellExecute(0, 0, "Game\\Game.exe", arguments.c_str(), NULL, SW_SHOW);

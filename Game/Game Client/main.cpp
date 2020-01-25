@@ -23,7 +23,7 @@
 
 const unsigned short REMOTE_TCP_PORT = 5000;
 const unsigned short REMOTE_GAME_PORT = 5001;
-const std::string REMOTE_IP = "192.168.0.15"; //82.40.114.214
+const std::string REMOTE_IP = "82.40.114.214"; //192.168.0.15
 const std::string WEBSITE_URL = "http://erewhon.xyz";
 
 int main(int argc, char **argv) { //will accept parameters from command line, the launcher will send parameters using this
@@ -33,8 +33,8 @@ int main(int argc, char **argv) { //will accept parameters from command line, th
 	/*
 	std::string launcherKey(argv[1]);
 	std::string username(argv[2]);
-	*/
 	///>>>below are set temporarily for debugging and development
+	*/
 	std::string launcherKey = authString;
 	std::string username = "fate";
 

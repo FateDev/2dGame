@@ -74,9 +74,13 @@ void gameBit(sf::Clock* globalClock, networking* networkObject, gameNetwork* gam
 		taskbarHeight = rect.bottom - rect.top;
 	}
 
-	sf::RenderWindow gameWindow(sf::VideoMode(sf::VideoMode::getDesktopMode().width, sf::VideoMode::getDesktopMode().height-taskbarHeight), "One More Time", sf::Style::None, settings);
+	sf::RenderWindow gameWindow(sf::VideoMode(sf::VideoMode::getDesktopMode().width, sf::VideoMode::getDesktopMode().height-taskbarHeight), "Descend", sf::Style::None, settings);
 	gameWindow.setPosition(sf::Vector2i(0, 0));
 	gameWindow.setVerticalSyncEnabled(true);
+
+	sf::Image icon;
+	icon.loadFromFile("resources/icon.png");
+	gameWindow.setIcon(200, 200, icon.getPixelsPtr());
 	//fullscreen window for the game
 
 	tgui::Gui gui(gameWindow); //the main gui for the entire game bit
