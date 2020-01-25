@@ -31,7 +31,7 @@ void updateActiveChunkData::updateActiveChunks()
 		);
 
 		for(int i = -1; i <= 1; i++){
-			for(int j = -1; j <= 1; j++){
+			for(int j = -1; j <= 1; j++){ //loops through chunks around user
 				if(!chunks[coordinatesStruct(currentChunkCoords.coordinates.first + i, currentChunkCoords.coordinates.second + j)].first.generated){ //if the chunk hasn't been made yet
 					generationCoords.push_back(coordinatesStruct(currentChunkCoords.coordinates.first + i, currentChunkCoords.coordinates.second + j)); //flag this up for generation
 				}
@@ -41,8 +41,7 @@ void updateActiveChunkData::updateActiveChunks()
 	}
 	
 	for(auto &chunk : chunks){
-		if(liveChunks.find(chunk.first) == liveChunks.end()){
-			if(chunk.second.first.userCount > 0){ std::cout << "WHAT THE FUCK\n"; }
+		if(liveChunks.find(chunk.first) == liveChunks.end()){ //if the current chunks being looped over is not found, then add it to chunks which should be deleted
 			deletionCoords.push_back(chunk.first);
 		}
 	}
@@ -51,18 +50,17 @@ void updateActiveChunkData::updateActiveChunks()
 	Generation:
 	-Every power of 2 on the x-axis excluding the first 3 (so until the 8th chunk), generate a city there
 		-> their y vaues are always multiples of 5
-	*/
 	std::cout << "Deleting: " << deletionCoords.size() << "\n";
 	std::cout << "Generating: " << generationCoords.size() << "\n";
 	std::cout << "Total number: " << chunks.size() << "\n";
+	*/
 
 	cleanupChunks(deletionCoords); //deletes the deletionCoords ones
 	generateChunks(generationCoords, false); //generates the ones at generationCoords, false is saying that these ones shouldn't be permanent
 }
 
 void updateActiveChunkData::cleanupChunks(std::vector<coordinatesStruct> deletionCoords){
-	bool ignoreDeletion = false; //temporary fix
-	for(auto &deletion : deletionCoords){ //deletes the ones flagged for deletion
+	for(auto &deletion : deletionCoords){ //deletes the ones flagged for deletion, and delete entities inside of them, properly - to prevent any potential undefined behaviour
 		for(auto &entitiesInChunk : chunks[deletion].second){
 			if(ecs::entity::superEntityManager.getType(entitiesInChunk) == ecs::entity::entityType::MOB){
 				chunks[deletion].first.mobCount--;
@@ -70,14 +68,9 @@ void updateActiveChunkData::cleanupChunks(std::vector<coordinatesStruct> deletio
 				chunks[deletion].first.npcCount--;
 			}else if(ecs::entity::superEntityManager.getType(entitiesInChunk) == ecs::entity::entityType::ITEM_THROWN){
 				chunks[deletion].first.itemCount--;
-			}else if(ecs::entity::superEntityManager.getType(entitiesInChunk) == ecs::entity::entityType::USER){
-				std::cout << chunks[deletion].first.userCount << "\n";
-				ignoreDeletion = true;
-				break;
 			}
 			ecs::entity::superEntityManager.destroy(entitiesInChunk);
 		}
-		if(ignoreDeletion){continue;};
 		chunks.erase(deletion);
 	}
 }

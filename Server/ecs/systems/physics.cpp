@@ -192,7 +192,7 @@ void physics::chunkMovementManager(coordinatesStruct newChunkCoords, coordinates
 			if(entity::superEntityManager.getType(entity::entity(entityID)) == entity::USER){ //if it's a user
 				chunks[currentChunkCoords].first.userCount--; //decrements the number of users in this chunk
 				chunks[newChunkCoords].first.userCount++; //increments the number of users in this chunk
-				std::cout << "moved " << users.compVec[users.entityToVectorMap(entityID)].username << " to chunk: " << newChunkCoords.coordinates.first << ", " << newChunkCoords.coordinates.second << std::endl;
+				//std::cout << "moved " << users.compVec[users.entityToVectorMap(entityID)].username << " to chunk: " << newChunkCoords.coordinates.first << ", " << newChunkCoords.coordinates.second << std::endl;
 			} else if(entity::superEntityManager.getType(entity::entity(entityID)) == entity::ITEM_THROWN){ //if it's a thrown item
 				chunks[currentChunkCoords].first.itemCount--;
 				chunks[newChunkCoords].first.itemCount++; //increments the number of users in this chunk
