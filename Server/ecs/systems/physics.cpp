@@ -22,7 +22,7 @@ void physics::userInput(json keysAndID) {
 		if(itemsFromFile[currentItem]["type"].get<std::string>() == "weapon"){
 			float damage = itemsFromFile[currentItem]["damage"].get<float>();
 			mutexs::attackVectorMutex.lock();
-			attacks.push_back({entityID, damage}); //pushes atttacks to this for processing
+			attacks.push_back({entityID, damage}); //pushes atttacks to this for processing, so we can process all of the attack stuff in one place
 			mutexs::attackVectorMutex.unlock();
 		}
 	}

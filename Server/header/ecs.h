@@ -257,7 +257,8 @@ namespace ecs{
                 itemSystem();
             public:
                 static itemSystem* getInstance();
-                void throwItem(json keysAndID, int entityID, int direction_x, sf::Vector2f userCoordinates);
+                void dropItem(sf::Vector2f coordinates, int itemID, sf::Vector2f velocity);
+                void throwItem(json keysAndID, int entityID, int direction_x, sf::Vector2f userCoordinates); //specifically used for users dropped items
                 void pickupItem(entity::entity colliderEntity, entity::entity collisionEntity);
                 bool userItemCollision(component::physical* collisionObject, component::physical* colliderObject);
        };

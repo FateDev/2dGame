@@ -20,20 +20,24 @@ void itemSystem::throwItem(json keysAndID, int entityID, int direction_x, sf::Ve
 
 			userPtr->socket->send(packet); //sends the packet to the user currently being looped over
 
-			int thrownEntityID = ecs::entity::superEntityManager.create(ecs::entity::ITEM_THROWN);
-			ecs::component::physical* physicalObj = &physicsObjects.compVec[physicsObjects.entityToVectorMap(thrownEntityID)];
-			physicalObj->coordinates = sf::Vector2f(userCoordinates.x, userCoordinates.y - 5); //sets thrown item's coordinates as this (around player's waist)
-			physicalObj->velocity = sf::Vector2f(direction_x, 0); //sets thrown item's velocity as this
-			physicalObj->objType = ITEM; //special type of collision/collider object
-            physicalObj->onFloor = false; //not on the floor
-			thrown_items.compVec[thrown_items.entityToVectorMap(thrownEntityID)].item_id = thrownItemID; //sets the id of the fallent item
-			drawables.compVec[drawables.entityToVectorMap(thrownEntityID)].texture = itemsFromFile[thrownItemID]["resourceLocation"].get<std::string>();
-
-			ecs::system::coordinatesStruct thrownItemChunk = coordinatesStruct(chunkCoordHelperX(physicalObj->coordinates.x, chunkPixelSize_x), chunkCoordHelperY(physicalObj->coordinates.y, chunkPixelSize_y));
-			chunks[thrownItemChunk].second.push_back(entity::entity(thrownEntityID));
+            dropItem(userCoordinates, thrownItemID, sf::Vector2f(direction_x, 0)); //will generate the thrown item
 		}
 		mutexs::mainUserLockMutex.unlock();
 	}	
+}
+
+void itemSystem::dropItem(sf::Vector2f coordinates, int itemID, sf::Vector2f velocity){
+    int droppedEntityID = ecs::entity::superEntityManager.create(ecs::entity::ITEM_THROWN);
+    ecs::component::physical* physicalObj = &physicsObjects.compVec[physicsObjects.entityToVectorMap(droppedEntityID)];
+    physicalObj->coordinates = sf::Vector2f(coordinates.x, coordinates.y - 5); //sets dropped item's coordinates as this (around player's waist)
+    physicalObj->objType = ITEM; //special type of collision/collider object
+    physicalObj->onFloor = false; //not on the floor
+    physicalObj->velocity = velocity; //sets the velocity
+    thrown_items.compVec[thrown_items.entityToVectorMap(droppedEntityID)].item_id = itemID; //sets the id of the fallent item
+    drawables.compVec[drawables.entityToVectorMap(droppedEntityID)].texture = itemsFromFile[itemID]["resourceLocation"].get<std::string>();
+
+    ecs::system::coordinatesStruct droppedItemChunk = coordinatesStruct(chunkCoordHelperX(physicalObj->coordinates.x, chunkPixelSize_x), chunkCoordHelperY(physicalObj->coordinates.y, chunkPixelSize_y));
+    chunks[droppedItemChunk].second.push_back(ecs::entity::entity(droppedEntityID));
 }
 
 void itemSystem::pickupItem(entity::entity colliderEntity, entity::entity collisionEntity){ //the collider and collision could both be ITEMs, and this accounts for it
@@ -69,18 +73,19 @@ void itemSystem::pickupItem(entity::entity colliderEntity, entity::entity collis
                     break;
                 }
             }
+            if(pickedUpItem != false){ //the item could be picked up due to a non-full inventory, so we do the code for it, otherwise we don't
+                sf::Vector2f coordinates = physicsObjects.compVec[physicsObjects.entityToVectorMap(entityID)].coordinates;
+                ecs::system::coordinatesStruct removeItemCoordinates(chunkCoordHelperX(int(coordinates.x), chunkPixelSize_x), chunkCoordHelperY(int(coordinates.y), chunkPixelSize_y)); //get what the coordinates would be in the world using simple mod math
 
-            sf::Vector2f coordinates = physicsObjects.compVec[physicsObjects.entityToVectorMap(entityID)].coordinates;
-            ecs::system::coordinatesStruct removeItemCoordinates(chunkCoordHelperX(int(coordinates.x), chunkPixelSize_x), chunkCoordHelperY(int(coordinates.y), chunkPixelSize_y)); //get what the coordinates would be in the world using simple mod math
-
-            for(int i = 0; i < chunks[removeItemCoordinates].second.size(); i++){
-                if(chunks[removeItemCoordinates].second[i].id == entityID){
-                    chunks[removeItemCoordinates].second.erase(chunks[removeItemCoordinates].second.begin() + i);
-                    break;
+                for(int i = 0; i < chunks[removeItemCoordinates].second.size(); i++){
+                    if(chunks[removeItemCoordinates].second[i].id == entityID){
+                        chunks[removeItemCoordinates].second.erase(chunks[removeItemCoordinates].second.begin() + i);
+                        break;
+                    }
                 }
-            }
 
-            ecs::entity::superEntityManager.destroy(entity::entity(entityID));
+                ecs::entity::superEntityManager.destroy(entity::entity(entityID));
+            }
         }
     }
     if(physicsObjects.compVec[physicsObjects.entityToVectorMap(colliderEntity.id)].objType == ITEM && physicsObjects.compVec[physicsObjects.entityToVectorMap(colliderEntity.id)].onFloor == true){
