@@ -23,8 +23,18 @@ void mpHpSystem::damage(){
     }
 
     for(auto &entityID : entitiesKilled){
+        sf::Vector2f coordinates = physicsObjects.compVec[physicsObjects.entityToVectorMap(entityID)].coordinates;
+        coordinatesStruct chunkCoord(chunkCoordHelperX(coordinates.x, chunkPixelSize_x), chunkCoordHelperY(coordinates.y, chunkPixelSize_y));
+        
+        for(int i = 0; i < chunks[chunkCoord].second.size(); i++){
+            if(chunks[chunkCoord].second[i].id == entityID){
+                chunks[chunkCoord].second.erase(chunks[chunkCoord].second.begin() + i); //erases the entity from the vector
+                break;
+            }
+        }
+        chunks[chunkCoord].first.mobCount--; //decrement the mob count because we just killed one
+
         entity::superEntityManager.destroy(entity::entity(entityID)); //destroys the entity
-        //coordinatesStruct chunkCoord()
     }
 
     entitiesKilled.clear();

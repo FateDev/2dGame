@@ -156,7 +156,7 @@ void physics::moveEntities() {
 		coordinatesStruct currentChunkCoords(
 			chunkCoordHelperX(physicsalStruct->coordinates.x, chunkPixelSize_x), 
 			chunkCoordHelperY(physicsalStruct->coordinates.y, chunkPixelSize_y)
-		);  //get what the current chunk coordinates would be in the world using simple mod math
+		);  //get what the current chunk coordinates would be in the world using simple mod math, we do it at this stage rather than later as checkCollision and mobMovement may change the position after this point
 
 		////////2nd we do collision detection and resolution based on the current positions and velocities, but they will potentially be updated here
 		checkCollision(entityID); //does the collision detection

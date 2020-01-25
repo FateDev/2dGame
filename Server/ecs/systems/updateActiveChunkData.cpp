@@ -19,21 +19,30 @@ void updateActiveChunkData::updateActiveChunks()
 { //this is for updating which chunks are actually active
 	std::vector<coordinatesStruct> generationCoords = {}; //a vector containing all of the coordinates to generate a new chunk at
 	std::vector<coordinatesStruct> deletionCoords = {}; //a vector containing all of the coordinates to delete chunks from
-	std::unordered_set<coordinatesStruct, ecs::system::Hash> liveChunks; //the set of active chunks
-	for (auto &chunk : chunks) {
-		if(chunk.second.first.userCount > 0){
-			for(int i = chunk.first.coordinates.first-1; i <= chunk.first.coordinates.first+1;i++){
-				for(int j = chunk.first.coordinates.second-1; j <= chunk.first.coordinates.second+1;j++){ //loops around all the surrounding chunks
-					if(!chunks[coordinatesStruct(i, j)].first.generated){ //if the chunk hasn't been made yet
-						generationCoords.push_back(coordinatesStruct(i, j)); //flag this up for generation
-					}
-					liveChunks.insert(coordinatesStruct(i, j)); //adds this chunk to the set of chunks flagged as 'alive'
+	std::unordered_set<coordinatesStruct, ecs::system::Hash> liveChunks = {}; //the set of active chunks
+
+	for(int i = 0; i < users.compVec.size(); i++){ //loop through all users, and their position, instead of chunks
+		int entityID = users.vectorToEntityMap(i);
+		sf::Vector2f* userCoordinates = &physicsObjects.compVec[physicsObjects.entityToVectorMap(i)].coordinates;
+		
+		coordinatesStruct currentChunkCoords(
+			chunkCoordHelperX(userCoordinates->x, chunkPixelSize_x), 
+			chunkCoordHelperY(userCoordinates->y, chunkPixelSize_y)
+		);
+
+		for(int i = -1; i <= 1; i++){
+			for(int j = -1; j <= 1; j++){
+				if(!chunks[coordinatesStruct(currentChunkCoords.coordinates.first + i, currentChunkCoords.coordinates.second + j)].first.generated){ //if the chunk hasn't been made yet
+					generationCoords.push_back(coordinatesStruct(currentChunkCoords.coordinates.first + i, currentChunkCoords.coordinates.second + j)); //flag this up for generation
 				}
+				liveChunks.insert(coordinatesStruct(currentChunkCoords.coordinates.first + i, currentChunkCoords.coordinates.second + j)); //adds this chunk to the set of chunks flagged as 'alive'
 			}
 		}
 	}
+	
 	for(auto &chunk : chunks){
 		if(liveChunks.find(chunk.first) == liveChunks.end()){
+			if(chunk.second.first.userCount > 0){ std::cout << "WHAT THE FUCK\n"; }
 			deletionCoords.push_back(chunk.first);
 		}
 	}
@@ -42,10 +51,10 @@ void updateActiveChunkData::updateActiveChunks()
 	Generation:
 	-Every power of 2 on the x-axis excluding the first 3 (so until the 8th chunk), generate a city there
 		-> their y vaues are always multiples of 5
+	*/
 	std::cout << "Deleting: " << deletionCoords.size() << "\n";
 	std::cout << "Generating: " << generationCoords.size() << "\n";
 	std::cout << "Total number: " << chunks.size() << "\n";
-	*/
 
 	cleanupChunks(deletionCoords); //deletes the deletionCoords ones
 	generateChunks(generationCoords, false); //generates the ones at generationCoords, false is saying that these ones shouldn't be permanent
@@ -62,6 +71,7 @@ void updateActiveChunkData::cleanupChunks(std::vector<coordinatesStruct> deletio
 			}else if(ecs::entity::superEntityManager.getType(entitiesInChunk) == ecs::entity::entityType::ITEM_THROWN){
 				chunks[deletion].first.itemCount--;
 			}else if(ecs::entity::superEntityManager.getType(entitiesInChunk) == ecs::entity::entityType::USER){
+				std::cout << chunks[deletion].first.userCount << "\n";
 				ignoreDeletion = true;
 				break;
 			}
