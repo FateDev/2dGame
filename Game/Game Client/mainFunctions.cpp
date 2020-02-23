@@ -118,6 +118,8 @@ void gameBit(sf::Clock* globalClock, networking* networkObject, gameNetwork* gam
 
 	stats onScreenStats(gui, networkObject); //makes the status object
 
+	bool isWindowFocused = true;
+
 	actualGame.statsObj = &onScreenStats; //sets the stats object as this, so the data from the draw loop can be used to update it
 
 	while (gameWindow.isOpen()) //so long as the window is open
@@ -127,6 +129,11 @@ void gameBit(sf::Clock* globalClock, networking* networkObject, gameNetwork* gam
 		{
 			if (event.type == sf::Event::Closed) 
 				gameWindow.close(); //close the window when you find the close event basically
+			if (event.type == sf::Event::GainedFocus)
+				isWindowFocused = true;
+			if (event.type == sf::Event::LostFocus)
+				isWindowFocused = false;
+
 
 			gui.handleEvent(event); //pass the event to the widgets
 			actualGame.listenForKeys(event); //pass the event on to the game to listen for keys
@@ -151,7 +158,7 @@ void gameBit(sf::Clock* globalClock, networking* networkObject, gameNetwork* gam
 		//the below would check if the main game screen has been made active, and to then call the live update method, 
 		//which calls the chat's live update method (for sending messages and stuff)
 		if (mainGameScreen.active == true) {
-			actualGame.live(&inventoryBit); //processes stuff like keys and sends it, and drawing stuff for the game
+			actualGame.live(&inventoryBit, isWindowFocused); //processes stuff like keys and sends it, and drawing stuff for the game
 
 			gameWindow.setView(gameWindow.getDefaultView());
 
