@@ -357,8 +357,6 @@ namespace ecs{
 
                 std::thread* mainGame = 0;
                 std::thread* chunksStuff = 0;
-                std::thread* physicsLoop = 0;
-                std::thread* broadcastGameLoop = 0;
                 std::thread* updateInRangeThread = 0;
                 std::thread* damageThread = 0;
         };
