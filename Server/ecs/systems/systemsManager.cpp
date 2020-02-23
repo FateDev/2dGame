@@ -28,8 +28,6 @@ void systemsManager::systemStart()
 	mainGame = new std::thread(&game::runGame, game::getInstance());
 
 	chunksStuff = new std::thread(&game::chunksUpdateLoop, game::getInstance());
-	broadcastGameLoop = new std::thread(&game::broadcastGameLoop, game::getInstance());
-	physicsLoop = new std::thread(&game::physicsLoop, game::getInstance());
 	updateInRangeThread = new std::thread(&game::updateInRangeLoop, game::getInstance());
 	damageThread = new std::thread(&game::damageLoop, game::getInstance());
 
@@ -72,16 +70,6 @@ void systemsManager::systemEnd()
 	if (chunksStuff){
 		chunksStuff->join();
 		delete chunksStuff;
-	}
-
-	if (physicsLoop){
-		physicsLoop->join();
-		delete physicsLoop;
-	}
-
-	if (broadcastGameLoop){
-		broadcastGameLoop->join();
-		delete broadcastGameLoop;
 	}
 
 	if (updateInRangeThread){

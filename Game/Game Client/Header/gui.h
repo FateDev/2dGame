@@ -19,11 +19,11 @@ class game; //forward declaration, need it for the inventory bit
 class loadingScreen { //this is for the loading screen
 private:
 	sf::Clock* loadingScreenClock = NULL; //need the clock for the loading animation
-	sf::RenderWindow *gameWindow = NULL; //holds window
-	tgui::Gui *gui = NULL; //holds gui
-	sf::CircleShape *shape; //holds shape
+	sf::RenderWindow* gameWindow = NULL; //holds window
+	tgui::Gui* gui = NULL; //holds gui
+	sf::CircleShape* shape; //holds shape
 public:
-	loadingScreen(sf::RenderWindow *window, sf::Clock *clock); //initialises the loading screen
+	loadingScreen(sf::RenderWindow* window, sf::Clock* clock); //initialises the loading screen
 	void liveUpdate(); //the function to do stuff during the main loop
 	~loadingScreen(); //called when the loading screen is deleted
 };
@@ -38,7 +38,7 @@ private:
 
 	float percentWidth = 0; //the user defined maximum width of the chatbox
 	float percentHeight = 0; //user defined maximum height of the chatbox
-	float currentMaxHeight = 0; 
+	float currentMaxHeight = 0;
 	//above is internal float to get the lowest y coord currently being used, so that we can give this to new messages for their y coord, 
 	//and to jump down to this value for new messages
 
@@ -54,7 +54,7 @@ public:
 
 	tgui::ChildWindow::Ptr chatBoxContainer = tgui::ChildWindow::create("Chat"); //this would be the final container holding the chat box (a draggable window from tgui)
 	chat(float percentWidth, float percentHeight, float posPercentX, float posPercentY); //the constructor, first 2 are the size of the box, last 2 are the starting position
-	void liveUpdate(networking* networkObject, sf::Clock* clock); 
+	void liveUpdate(networking* networkObject, sf::Clock* clock);
 	//the above would send whatever message a user enters when they press enter (uses network object to send through the network obviously)
 };
 
@@ -63,7 +63,7 @@ private:
 	tgui::Group::Ptr mainScreenGroup = tgui::Group::create({ sf::VideoMode::getDesktopMode().width , sf::VideoMode::getDesktopMode().height });
 	//the above would be an invisible container from tgui which holds everything that gets drawn for this screen
 
-	sf::RenderWindow *window = NULL; //would hold the window object
+	sf::RenderWindow* window = NULL; //would hold the window object
 	networking* networkObject = NULL; //this will hold the network object for use in the chat
 	friend void chatBoxBulkAdd(networking* networkObject, chat* chatBox); //this will parse messages in the network object's buffer and add them
 public:
@@ -71,69 +71,61 @@ public:
 
 	bool active = false; //we can use this to decide whether or not we should have the liveUpdate() function execute
 	void setActive(bool active); //this would make the above boolean active, and also would make the main screen group visible
-	mainScreen(tgui::Gui &gui, networking* networkObject); //the constructor, has networking object because needs to pass it to the chat
+	mainScreen(tgui::Gui& gui, networking* networkObject); //the constructor, has networking object because needs to pass it to the chat
 	void liveUpdate(sf::Clock* globalClock); //simply calls the chat's live update function
 };
 
 class socialTabClass {
 private:
-	std::thread *guildRoomMsgUpdateThread; //thread to be used for async type stuff
-	std::thread *roomGuildBoxUpdateThread; //async stuff again
-	std::thread *guildSelectBoxUpdateThread; //async stuff again
-	std::atomic<bool> updateMsgGUI = false; //will be used as a flag, to signal that data for the messages of the new tab has been received, atomic data types can be written/read from threads so useful here
-
+	//the below would be an invisible container from tgui which holds everything that gets drawn for this screen
 	tgui::Group::Ptr socialTabGroup = tgui::Group::create({ sf::VideoMode::getDesktopMode().width , sf::VideoMode::getDesktopMode().height });
-	//the above would be an invisible container from tgui which holds everything that gets drawn for this screen
-
 	tgui::Theme mainTheme; //main theme for the social tab
-
-	sf::RenderWindow *window = NULL; //would hold the window object
-	networking* networkObject = NULL; //this will hold the network object for use in the chat
-	chat* chatBox = NULL; //this will hold the chat box
-	friend void chatBoxBulkAdd(networking* networkObject, chat* chatBox); //this will parse messages in the network object's buffer and add them
-
+	sf::RenderWindow* window = NULL; //would hold the window object
 	tgui::ScrollablePanel::Ptr roomGuildSelectBox; //this will be the box on the left of the screen which will contain buttons for selecting room/guild
 	tgui::ScrollablePanel::Ptr guildSelectBox; //will contain selection of guilds to join/leave
-
-	float currentMaxHeightRoomGuildSelect = 0; //the max height of the room guild select box
-	float currentMaxHeightGuildSelect = 0; //the max height of the guild select box
-
-	void addButtonToPanel(tgui::ScrollablePanel::Ptr panel, std::string text, float percentWidth, float &maxHeightVar, std::string joined, bool roomGuild);
-	void populateRoomGuildSelectBox(); //will fill up the room guild select box
-	void populateGuildSelectBox(); //will fill up the room guild select box
-
-	void changeRoomGuild(std::string buttonText); //function which changes the room/guild in the rooms bit
-	void changeGuild(tgui::Button::Ptr button);
-
-	//the buttons for the various tabs
-	tgui::Button::Ptr roomsBtn;
-	tgui::Button::Ptr areaChatBtn;
-	tgui::Button::Ptr guildSelectBtn;
-	tgui::Button::Ptr privateMessagingBtn;
-
-	float chatBoxContainerHeight = 0;
-	float chatBoxContainerYCoord = 0;
-
+	tgui::Button::Ptr roomsBtn; //button for rooms tab
+	tgui::Button::Ptr areaChatBtn; //button for localchat/areachat tab
+	tgui::Button::Ptr guildSelectBtn; //button for guild select tab
+	tgui::Button::Ptr privateMessagingBtn; //button for private messaging tab
 	json roomGuildList; //this will contain the room guild stuff so a user can select and switch and stuff
 	json guildList; //this will contain a list of guilds for the guild select tab
+	networking* networkObject = NULL; //this will hold the network object for use in the chat
+	chat* chatBox = NULL; //this will hold the chat box
+	std::string activeTab = "Rooms"; //the currently active tab
+	float currentMaxHeightRoomGuildSelect = 0; //the max height of the room guild select box (i.e the maximum y coord for the lowest button)
+	float currentMaxHeightGuildSelect = 0; //the max height of the guild select box  (i.e the maximum y coord for the lowest button)
+	float chatBoxContainerHeight = 0; //how tall the chat box container should be (the object in chat)
+	float chatBoxContainerYCoord = 0; //how far down the screen the chat box container should be (the object in chat)
+	std::thread* guildRoomMsgUpdateThread; //thread to be used for async type stuff, for messages
+	std::thread* roomGuildBoxUpdateThread; //async stuff again, but for the room guild select box
+	std::thread* guildSelectBoxUpdateThread; //async stuff again, but for the guild select box
+	std::thread* changeGuildThread; //async stuff again, but for joining/leaving guilds
+	std::atomic<bool> updateMsgGUI = false;
+	//above will be used as a flag, to signal that data for the messages of the new tab has been received, 
+	//atomic data types can be written/read from threads so useful here
 
-	std::string activeTab = "Rooms";
-
-	void switchTabs(std::string buttonText);
-
-	friend size_t WriteCallback(char *contents, size_t size, size_t nmemb, void *userp); //friend function to get data from curl, this is forward declaring the function as we can't include the header file here, as this file is included in it
+	//below adds a button to either the roomGuildSelectBox panel or the guildSelectBox panel
+	void addButtonToPanel(tgui::ScrollablePanel::Ptr panel, std::string text, float percentWidth, float& maxHeightVar, std::string joined, bool roomGuild);
+	void populateRoomGuildSelectBox(); //will fill up the room guild select box
+	void populateGuildSelectBox(); //will fill up the guild select box
+	void changeRoomGuild(std::string buttonText); //function which changes the room/guild in the rooms bit
+	void switchTabs(std::string buttonText); //called when clicking on a tab button
+	void changeGuild(tgui::Button::Ptr button); //called when clicking on the guild buttons
+	friend void chatBoxBulkAdd(networking* networkObject, chat* chatBox); //this will parse messages in the network object's buffer and add them
+	friend size_t WriteCallback(char* contents, size_t size, size_t nmemb, void* userp);
+	//friend function to get data from curl, this is forward declaring the function as we can't include the header file here, as this file is included in it
 public:
 	void destroyThreads(); //this will be called at the end of the program, and will wait for threads to finish their operations before exiting
 	void completeThreadWork(); //will wait for threads to stop execution before proceeding
 	bool active = false; //we can use this to decide whether or not we should have the liveUpdate() function execute
 	void setActive(bool active); //this would make the above boolean active, and also would make the main screen group visible
-	socialTabClass(tgui::Gui &gui, networking* networkObject); //the constructor, has networking object because needs to pass it to the chat
+	socialTabClass(tgui::Gui& gui, networking* networkObject); //the constructor, has networking object because needs to pass it to the chat
 	void liveUpdate(sf::Clock* globalClock); //simply calls the chat's live update function
 };
 
 class toolbar { //this contains the buttons in the top left of the screen
 private:
-	sf::RenderWindow *window = NULL; //would hold the window object
+	sf::RenderWindow* window = NULL; //would hold the window object
 	mainScreen* main_screen = NULL; //holds the main screen (for switching using buttons)
 	socialTabClass* socialTabBit = NULL; //holds the social tab bit
 
@@ -146,7 +138,7 @@ private:
 	void socialTab(); //this will open the social tab/panel
 	void returnToMain(); //this will go back to the main game screen
 public:
-	toolbar(sf::RenderWindow *window, mainScreen* main_screen, socialTabClass* socialTabBit, tgui::Gui &gui); //would initialise the toolbar and construct it
+	toolbar(sf::RenderWindow* window, mainScreen* main_screen, socialTabClass* socialTabBit, tgui::Gui& gui); //would initialise the toolbar and construct it
 	tgui::Group::Ptr toolbarGroup = tgui::Group::create({ sf::VideoMode::getDesktopMode().width , sf::VideoMode::getDesktopMode().height });
 	//the above would be an invisible container from tgui which holds everything that gets drawn for the toolbar, it's public so we can set it visible/invisible
 };
@@ -175,7 +167,7 @@ private:
 	int currentSelectedItemIndex = 0; //defaults to 0, the currently selected item, used to draw the box which is selected slightly differently
 public:
 	void setInventoryJSON(json obj) { inventoryJSON = obj; drawInventoryItems(); /*and draw the toolbar items*/ }; //sets the JSON object for the inventory
-	void setCurrentSelected(int selected) { currentSelectedItemIndex = selected;  } //will set the currently selecte item as this
+	void setCurrentSelected(int selected) { currentSelectedItemIndex = selected; } //will set the currently selecte item as this
 	void drawInventoryItems(); //will draw the inventory items
 	void openInventory(); //open the inventory
 	void closeInventory(); //close the inventory
@@ -193,7 +185,7 @@ class stats {
 private:
 	networking* networkingObj = NULL;
 	tgui::Group::Ptr userStats = tgui::Group::create({ "100%", "100%" });
-	tgui::Panel::Ptr statsBox,hpBarLeft, hpBarRight, mpBarLeft, mpBarRight;
+	tgui::Panel::Ptr statsBox, hpBarLeft, hpBarRight, mpBarLeft, mpBarRight;
 	tgui::Label::Ptr mp, hp, balance;
 	std::atomic_int balanceVal, mpVal, hpVal, max_mpVal, max_hpVal;
 public:

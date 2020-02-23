@@ -123,7 +123,8 @@ launcher::launcher(networking *networkObject, sf::RenderWindow* mainWindow, sf::
 	//and 3rd and 4th are the 2 text fields to get credentials from
 }
 
-void launcher::loginFunctionFromWindow(tgui::EditBox::Ptr usernameBox, tgui::EditBox::Ptr passwordBox) //function will take the text in username and password boxes and pass it to the login function
+void launcher::loginFunctionFromWindow(tgui::EditBox::Ptr usernameBox, tgui::EditBox::Ptr passwordBox) 
+//function will take the text in username and password boxes and pass it to the login function
 {
 	//makes the input into text
 	std::string username = usernameBox->getText().toAnsiString();
@@ -133,7 +134,7 @@ void launcher::loginFunctionFromWindow(tgui::EditBox::Ptr usernameBox, tgui::Edi
 		playButton->setEnabled(false); //disables the playButton as you've managed to log in at this point
 	}
 	else {
-		loginError = 1; //uf you can login then it'll show the error message, rather part 1 of it
+		loginError = 1; //if you can login then it'll show the error message, rather part 1 of it
 	}
 }
 

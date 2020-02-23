@@ -181,6 +181,9 @@ void gameBit(sf::Clock* globalClock, networking* networkObject, gameNetwork* gam
 			onScreenStats.enableDraw();
 			onScreenStats.updateStats();
 		}
+		else {
+			onScreenStats.disableDraw();
+		}
 
 		try {
 			gui.draw(); //draws everything that's been added to it (hopefully just groups of tgui objects for the different screens)

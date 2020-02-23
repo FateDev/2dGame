@@ -326,11 +326,8 @@ namespace ecs{
                 game();
             public:
                 static game* getInstance();
-                void broadcastGame(); //will broadcast game data
                 void runGame(); //will run internal game loops and stuff
                 void chunksUpdateLoop(); //loop to update chunks
-                void broadcastGameLoop();
-                void physicsLoop();
                 void updateInRangeLoop();
                 void damageLoop();
        };

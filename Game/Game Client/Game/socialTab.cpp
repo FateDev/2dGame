@@ -36,7 +36,9 @@ socialTabClass::socialTabClass(tgui::Gui &gui, networking* networkObject) : wind
 	areaChatBtn = tgui::Button::create("Area Chat");
 	areaChatBtn->setPosition("25%", chatBox->chatBoxContainer->getPosition().y - 40);
 	areaChatBtn->setSize("25%", 40);
+
 	areaChatBtn->connect("Clicked", &socialTabClass::switchTabs, this, areaChatBtn->getText());
+
 	guildSelectBtn = tgui::Button::create("Guilds");
 	guildSelectBtn->setPosition("50%", chatBox->chatBoxContainer->getPosition().y - 40);
 	guildSelectBtn->setSize("25%", 40);
@@ -108,16 +110,15 @@ void socialTabClass::addButtonToPanel(tgui::ScrollablePanel::Ptr panel, std::str
 
 	button->setUserData(joined);
 
-	if (!roomGuild) {
-		if (joined == "true") {
+	if (!roomGuild) { //if the roomGuild parameter (final parameter) is false, then this is for joining/leaving guilds
+		if (joined == "true") { //joined is applicable only for this type of button, if it's true then set the appropriate UI
 			button->setRenderer(mainTheme.getRenderer("button.joined"));
+		} else {
+			button->setRenderer(mainTheme.getRenderer("button.notjoined")); //and similar for if it's not joined
 		}
-		else {
-			button->setRenderer(mainTheme.getRenderer("button.notjoined"));
-		}
-		button->connect("Clicked", &socialTabClass::changeGuild, this, button);
-	} else {
-		button->connect("Clicked", &socialTabClass::changeRoomGuild, this, button->getText());
+		button->connect("Clicked", &socialTabClass::changeGuild, this, button); //then connect the appropriate function
+	} else { //else this is for changing room guild
+		button->connect("Clicked", &socialTabClass::changeRoomGuild, this, button->getText()); //then connect the appropriate function
 	}
 
 	maxHeightVar += button->getFullSize().y; //updates the maximum y pos for the next message (assuming there is one)
@@ -233,30 +234,24 @@ void socialTabClass::populateGuildSelectBox() {
 }
 
 void socialTabClass::switchTabs(std::string buttonText) { //this will enable switching tabs and stuff
-	sf::Clock x;
 	if (buttonText == "Area Chat") {
 		if (activeTab == "Rooms") {
 			roomGuildSelectBox->setVisible(false); //makes the select box invisible
 			//code to disable the area chat stuff
-		}
-		if (activeTab == "Guilds") {
+		} else if (activeTab == "Guilds") {
 			guildSelectBox->setVisible(false); //makes the guild select box invisible
 			//code to disable the guilds stuff
-		}
-		if (activeTab == "Private Messaging") {
+		} else if (activeTab == "Private Messaging") {
 			//code to disable the private messaging stuff
 		}
 		if (activeTab != "Area Chat") { //this sets the UI to look like how it should for this specific tab, but only once
-			chatBox->chatBoxContainer->setPosition("10%", sf::VideoMode::getDesktopMode().height - chatBox->chatBoxContainer->getFullSize().y - 60);  //sets correct positioning as it's also used for the Rooms tab
+			chatBox->chatBoxContainer->setPosition("10%", sf::VideoMode::getDesktopMode().height - chatBox->chatBoxContainer->getFullSize().y - 60);  
+			//sets correct positioning as the chat box is also used for the Rooms tab
 			chatBox->chatBoxContainer->setSize("80%", chatBoxContainerHeight); //sets correct sizing as it's also used for the Rooms tab
 			activeTab = "Area Chat"; //sets active tab
-			
 			changeRoomGuild("LOCALCHAT"); //changes the current chat rooom to localchat
-
-			//stuff below is done on every click on this button, just to make sure, maybe will work through them later to decrease overhead or whatever
 			chatBox->chatBoxContainer->setVisible(true); //makes the chat box visible
 		}
-
 	}
 	else if (buttonText == "Rooms") {
 		if (activeTab == "Area Chat") {

@@ -171,6 +171,7 @@ void game::draw() { //this is called from the tcpGameThread, so not on the main 
 	spriteAccessories.clear();
 
 	if (!gameData.is_null()) {	//it now moves it
+		//std::cout << gameData.dump() << "\n";
 		for (int j = 0; j < 9; j++) { //the server sends 9 chunks of data
 			json chunkToDraw = json::parse(gameData["chunks"][j].get<std::string>());
 
